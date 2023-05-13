@@ -1,0 +1,11 @@
+# https://www.home-assistant.io/integrations/default_config/
+default_config:
+
+http:
+  server_port: 8124
+
+# https://www.home-assistant.io/integrations/logger/
+logger:
+  default: info
+  logs:
+    custom_components.e3dcgit: debug

@@ -1,0 +1,126 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Device is already configured",
+            "reauth_successful": "Re-authentication was successful"
+        },
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication"
+        },
+        "step": {
+            "reauth_confirm": {
+                "data": {
+                    "host": "Host",
+                    "password": "Password",
+                    "rscpkey": "RSCP encryption key",
+                    "username": "Username"
+                },
+                "title": "Updating E3DC credentials"
+            },
+            "user": {
+                "data": {
+                    "host": "Host",
+                    "password": "Password",
+                    "rscpkey": "RSCP encryption key",
+                    "username": "Username"
+                }
+            }
+        }
+    },
+    "entity": {
+        "binary_sensor": {
+            "ext_source_available": {
+                "name": "External source"
+            },
+            "pset_limits_enabled": {
+                "name": "Power limits"
+            }
+        },
+        "sensor": {
+            "derate_percent": {
+                "name": "Derate feed above %"
+            },
+            "derate_power": {
+                "name": "Derate feed above W"
+            },
+            "installed_battery_capacity": {
+                "name": "Installed battery capacity"
+            },
+            "installed_peak_power": {
+                "name": "Installed peak power"
+            },
+            "max_ac_power": {
+                "name": "Maximum AC power"
+            },
+            "max_bat_charge_power": {
+                "name": "System maximum charge"
+            },
+            "max_bat_discharge_power": {
+                "name": "System maximum discharge"
+            },
+            "mac_address": {
+                "name": "MAC address"
+            },
+            "start_discharge_default": {
+                "name": "System minimum discharge"
+            },
+            "autarky": {
+                "name": "Autarky"
+            },
+            "charge_battery": {
+                "name": "Battery charge"
+            },
+            "consumption_battery": {
+                "name": "Battery consumption"
+            },
+            "consumption_grid": {
+                "name": "Consumption from grid"
+            },
+            "consumption_house": {
+                "name": "House consumption"
+            },
+            "consumption_wallbox": {
+                "name": "Wallbox consumption"
+            },
+            "delta_grid": {
+                "name": "Transfer to/from grid"
+            },
+            "discharge_battery": {
+                "name": "Battery discharge"
+            },
+            "production_add": {
+                "name": "Additional source production"
+            },
+            "production_grid": {
+                "name": "Export to grid"
+            },
+            "production_solar": {
+                "name": "Solar production"
+            },
+            "pset_limits_charge_max": {
+                "name": "Maximum charge"
+            },
+            "pset_limits_discharge_max": {
+                "name": "Maximum discharge"
+            },
+            "pset_limits_discharge_start": {
+                "name": "Minimum discharge"
+            },
+            "selfconsumption": {
+                "name": "Self consumption"
+            },
+            "soc": {
+                "name": "State of charge"
+            }
+        },
+        "switch": {
+            "pset_weatherregulation_enabled": {
+                "name": "Weather regulation"
+            },
+            "pset_powersave_enabled": {
+                "name": "SmartPower powersaving"
+            }
+        }
+    }
+}

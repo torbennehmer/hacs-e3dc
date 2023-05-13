@@ -1,0 +1,33 @@
+set_power_limits:
+  name: Set power limits
+  description: Sets the maximum charge/discharge limits of the E3DC unit
+  fields:
+    device_id:
+      name: E3DC Device ID
+      description: E3DC Device ID
+      required: true
+      example: "S10-412345678"
+      selector:
+        text:
+    max_charge:
+      name: Maximum Charge (W)
+      description: Maximum allowed battery charge in Watts
+      required: false
+      example: "1000"
+      selector:
+        number:
+          min: 0
+          unit_of_measurement: W
+          mode: box
+          step: 100
+    max_discharge:
+      name: Maximum Discharge (W)
+      description: Maximum allowed battery discharge in Watts
+      required: false
+      example: "1000"
+      selector:
+        number:
+          min: 0
+          unit_of_measurement: W
+          mode: box
+          step: 100
