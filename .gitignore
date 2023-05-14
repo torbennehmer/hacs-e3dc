@@ -160,5 +160,5 @@ cython_debug/
 #.idea/
 
 # Home Assistant configuration
-conrig/*
+config/*
 !config/configuration.yaml
