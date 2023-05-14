@@ -1,0 +1,8 @@
+{
+    "filename": "hacs-e3dc-git.zip",
+    "hide_default_branch": true,
+    "homeassistant": "2023.3.0",
+    "name": "E3DC Remote Storage Control Protocol (Git)",
+    "render_readme": true,
+    "zip_release": true
+}
