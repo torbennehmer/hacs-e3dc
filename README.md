@@ -18,8 +18,8 @@ different name.
    to create it.
 1. In the `custom_components` directory (folder) create a new folder called
    `e3dcgit`.
-1. Download *all*_* the files from the `custom_components/e3dcgit/`
-   directory (folder) in this repository.
+1. Download *all* the files from the `custom_components/e3dcgit/` directory 
+   (folder) in this repository.
 1. Place the files you downloaded in the new directory (folder) you created.
 1. Restart Home Assistant
 1. In the HA UI go to *Configuration -> Integrations* click "+" and search for
