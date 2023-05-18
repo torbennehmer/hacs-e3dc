@@ -6,10 +6,6 @@ This repository delivers the latest features via HACS. You can use it for
 testing until I can get the integration accepted to HA core (no timeline for
 that, sorry).
 
-The integration installed via HACS will register itself as `e3dcgit`, so that it
-stays separated from any attempt to merge it into HA core, where it'll have a
-different name.
-
 ## Installation
 
 1. Using the tool of choice open the directory (folder) for your HA
@@ -17,8 +13,8 @@ different name.
 1. If you do not have a `custom_components` directory (folder) there, you need
    to create it.
 1. In the `custom_components` directory (folder) create a new folder called
-   `e3dcgit`.
-1. Download *all* the files from the `custom_components/e3dcgit/` directory 
+   `e3dc`.
+1. Download *all* the files from the `custom_components/e3dc/` directory
    (folder) in this repository.
 1. Place the files you downloaded in the new directory (folder) you created.
 1. Restart Home Assistant
