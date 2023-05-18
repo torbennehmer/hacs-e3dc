@@ -27,7 +27,7 @@ jobs:
         shell: "bash"
         run: |
           cd "${{ github.workspace }}/custom_components/e3dc"
-          zip hacs-e3dc-git.zip -r ./
+          zip hacs-e3dc.zip -r ./
 
       - name: "Upload the ZIP file to the release"
         uses: softprops/action-gh-release@v0.1.15
