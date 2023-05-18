@@ -157,7 +157,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     SensorEntityDescription(
         key="autarky",
         translation_key="autarky",
-        icon="mdi:home-lightning-bolt-outline",
+        icon="mdi:home-percent-outline",
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
@@ -166,7 +166,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     SensorEntityDescription(
         key="charge_battery",
         translation_key="charge_battery",
-        icon="mdi:battery-charging",
+        icon="mdi:battery-charging-outline",
         native_unit_of_measurement=UnitOfPower.WATT,
         suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -197,7 +197,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     SensorEntityDescription(
         key="consumption_house",
         translation_key="consumption_house",
-        icon="mdi:home-battery-outline",
+        icon="mdi:home-import-outline",
         native_unit_of_measurement=UnitOfPower.WATT,
         suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -229,7 +229,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     SensorEntityDescription(
         key="discharge_battery",
         translation_key="discharge_battery",
-        icon="mdi:battery",
+        icon="mdi:battery-arrow-down-outline",
         native_unit_of_measurement=UnitOfPower.WATT,
         suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
         suggested_display_precision=2,
@@ -270,7 +270,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     SensorEntityDescription(
         key="selfconsumption",
         translation_key="selfconsumption",
-        icon="mdi:home-battery-outline",
+        icon="mdi:cloud-percent-outline",
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
