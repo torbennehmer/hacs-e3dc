@@ -113,16 +113,14 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return self._show_setup_form_init({"base": error})
 
         await self.async_set_unique_id(
-            # f"{self._e3dc.serialNumberPrefix}{self._e3dc.serialNumber}"
-            "test"
+            f"{self._e3dc.serialNumberPrefix}{self._e3dc.serialNumber}"
         )
         self._abort_if_unique_id_configured()
         final_data: dict[str, Any] = user_input
         final_data[CONF_API_VERSION] = CONF_VERSION
 
         return self.async_create_entry(
-            # title=f"E3DC {self._e3dc.model}", data=final_data
-            title="Test", data=final_data
+            title=f"E3DC {self._e3dc.model}", data=final_data
         )
 
     def _show_setup_form_init(self, errors: dict[str, str] | None = None) -> FlowResult:
