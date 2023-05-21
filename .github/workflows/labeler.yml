@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main
-      - master
+    paths:
+      - '.github/labels.yml'
+      - '.github/workflows/labels.yml'
 
 jobs:
   labeler:
@@ -17,4 +19,6 @@ jobs:
       - name: Run Labeler
         uses: crazy-max/ghaction-github-labeler@v3.1.1
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           skip-delete: true
+          yaml-file: .github/labels.yml

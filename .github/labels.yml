@@ -28,9 +28,6 @@
 - name: enhancement
   description: New feature or request
   color: a2eeef
-- name: github_actions
-  description: Pull requests that update Github_actions code
-  color: "000000"
 - name: good first issue
   description: Good for newcomers
   color: 7057ff
@@ -43,9 +40,6 @@
 - name: performance
   description: Performance
   color: "016175"
-- name: python
-  description: Pull requests that update Python code
-  color: 2b67c6
 - name: question
   description: Further information is requested
   color: d876e3
@@ -55,9 +49,6 @@
 - name: removal
   description: Removals and Deprecations
   color: 9ae7ea
-- name: style
-  description: Style
-  color: c120e5
 - name: testing
   description: Testing
   color: b1fc6f
