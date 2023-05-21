@@ -1,0 +1,36 @@
+# https://github.com/release-drafter/release-drafter
+
+categories:
+  - title: ":boom: Breaking Changes"
+    label: "breaking"
+
+  - title: ":rocket: Features"
+    label: "enhancement"
+
+  - title: ":fire: Removals and Deprecations"
+    label: "removal"
+
+  - title: ":beetle: Fixes"
+    label: "bug"
+
+  - title: ":racehorse: Performance"
+    label: "performance"
+
+  - title: ":hammer: Refactoring"
+    label: "refactoring"
+
+  - title: ":package: Build Process"
+    labels:
+      - "dependencies"
+      - "build"
+      - "ci"
+
+  - title: "Miscellaneous changes"
+    labels:
+      - "documentation"
+      - "testing"
+
+template: |
+  ## Changes
+
+  $CHANGES
