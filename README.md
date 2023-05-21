@@ -25,8 +25,8 @@ that, sorry).
 1. If you do not have a `custom_components` directory (folder) there, you need
    to create it.
 1. In the `custom_components` directory (folder) create a new folder called
-   `e3dc`.
-1. Download *all* the files from the `custom_components/e3dc/` directory
+   `e3dc_rscp`.
+1. Download *all* the files from the `custom_components/e3dc_rscp/` directory
    (folder) in this repository.
 1. Place the files you downloaded in the new directory (folder) you created.
 1. Restart Home Assistant

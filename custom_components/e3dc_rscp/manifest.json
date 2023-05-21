@@ -1,5 +1,5 @@
 {
-  "domain": "e3dc",
+  "domain": "e3dc_rscp",
   "name": "E3DC Remote Storage Control Protocol (Git)",
   "codeowners": [
     "@torbennehmer"

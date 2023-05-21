@@ -4,7 +4,7 @@ from homeassistant.const import Platform
 
 CONF_RSCPKEY = "rscpkey"
 CONF_VERSION = 1
-DOMAIN = "e3dc"
+DOMAIN = "e3dc_rscp"
 ERROR_AUTH_INVALID = "invalid_auth"
 ERROR_CANNOT_CONNECT = "cannot_connect"
 SERVICE_SET_POWER_LIMITS = "set_power_limits"
