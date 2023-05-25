@@ -36,13 +36,12 @@ ignore = [
     "D411",  # Missing blank line before section
     "E501",  # line too long
     "E731",  # do not assign a lambda expression, use a def
+    "UP006", # replaces keep-runtime-typing = true
+    "UP007", # replaces keep-runtime-typing = true
 ]
 
 [flake8-pytest-style]
 fixture-parentheses = false
-
-[pyupgrade]
-keep-runtime-typing = true
 
 [mccabe]
 max-complexity = 25
