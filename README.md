@@ -18,7 +18,7 @@ This repository delivers the latest features via HACS. You can use it for
 testing until I can get the integration accepted to HA core (no timeline for
 that, sorry).
 
-## Installation
+## Manual Installation
 
 1. Using the tool of choice open the directory (folder) for your HA
    configuration (where you find `configuration.yaml`).
@@ -29,6 +29,18 @@ that, sorry).
 1. Download *all* the files from the `custom_components/e3dc_rscp/` directory
    (folder) in this repository.
 1. Place the files you downloaded in the new directory (folder) you created.
+1. Restart Home Assistant
+1. In the HA UI go to *Configuration -> Integrations* click "+" and search for
+   "E3DC Remote Storage Control Protocol (Git)"
+
+## HACS Installation
+
+1. Go to *HACS -> Integrations*
+1. Click the Triple-Dot menu on the top right and select *Custom Repositories*
+1. Set `https://github.com/torbennehmer/hacs-e3dc.git` as repository name for
+   the category *Integrations*
+1. Open the repository (it will be displayed by default), select *Download* and
+   confirm it
 1. Restart Home Assistant
 1. In the HA UI go to *Configuration -> Integrations* click "+" and search for
    "E3DC Remote Storage Control Protocol (Git)"
