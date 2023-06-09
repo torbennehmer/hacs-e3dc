@@ -112,6 +112,30 @@
       },
       "soc": {
         "name": "State of charge"
+      },
+      "db-day-autarky": {
+        "name": "Autarky - today"
+      },
+      "db-day-battery-charge": {
+        "name": "Battery charge - today"
+      },
+      "db-day-battery-discharge": {
+        "name": "Battery discharge - today"
+      },
+      "db-day-grid-consumption": {
+        "name": "Consumption from grid - today"
+      },
+      "db-day-house-consumption": {
+        "name": "House consumption - today"
+      },
+      "db-day-grid-production": {
+        "name": "Export to grid - today"
+      },
+      "db-day-solar-production": {
+        "name": "Solar production - today"
+      },
+      "db-day-selfconsumption": {
+        "name": "Self consumption - today"
       }
     },
     "switch": {

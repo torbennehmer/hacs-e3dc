@@ -1,14 +1,17 @@
 """Coordinator for E3DC integration."""
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 import logging
+from time import time
 from typing import Any
+import pytz
 
 from e3dc import E3DC  # Missing Exports:; SendError,
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
+from homeassistant.util.dt import as_timestamp, start_of_local_day
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
@@ -19,7 +22,7 @@ from homeassistant.helpers.update_coordinator import (  # CoordinatorEntity,; Up
 from .const import CONF_RSCPKEY, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
+_STAT_REFRESH_INTERVAL = 60
 
 class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
@@ -28,6 +31,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     _mydata: dict[str, Any] = {}
     _sw_version: str = ""
     _update_guard_powersettings: bool = False
+    _timezone_offset: int = 0
+    _next_stat_update: float = 0
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize E3DC Coordinator and connect."""
@@ -72,6 +77,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "INFO_REQ_SW_RELEASE"
         )
 
+        await self._load_timezone_settings()
+
     async def _async_e3dc_request_single_tag(self, tag: str) -> Any:
         """Send a single tag request to E3DC, wraps lib call for async usage, supplies defaults."""
 
@@ -104,6 +111,21 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("Not polling powersettings, they are updating right now")
 
+        # Only poll power statstics once per minute. E3DC updates it only once per 15
+        # minutes anyway, this should be a good compromise to get the metrics shortly
+        # before the end of the day.
+        if self._next_stat_update < time():
+            _LOGGER.debug("Polling today's power metrics")
+            db_data_today: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.e3dc.get_db_data_timestamp, self._get_db_data_day_timestamp(), 86400, True
+            )
+            self._process_db_data_today(db_data_today)
+            self._next_stat_update = time() + _STAT_REFRESH_INTERVAL
+            # TODO: Reduce interval further, but take start_ts into account to get an
+            # end of day reading of the metric.
+        else:
+            _LOGGER.debug("Skipping power metrics poll.")
+
         return self._mydata
 
     def _process_power_settings(self, power_settings: dict[str, Any | None]):
@@ -135,6 +157,77 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["production_solar"] = poll_data["production"]["solar"]
         self._mydata["selfconsumption"] = poll_data["selfConsumption"]
         self._mydata["soc"] = poll_data["stateOfCharge"]
+
+    def _process_db_data_today(self, db_data: dict[str, Any | None]) -> None:
+        """Process retrieved db data settings."""
+        self._mydata["db-day-autarky"] = db_data["autarky"]
+        self._mydata["db-day-battery-charge"] = db_data["bat_power_in"]
+        self._mydata["db-day-battery-discharge"] = db_data["bat_power_out"]
+        self._mydata["db-day-grid-consumption"] = db_data["grid_power_out"]
+        self._mydata["db-day-house-consumption"] = db_data["consumption"]
+        self._mydata["db-day-grid-production"] = db_data["grid_power_in"]
+        self._mydata["db-day-solar-production"] = db_data["solarProduction"]
+        self._mydata["db-day-selfconsumption"] = db_data["consumed_production"]
+        self._mydata["db-day-startts"] = db_data["startTimestamp"]
+
+    async def _load_timezone_settings(self):
+        """
+        Loads the current timezone offset from the E3DC, using its local timezone data.
+        Required to correctly retrieve power statistics for today.
+        """
+        try:
+            tz_name: str = await self._async_e3dc_request_single_tag("INFO_REQ_TIME_ZONE")
+        except:
+            _LOGGER.exception(
+                "Failed to loade timezone from E3DC"
+            )
+            # Once we have better exception handling available, we need to throw
+            # proper HomeAssistantErrors at this point.
+            raise
+
+        tz_offset: int | None = None
+        try:
+            tz_info: pytz.timezone = pytz.timezone(tz_name)
+            dt_tmp: datetime = datetime.now(tz_info)
+            tz_offset = dt_tmp.utcoffset().seconds
+        except pytz.UnknownTimeZoneError:
+            _LOGGER.exception(
+                "Failed to load timezone from E3DC"
+            )
+
+        if tz_offset is None:
+            try:
+                # Fallback to compute the offset using current times from E3DC:
+                ts_local: int = int(await self._async_e3dc_request_single_tag("INFO_REQ_TIME"))
+                ts_utc: int = int(await self._async_e3dc_request_single_tag("INFO_REQ_UTC_TIME"))
+                delta: int = ts_local - ts_utc
+                tz_offset = int(1800 * round(delta / 1800))
+            except:
+                _LOGGER.exception(
+                    "Failed to load timestamps from E3DC"
+                )
+                # Once we have better exception handling available, we need to throw
+                # proper HomeAssistantErrors at this point.
+                raise
+
+        self._mydata["e3dc_timezone"] = tz_name
+        self._timezone_offset = tz_offset
+
+    def _get_db_data_day_timestamp(self) -> int:
+        """ Get the local start-of-day timestamp for DB Query, needs some tweaking """
+        today: datetime = start_of_local_day()
+        today_ts: int = int(as_timestamp(today))
+        _LOGGER.debug("Midnight is %s, DB query timestamp is %s, applied offset: %s",
+            today, today_ts, self._timezone_offset)
+        # tz_hass: pytz.timezone = pytz.timezone("Europe/Berlin")
+        # today: datetime = datetime.now(tz_hass).replace(hour=0, minute=0, second=0, microsecond=0)
+        # today_ts: int = today.timestamp()
+        # Move to local time, the Timestamp needed by the E3DC DB queries are
+        # not in UTC as they should be.
+        today_ts += self._timezone_offset
+        _LOGGER.debug("Midnight DB query timestamp is %s, applied offset: %s",
+            today_ts, self._timezone_offset)
+        return today_ts
 
     def device_info(self) -> DeviceInfo:
         """Return default device info structure."""
