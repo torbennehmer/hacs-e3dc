@@ -4,11 +4,11 @@ categories:
   - title: ":boom: Breaking Changes"
     label: "breaking"
 
-  - title: ":rocket: Features"
-    label: "enhancement"
-
   - title: ":fire: Removals and Deprecations"
     label: "removal"
+
+  - title: ":rocket: Features"
+    label: "enhancement"
 
   - title: ":beetle: Fixes"
     label: "bug"
