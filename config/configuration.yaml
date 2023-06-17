@@ -8,4 +8,4 @@ http:
 logger:
   default: info
   logs:
-    custom_components.e3dc: debug
+    custom_components.e3dc_rscp: debug
