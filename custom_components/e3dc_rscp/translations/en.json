@@ -30,82 +30,82 @@
     },
     "entity": {
         "binary_sensor": {
-            "ext_source_available": {
-                "name": "External source"
+            "system-additional-source-available": {
+                "name": "Additional source"
             },
-            "pset_limits_enabled": {
+            "pset-limit-enabled": {
                 "name": "Power limits"
             }
         },
         "sensor": {
-            "derate_percent": {
+            "system-derate-percent": {
                 "name": "Derate feed above %"
             },
-            "derate_power": {
+            "system-derate-power": {
                 "name": "Derate feed above W"
             },
-            "installed_battery_capacity": {
+            "system-battery-installed-capacity": {
                 "name": "Installed battery capacity"
             },
-            "installed_peak_power": {
+            "system-battery-installed-peak": {
                 "name": "Installed peak power"
             },
-            "max_ac_power": {
+            "system-ac-maxpower": {
                 "name": "Maximum AC power"
             },
-            "max_bat_charge_power": {
+            "system-battery-charge-max": {
                 "name": "System maximum charge"
             },
-            "max_bat_discharge_power": {
+            "system-battery-discharge-max": {
                 "name": "System maximum discharge"
             },
-            "mac_address": {
+            "system-mac": {
                 "name": "MAC address"
             },
-            "start_discharge_default": {
+            "system-battery-discharge-minimum-default": {
                 "name": "System minimum discharge"
             },
             "autarky": {
                 "name": "Autarky"
             },
-            "charge_battery": {
+            "battery-charge": {
                 "name": "Battery charge"
             },
-            "consumption_battery": {
-                "name": "Battery consumption"
+            "battery-netchange": {
+                "name": "Battery net change"
             },
-            "consumption_grid": {
+            "grid-consumption": {
                 "name": "Consumption from grid"
             },
-            "consumption_house": {
+            "house-consumption": {
                 "name": "House consumption"
             },
-            "consumption_wallbox": {
+            "wallbox-consumption": {
                 "name": "Wallbox consumption"
             },
-            "delta_grid": {
+            "grid-netchange": {
                 "name": "Transfer to/from grid"
             },
-            "discharge_battery": {
+            "battery-discharge": {
                 "name": "Battery discharge"
             },
-            "production_add": {
+            "additional-production": {
                 "name": "Additional source production"
             },
-            "production_grid": {
+            "grid-production": {
                 "name": "Export to grid"
             },
-            "production_solar": {
+            "solar-production": {
                 "name": "Solar production"
             },
-            "pset_limits_charge_max": {
+            "pset-limit-charge": {
                 "name": "Maximum charge"
             },
-            "pset_limits_discharge_max": {
+            "pset-limit-discharge": {
                 "name": "Maximum discharge"
             },
-            "pset_limits_discharge_start": {
-                "name": "Minimum discharge"
+            "pset-limit-discharge-minimum": {
+                "name": "Minimum required discharge"
             },
             "selfconsumption": {
                 "name": "Self consumption"
@@ -139,10 +139,10 @@
             }
         },
         "switch": {
-            "pset_weatherregulation_enabled": {
+            "pset-weatherregulationenabled": {
                 "name": "Weather regulation"
             },
-            "pset_powersave_enabled": {
+            "pset-powersaving-enabled": {
                 "name": "SmartPower powersaving"
             }
         }

@@ -39,8 +39,8 @@ class E3DCSwitchEntityDescription(SwitchEntityDescription):
 SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
     # CONFIG AND DIAGNOSTIC SWITCHES
     E3DCSwitchEntityDescription(
-        key="pset_powersave_enabled",
-        translation_key="pset_powersave_enabled",
+        key="pset-powersaving-enabled",
+        translation_key="pset-powersaving-enabled",
         on_icon="mdi:leaf",
         off_icon="mdi:leaf-off",
         device_class=SwitchDeviceClass.SWITCH,
@@ -52,8 +52,8 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         entity_registry_enabled_default=False,
     ),
     E3DCSwitchEntityDescription(
-        key="pset_weatherregulation_enabled",
-        translation_key="pset_weatherregulation_enabled",
+        key="pset-weatherregulationenabled",
+        translation_key="pset-weatherregulationenabled",
         on_icon="mdi:weather-sunny",
         off_icon="mdi:weather-sunny-off",
         device_class=SwitchDeviceClass.SWITCH,
