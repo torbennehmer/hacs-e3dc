@@ -33,16 +33,16 @@ class E3DCBinarySensorEntityDescription(BinarySensorEntityDescription):
 SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
     # CONFIG AND DIAGNOSTIC SENSORS
     E3DCBinarySensorEntityDescription(
-        key="ext_source_available",
-        translation_key="ext_source_available",
+        key="system-additional-source-available",
+        translation_key="system-additional-source-available",
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         on_icon="mdi:power-plug-outline",
         off_icon="mdi:power-plug-off-outline",
     ),
     E3DCBinarySensorEntityDescription(
-        key="pset_limits_enabled",
-        translation_key="pset_limits_enabled",
+        key="pset-limit-enabled",
+        translation_key="pset-limit-enabled",
         entity_category=EntityCategory.CONFIG,
         device_class=BinarySensorDeviceClass.RUNNING,
         on_icon="mdi:signal",
