@@ -171,8 +171,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["db-day-startts"] = db_data["startTimestamp"]
 
     async def _load_timezone_settings(self):
-        """
-        Loads the current timezone offset from the E3DC, using its local timezone data.
+        """Load the current timezone offset from the E3DC, using its local timezone data.
+
         Required to correctly retrieve power statistics for today.
         """
         try:
@@ -214,7 +214,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._timezone_offset = tz_offset
 
     def _get_db_data_day_timestamp(self) -> int:
-        """ Get the local start-of-day timestamp for DB Query, needs some tweaking """
+        """Get the local start-of-day timestamp for DB Query, needs some tweaking."""
         today: datetime = start_of_local_day()
         today_ts: int = int(as_timestamp(today))
         _LOGGER.debug("Midnight is %s, DB query timestamp is %s, applied offset: %s",
