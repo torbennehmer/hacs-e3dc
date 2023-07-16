@@ -8,7 +8,9 @@ set_power_limits:
       required: true
       example: "S10-412345678"
       selector:
-        text:
+        device:
+          filter:
+            integration: e3dc_rscp
     max_charge:
       name: Maximum Charge (W)
       description: Maximum allowed battery charge in Watts
