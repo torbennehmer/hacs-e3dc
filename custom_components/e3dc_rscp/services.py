@@ -27,7 +27,7 @@ SCHEMA_CLEAR_POWER_LIMITS = vol.Schema(
     }
 )
 
-SCHEMA_SET_POWER_KUNUTS = vol.Schema(
+SCHEMA_SET_POWER_LIMITS = vol.Schema(
     {
         vol.Required(ATTR_DEVICEID): str,
         vol.Optional(ATTR_MAX_CHARGE): vol.All(int, vol.Range(min=0)),
@@ -47,7 +47,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         domain=DOMAIN,
         service=SERVICE_SET_POWER_LIMITS,
         service_func=async_call_set_power_limits,
-        schema=SCHEMA_SET_POWER_KUNUTS,
+        schema=SCHEMA_SET_POWER_LIMITS,
     )
 
     async def async_call_clear_power_limits(call: ServiceCall) -> None:
