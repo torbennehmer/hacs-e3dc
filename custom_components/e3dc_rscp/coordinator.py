@@ -305,6 +305,29 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully updated powersaving to %s", enabled)
         return True
 
+    async def async_clear_power_limits(self) -> None:
+        """Clear any active power limit."""
+
+        _LOGGER.debug("Clearing any active power limit.")
+
+        try:
+            # Call RSCP service.
+            # no update guard necessary, as we're called from a service, not an entity
+            result: int = await self.hass.async_add_executor_job(
+                self.e3dc.set_power_limits, False, None, None, None, True
+            )
+        except Exception as ex:
+            _LOGGER.exception("Failed to clear power limits")
+            raise HomeAssistantError("Failed to clear power limits") from ex
+
+        if result == -1:
+            raise HomeAssistantError("Failed to clear power limits")
+
+        if result == 1:
+            _LOGGER.warning("The given power limits are not optimal, continuing anyway")
+        else:
+            _LOGGER.debug("Successfully cleared the power limits")
+
     async def async_set_power_limits(
         self, max_charge: int | None, max_discharge: int | None
     ) -> None:

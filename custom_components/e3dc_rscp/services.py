@@ -11,7 +11,7 @@ from homeassistant.helpers.device_registry import (
     DeviceRegistry,
     async_get,
 )
-from .const import DOMAIN, SERVICE_SET_POWER_LIMITS
+from .const import DOMAIN, SERVICE_SET_POWER_LIMITS, SERVICE_CLEAR_POWER_LIMITS
 from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,6 +20,12 @@ _device_map: dict[str, E3DCCoordinator] = {}
 ATTR_DEVICEID = "device_id"
 ATTR_MAX_CHARGE = "max_charge"
 ATTR_MAX_DISCHARGE = "max_discharge"
+
+SCHEMA_CLEAR_POWER_LIMITS = vol.Schema(
+    {
+        vol.Required(ATTR_DEVICEID): str,
+    }
+)
 
 SCHEMA_SET_POWER_KUNUTS = vol.Schema(
     {
@@ -33,15 +39,25 @@ SCHEMA_SET_POWER_KUNUTS = vol.Schema(
 async def async_setup_services(hass: HomeAssistant) -> None:
     """Central hook to register all services, called by component setup."""
 
+    # hass.services.register(DOMAIN, "servicename", lambda, schema)
     async def async_call_set_power_limits(call: ServiceCall) -> None:
         await _async_set_power_limits(hass, call)
 
-    # hass.services.register(DOMAIN, "servicename", lambda, schema)
     hass.services.async_register(
         domain=DOMAIN,
         service=SERVICE_SET_POWER_LIMITS,
         service_func=async_call_set_power_limits,
         schema=SCHEMA_SET_POWER_KUNUTS,
+    )
+
+    async def async_call_clear_power_limits(call: ServiceCall) -> None:
+        await _async_clear_power_limits(hass, call)
+
+    hass.services.async_register(
+        domain=DOMAIN,
+        service=SERVICE_CLEAR_POWER_LIMITS,
+        service_func=async_call_clear_power_limits,
+        schema=SCHEMA_CLEAR_POWER_LIMITS,
     )
 
 
@@ -65,7 +81,7 @@ def _resolve_device_id(hass: HomeAssistant, devid: str) -> E3DCCoordinator:
     uid: str = identifier[1]
     coordinator: E3DCCoordinator = hass.data[DOMAIN][uid]
     _device_map[devid] = coordinator
-    return uid
+    return coordinator
 
 
 async def _async_set_power_limits(hass: HomeAssistant, call: ServiceCall) -> None:
@@ -82,3 +98,11 @@ async def _async_set_power_limits(hass: HomeAssistant, call: ServiceCall) -> Non
     await coordinator.async_set_power_limits(
         max_charge=max_charge, max_discharge=max_discharge
     )
+
+
+async def _async_clear_power_limits(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Extract service information and relay to coordinator."""
+    coordinator: E3DCCoordinator = _resolve_device_id(
+        hass, call.data.get(ATTR_DEVICEID)
+    )
+    await coordinator.async_clear_power_limits()
