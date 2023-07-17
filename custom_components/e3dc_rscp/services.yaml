@@ -1,3 +1,17 @@
+clear_power_limits:
+  name: Clear power limits
+  description: Clears any active power limit of the E3DC unit
+  fields:
+    device_id:
+      name: E3DC Device ID
+      description: E3DC Device ID
+      required: true
+      example: "S10-412345678"
+      selector:
+        device:
+          filter:
+            integration: e3dc_rscp
+
 set_power_limits:
   name: Set power limits
   description: Sets the maximum charge/discharge limits of the E3DC unit
@@ -8,7 +22,9 @@ set_power_limits:
       required: true
       example: "S10-412345678"
       selector:
-        text:
+        device:
+          filter:
+            integration: e3dc_rscp
     max_charge:
       name: Maximum Charge (W)
       description: Maximum allowed battery charge in Watts

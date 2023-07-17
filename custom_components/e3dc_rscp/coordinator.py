@@ -305,6 +305,29 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully updated powersaving to %s", enabled)
         return True
 
+    async def async_clear_power_limits(self) -> None:
+        """Clear any active power limit."""
+
+        _LOGGER.debug("Clearing any active power limit.")
+
+        try:
+            # Call RSCP service.
+            # no update guard necessary, as we're called from a service, not an entity
+            result: int = await self.hass.async_add_executor_job(
+                self.e3dc.set_power_limits, False, None, None, None, True
+            )
+        except Exception as ex:
+            _LOGGER.exception("Failed to clear power limits")
+            raise HomeAssistantError("Failed to clear power limits") from ex
+
+        if result == -1:
+            raise HomeAssistantError("Failed to clear power limits")
+
+        if result == 1:
+            _LOGGER.warning("The given power limits are not optimal, continuing anyway")
+        else:
+            _LOGGER.debug("Successfully cleared the power limits")
+
     async def async_set_power_limits(
         self, max_charge: int | None, max_discharge: int | None
     ) -> None:
@@ -317,10 +340,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
         if max_charge is not None and max_charge > self.e3dc.maxBatChargePower:
-            _LOGGER.debug("Limiting max_charge to %s", self.e3dc.maxBatChargePower)
+            _LOGGER.warning("Limiting max_charge to %s", self.e3dc.maxBatChargePower)
             max_charge = self.e3dc.maxBatChargePower
         if max_discharge is not None and max_discharge > self.e3dc.maxBatDischargePower:
-            _LOGGER.debug(
+            _LOGGER.warning(
                 "Limiting max_discharge to %s", self.e3dc.maxBatDischargePower
             )
             max_discharge = self.e3dc.maxBatDischargePower
@@ -338,16 +361,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.e3dc.set_power_limits, True, max_charge, max_discharge, None, True
             )
         except Exception as ex:
-            _LOGGER.exception("Failed to update power limits")
-            raise HomeAssistantError("Failed to update power limits") from ex
+            _LOGGER.exception("Failed to set power limits")
+            raise HomeAssistantError("Failed to set power limits") from ex
 
         if result == -1:
-            raise HomeAssistantError("Failed to update power limits")
+            raise HomeAssistantError("Failed to set power limits")
 
         if result == 1:
-            _LOGGER.warning("The given power limits are not optimal, continuing Anyway")
+            _LOGGER.warning("The given power limits are not optimal, continuing anyway")
         else:
-            _LOGGER.warning("Successfully set the power limits")
+            _LOGGER.debug("Successfully set the power limits")
 
 
 def create_e3dcinstance(username: str, password: str, host: str, rscpkey: str) -> E3DC:
