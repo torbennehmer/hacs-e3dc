@@ -15,6 +15,7 @@
         "vscode": {
             "extensions": [
                 "github.vscode-pull-request-github",
+                "ms-python.black-formatter",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "ryanluker.vscode-coverage-gutters",
@@ -28,6 +29,11 @@
                 "files.eol": "\n",
                 "files.trimTrailingWhitespace": true,
                 "python.analysis.autoSearchPaths": false,
+                "python.editor.codeActionsOnSave": {
+                    "source.organizeImports": true
+                },
+                "python.editor.defaultFormatter": "ms-python.black-formatter",
+                "python.editor.formatOnSave": true,
                 "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
                 "python.formatting.provider": "black",
                 "python.linting.enabled": true,

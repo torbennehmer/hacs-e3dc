@@ -24,6 +24,7 @@ from .const import CONF_RSCPKEY, DOMAIN
 _LOGGER = logging.getLogger(__name__)
 _STAT_REFRESH_INTERVAL = 60
 
+
 class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
 
@@ -62,15 +63,21 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._mydata["system-derate-percent"] = self.e3dc.deratePercent
         self._mydata["system-derate-power"] = self.e3dc.deratePower
-        self._mydata["system-additional-source-available"] = self.e3dc.externalSourceAvailable != 0
-        self._mydata["system-battery-installed-capacity"] = self.e3dc.installedBatteryCapacity
+        self._mydata["system-additional-source-available"] = (
+            self.e3dc.externalSourceAvailable != 0
+        )
+        self._mydata[
+            "system-battery-installed-capacity"
+        ] = self.e3dc.installedBatteryCapacity
         self._mydata["system-battery-installed-peak"] = self.e3dc.installedPeakPower
         self._mydata["system-ac-maxpower"] = self.e3dc.maxAcPower
         self._mydata["system-battery-charge-max"] = self.e3dc.maxBatChargePower
         self._mydata["system-battery-discharge-max"] = self.e3dc.maxBatDischargePower
         self._mydata["system-mac"] = self.e3dc.macAddress
         self._mydata["model"] = self.e3dc.model
-        self._mydata["system-battery-discharge-minimum-default"] = self.e3dc.startDischargeDefault
+        self._mydata[
+            "system-battery-discharge-minimum-default"
+        ] = self.e3dc.startDischargeDefault
 
         # Idea: Maybe Port this to e3dc lib, it can query this in one go during startup.
         self._sw_version = await self._async_e3dc_request_single_tag(
@@ -117,7 +124,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._next_stat_update < time():
             _LOGGER.debug("Polling today's power metrics")
             db_data_today: dict[str, Any] = await self.hass.async_add_executor_job(
-                self.e3dc.get_db_data_timestamp, self._get_db_data_day_timestamp(), 86400, True
+                self.e3dc.get_db_data_timestamp,
+                self._get_db_data_day_timestamp(),
+                86400,
+                True,
             )
             self._process_db_data_today(db_data_today)
             self._next_stat_update = time() + _STAT_REFRESH_INTERVAL
@@ -176,11 +186,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Required to correctly retrieve power statistics for today.
         """
         try:
-            tz_name: str = await self._async_e3dc_request_single_tag("INFO_REQ_TIME_ZONE")
-        except:
-            _LOGGER.exception(
-                "Failed to loade timezone from E3DC"
+            tz_name: str = await self._async_e3dc_request_single_tag(
+                "INFO_REQ_TIME_ZONE"
             )
+        except:
+            _LOGGER.exception("Failed to loade timezone from E3DC")
             # Once we have better exception handling available, we need to throw
             # proper HomeAssistantErrors at this point.
             raise
@@ -191,21 +201,21 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             dt_tmp: datetime = datetime.now(tz_info)
             tz_offset = dt_tmp.utcoffset().seconds
         except pytz.UnknownTimeZoneError:
-            _LOGGER.exception(
-                "Failed to load timezone from E3DC"
-            )
+            _LOGGER.exception("Failed to load timezone from E3DC")
 
         if tz_offset is None:
             try:
                 # Fallback to compute the offset using current times from E3DC:
-                ts_local: int = int(await self._async_e3dc_request_single_tag("INFO_REQ_TIME"))
-                ts_utc: int = int(await self._async_e3dc_request_single_tag("INFO_REQ_UTC_TIME"))
+                ts_local: int = int(
+                    await self._async_e3dc_request_single_tag("INFO_REQ_TIME")
+                )
+                ts_utc: int = int(
+                    await self._async_e3dc_request_single_tag("INFO_REQ_UTC_TIME")
+                )
                 delta: int = ts_local - ts_utc
                 tz_offset = int(1800 * round(delta / 1800))
             except:
-                _LOGGER.exception(
-                    "Failed to load timestamps from E3DC"
-                )
+                _LOGGER.exception("Failed to load timestamps from E3DC")
                 # Once we have better exception handling available, we need to throw
                 # proper HomeAssistantErrors at this point.
                 raise
@@ -217,16 +227,23 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Get the local start-of-day timestamp for DB Query, needs some tweaking."""
         today: datetime = start_of_local_day()
         today_ts: int = int(as_timestamp(today))
-        _LOGGER.debug("Midnight is %s, DB query timestamp is %s, applied offset: %s",
-            today, today_ts, self._timezone_offset)
+        _LOGGER.debug(
+            "Midnight is %s, DB query timestamp is %s, applied offset: %s",
+            today,
+            today_ts,
+            self._timezone_offset,
+        )
         # tz_hass: pytz.timezone = pytz.timezone("Europe/Berlin")
         # today: datetime = datetime.now(tz_hass).replace(hour=0, minute=0, second=0, microsecond=0)
         # today_ts: int = today.timestamp()
         # Move to local time, the Timestamp needed by the E3DC DB queries are
         # not in UTC as they should be.
         today_ts += self._timezone_offset
-        _LOGGER.debug("Midnight DB query timestamp is %s, applied offset: %s",
-            today_ts, self._timezone_offset)
+        _LOGGER.debug(
+            "Midnight DB query timestamp is %s, applied offset: %s",
+            today_ts,
+            self._timezone_offset,
+        )
         return today_ts
 
     def device_info(self) -> DeviceInfo:
@@ -336,7 +353,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Validate the arguments, at least one has to be set.
         if max_charge is None and max_discharge is None:
             raise ValueError(
-                "async_set_power_limits must be called with at least one of max_charge or max_discharge."
+                "async_set_power_limits must be called with at least one of "
+                "max_charge or max_discharge."
             )
 
         if max_charge is not None and max_charge > self.e3dc.maxBatChargePower:
