@@ -1,10 +1,12 @@
 """The E3DC Remote Storage Control Protocol integration."""
 
 # Open tasks from integration quality checklist:
-# 1. Handles internet unavailable. Log a warning once when unavailable, log once when reconnected.
+# 1. Handles internet unavailable. Log a warning once when unavailable,
+#    log once when reconnected.
 #    -> Needs special care, as auth credentials change when E3DC is offline,
 #       haven't tested this yet, so we work only as long as we're connected.
-# 2. Handles device/service unavailable. Log a warning once when unavailable, log once when reconnected.
+# 2. Handles device/service unavailable. Log a warning once when unavailable,
+#    log once when reconnected.
 #    -> Similar to previous point, right now, we'll run into connection errors,
 #       we need an update to the E3DC lib to catch this safely, working on that one.
 # 3. Set available property to False if appropriate
