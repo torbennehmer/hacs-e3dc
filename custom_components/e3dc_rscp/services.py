@@ -11,7 +11,12 @@ from homeassistant.helpers.device_registry import (
     DeviceRegistry,
     async_get,
 )
-from .const import DOMAIN, SERVICE_SET_POWER_LIMITS, SERVICE_CLEAR_POWER_LIMITS
+from .const import (
+    DOMAIN,
+    SERVICE_SET_POWER_LIMITS,
+    SERVICE_CLEAR_POWER_LIMITS,
+    SERVICE_MANUAL_CHARGE,
+)
 from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,6 +25,7 @@ _device_map: dict[str, E3DCCoordinator] = {}
 ATTR_DEVICEID = "device_id"
 ATTR_MAX_CHARGE = "max_charge"
 ATTR_MAX_DISCHARGE = "max_discharge"
+ATTR_CHARGE_AMOUNT = "charge_amount"
 
 SCHEMA_CLEAR_POWER_LIMITS = vol.Schema(
     {
@@ -32,6 +38,13 @@ SCHEMA_SET_POWER_LIMITS = vol.Schema(
         vol.Required(ATTR_DEVICEID): str,
         vol.Optional(ATTR_MAX_CHARGE): vol.All(int, vol.Range(min=0)),
         vol.Optional(ATTR_MAX_DISCHARGE): vol.All(int, vol.Range(min=0)),
+    }
+)
+
+SCHEMA_MANUAL_CHARGE = vol.Schema(
+    {
+        vol.Required(ATTR_DEVICEID): str,
+        vol.Optional(ATTR_CHARGE_AMOUNT): vol.All(int, vol.Range(min=0)),
     }
 )
 
@@ -58,6 +71,16 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         service=SERVICE_CLEAR_POWER_LIMITS,
         service_func=async_call_clear_power_limits,
         schema=SCHEMA_CLEAR_POWER_LIMITS,
+    )
+
+    async def async_call_manual_charge(call: ServiceCall) -> None:
+        await _async_manual_charge(hass, call)
+
+    hass.services.async_register(
+        domain=DOMAIN,
+        service=SERVICE_MANUAL_CHARGE,
+        service_func=async_call_manual_charge,
+        schema=SCHEMA_MANUAL_CHARGE,
     )
 
 
@@ -106,3 +129,12 @@ async def _async_clear_power_limits(hass: HomeAssistant, call: ServiceCall) -> N
         hass, call.data.get(ATTR_DEVICEID)
     )
     await coordinator.async_clear_power_limits()
+
+
+async def _async_manual_charge(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Extract service information and relay to coordinator."""
+    coordinator: E3DCCoordinator = _resolve_device_id(
+        hass, call.data.get(ATTR_DEVICEID)
+    )
+    charge_amount: int = call.data.get(ATTR_CHARGE_AMOUNT)
+    await coordinator.async_manual_charge(charge_amount=charge_amount)

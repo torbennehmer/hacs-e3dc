@@ -47,3 +47,29 @@ set_power_limits:
           unit_of_measurement: W
           mode: box
           step: 100
+
+
+manual_charge:
+  name: Control manual charging
+  description: Starts or stops manual charging, set charge amount to zero to stop charging if it is running.
+  fields:
+    device_id:
+      name: E3DC Device ID
+      description: E3DC Device ID
+      required: true
+      example: "S10-412345678"
+      selector:
+        device:
+          filter:
+            integration: e3dc_rscp
+    charge_amount:
+      name: Charge amount (Wh)
+      description: Amount to charge in Wh
+      required: true
+      example: "1000"
+      selector:
+        number:
+          min: 0
+          unit_of_measurement: Wh
+          mode: box
+          step: 100
