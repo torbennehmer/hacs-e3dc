@@ -188,7 +188,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["db-day-startts"] = db_data["startTimestamp"]
 
     def _process_manual_charge(self, request_data) -> None:
-        """Parse manual charge status"""
+        """Parse manual charge status."""
         self._mydata["manual-charge-active"] = rscpFindTag(
             request_data, "EMS_MANUAL_CHARGE_ACTIVE"
         )[2]
