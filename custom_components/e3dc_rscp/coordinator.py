@@ -7,6 +7,7 @@ from typing import Any
 import pytz
 
 from e3dc import E3DC  # Missing Exports:; SendError,
+from e3dc._rscpLib import rscpFindTag
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
@@ -118,6 +119,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("Not polling powersettings, they are updating right now")
 
+        _LOGGER.debug("Polling manual charge information")
+        request_data = await self.hass.async_add_executor_job(
+            self.e3dc.sendRequest, ("EMS_REQ_GET_MANUAL_CHARGE", "None", None), 3, True
+        )
+        self._process_manual_charge(request_data)
+
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
         # before the end of the day.
@@ -179,6 +186,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["db-day-selfconsumption"] = db_data["consumed_production"]
         self._mydata["db-day-solar-production"] = db_data["solarProduction"]
         self._mydata["db-day-startts"] = db_data["startTimestamp"]
+
+    def _process_manual_charge(self, request_data) -> None:
+        """Parse manual charge status."""
+        self._mydata["manual-charge-active"] = rscpFindTag(
+            request_data, "EMS_MANUAL_CHARGE_ACTIVE"
+        )[2]
+        self._mydata["manual-charge-energy"] = rscpFindTag(
+            request_data, "EMS_MANUAL_CHARGE_ENERGY_COUNTER"
+        )[2]
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
@@ -389,6 +405,38 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("The given power limits are not optimal, continuing anyway")
         else:
             _LOGGER.debug("Successfully set the power limits")
+
+    async def async_manual_charge(self, charge_amount: int) -> None:
+        """Start manual charging the given amount, zero will stop charging."""
+
+        # Validate the arguments
+        if charge_amount < 0:
+            raise ValueError("Charge amount must be positive or zero.")
+
+        _LOGGER.debug(
+            "Starting manual charge of: %s",
+            charge_amount,
+        )
+
+        try:
+            # Call RSCP service.
+            # no update guard necessary, as we're called from a service, not an entity
+            result_data = await self.hass.async_add_executor_job(
+                self.e3dc.sendRequest,
+                ("EMS_REQ_START_MANUAL_CHARGE", "Uint32", charge_amount),
+                3,
+                True,
+            )
+        except Exception as ex:
+            _LOGGER.exception("Failed to initiate manual charging")
+            raise HomeAssistantError("Failed to initiate manual charging") from ex
+
+        result: bool = result_data[2]
+
+        if not result:
+            _LOGGER.warning("Manual charging could not be activated")
+        else:
+            _LOGGER.debug("Successfully started manual charging")
 
 
 def create_e3dcinstance(username: str, password: str, host: str, rscpkey: str) -> E3DC:

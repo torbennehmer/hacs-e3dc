@@ -35,6 +35,9 @@
             },
             "pset-limit-enabled": {
                 "name": "Power limits"
+            },
+            "manual-charge-active": {
+              "name": "Manual charge"
             }
         },
         "sensor": {
@@ -136,6 +139,9 @@
             },
             "db-day-selfconsumption": {
                 "name": "Self consumption - today"
+            },
+            "manual-charge-energy": {
+              "name": "Energy charged from grid"
             }
         },
         "switch": {

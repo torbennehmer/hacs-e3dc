@@ -48,7 +48,14 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         on_icon="mdi:signal",
         off_icon="mdi:signal-off",
     ),
-    # DEVICE SENSORS (none yet)
+    # DEVICE SENSORS
+    E3DCBinarySensorEntityDescription(
+        key="manual-charge-active",
+        translation_key="manual-charge-active",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        on_icon="mdi:electric-switch-closed",
+        off_icon="mdi:electric-switch",
+    ),
 )
 
 
