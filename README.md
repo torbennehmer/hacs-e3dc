@@ -156,7 +156,7 @@ library](https://github.com/fsantini/python-e3dc) from @fsantini. The general co
 [discord-shield]: https://img.shields.io/discord/330944238910963714.svg?style=for-the-badge
 -->
 [forum-shield]: https://img.shields.io/badge/Community%20Forum-Home%20Assistant-blue?style=for-the-badge&logo=homeassistant
-[forum]: https://community.home-assistant.io/
+[forum]: https://community.home-assistant.io/t/e3dc-remote-storage-control-protocol-rscp/595280
 [hacs]: https://github.com/hacs/integration
 [hacs-shield]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge&logo=homeassistantcommunitystore
 [license-shield]: https://img.shields.io/github/license/torbennehmer/hacs-e3dc?style=for-the-badge&color=blue&logo=gnu
