@@ -25,6 +25,12 @@ serial numbers etc., I recommend not to attach this to the issue directly, get
 in touch on the issue and I'll give you a filedrop hosted on a private server of
 me.
 
+## Disclaimer
+
+This integration is provided without any warranty or support by E3DC
+(unfortunately). I do not take responsibility for any problems it may cause in
+all cases. Use it at your own risk.
+
 ## Installation
 
 The recommend way to install this extension is using HACS. If you want more
@@ -137,6 +143,36 @@ Currently, the following features of pye3dc are not supported:
 
 - Web Connections
 - Local connections when offline, using the backup user.
+
+## Services
+
+The integration currently provides these services to initiate more complex
+commands to the E3DC unit:
+
+### Set power limits
+
+Use the service `set_power_limits` to limit the maximum charging or discharging
+rates of the battery system. Both values can be controlled individually, each
+call replaces the settings made by the last. It will not allow you to change the
+system defined minimum discharge rate at the moment, as I am not sure if this is
+actually a sensible thing to do.
+
+## Clear current power limits
+
+`clear_power_limits` will drop any active power limit. It will not emit an error
+if none has been set. Prefer this to use `set_power_limits` and setting the
+values to the system defined maximum.
+
+## Initate manual battery charging
+
+The service `manual_charge` will start charging the specified amount of energy
+into the battery, taking it from the grid if neccessary. The idea behind this is
+to take advantage of dynamic electricity providers like Tibber. Charge your
+battery when electricity is cheap even if you have no solar power available, for
+example in windy winter nights/days.
+
+Be aware, that calls to this operation seem to be limited, however, this is not
+documented. As always, use at your own risk and discretion.
 
 ## Upstream source
 
