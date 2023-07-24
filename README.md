@@ -18,7 +18,31 @@ This repository delivers the latest features via HACS. You can use it for
 testing until I can get the integration accepted to HA core (no timeline for
 that, sorry).
 
-## Manual Installation
+If you encounter problems, please file an issue at the integrations issue
+tracker. In the course of working with you, I'll probably want a diagnostic
+dump. As the dump will contain probably sensitvie information like MAC adresses,
+serial numbers etc., I recommend not to attach this to the issue directly, get
+in touch on the issue and I'll give you a filedrop hosted on a private server of
+me.
+
+## Installation
+
+The recommend way to install this extension is using HACS. If you want more
+control, use the manual installation method.
+
+### HACS Installation
+
+1. Go to *HACS -> Integrations*
+1. Click the Triple-Dot menu on the top right and select *Custom Repositories*
+1. Set `https://github.com/torbennehmer/hacs-e3dc.git` as repository name for
+   the category *Integrations*
+1. Open the repository (it will be displayed by default), select *Download* and
+   confirm it
+1. Restart Home Assistant
+1. In the HA UI go to *Configuration -> Integrations* click "+" and search for
+   "E3DC Remote Storage Control Protocol (Git)"
+
+### Manual Installation
 
 1. Using the tool of choice open the directory (folder) for your HA
    configuration (where you find `configuration.yaml`).
@@ -33,32 +57,91 @@ that, sorry).
 1. In the HA UI go to *Configuration -> Integrations* click "+" and search for
    "E3DC Remote Storage Control Protocol (Git)"
 
-## HACS Installation
+## Configuration
 
-1. Go to *HACS -> Integrations*
-1. Click the Triple-Dot menu on the top right and select *Custom Repositories*
-1. Set `https://github.com/torbennehmer/hacs-e3dc.git` as repository name for
-   the category *Integrations*
-1. Open the repository (it will be displayed by default), select *Download* and
-   confirm it
-1. Restart Home Assistant
-1. In the HA UI go to *Configuration -> Integrations* click "+" and search for
-   "E3DC Remote Storage Control Protocol (Git)"
+Once you add the integration, you'll be asked to authenticate yourself for a
+local connection to your E3DC.
 
-## Configuration is done in the UI
+- **Username:** Your E3DC portal user name
+- **Password:** Your E3DC portal password
+- **Hostname:** The Hostname or IP address of the E3/DC system
+- **RSCP Password:** This is the encryption key used in RSCP communications. You
+  have to set on the device under *Main Page -> Personalize -> User profile ->
+  RSCP password.*
 
-Right now, only local connections are supported by the integration, thus you'll need:
+### RSCP configuration
 
-- Your user name
-- Your password
-- The Hostname or IP address of the E3/DC system
-- The RSCP Password (encryption key), as set on the device under *Main Page ->
-  Personalize -> User profile -> RSCP password*
+Right now, the integration will use the default configuration provided by
+pye3dc. Additional PVIs, powermeters or batteries not covered yet by an option
+flow. You can find details about these options at the [pye3dc
+readme](https://github.com/fsantini/python-e3dc#configuration). I will plan to
+add options to configure this in the long run. Please file an issue if you need
+changes here, as I will need ral life examples to get these things running.
 
-**Not supported are:**
+### Probable causes of connection problems
+
+Based from my current experience, there may be a various problems when
+connecting to an E3DC unit. Please be aware that it is not an exthaustive list,
+also different E3DC types may behave slightly differently. I'll try to collect
+the information I can deduce here and - if possible - forward them to the pye3dc
+base lib where sensible.
+
+#### Password limitations
+
+According to bug reports, the usable characters of an RSCP key seem to be
+limited. A user had problems when using a dot as a key element. If you get
+strange authentication problems, try to start with a simple alphanumeric ASCII
+based RSCP key, this is known to work in all cases.
+
+#### Network restriction
+
+E3DC units seem to listen only for connections on the same TCP/IP subnet. Access
+from the outside must be proxied by a host on the local net. Connections from
+other IP addresses will be blocked, even if, for example, you connect through an
+VPN coming from other private networks.
+
+A temporary solution, e.g. for testing, could be a simple SSH forward. However,
+if you need a permanent solution, I would recommend using a [Traefik Reverse
+Proxy](https://traefik.io/traefik/) on the E3DC net to act as an intermediate.
+It will allow for a more detailed security setup.
+
+A sample setup for Traefik might look like this (without any warranty), I use
+this for my VPN setup:
+
+```yaml
+# Static config
+entryPoints:
+  e3dc.rscp:
+    # External Port reachable through Traefik
+    address: "10.11.12.10:5033/tcp"
+
+# Dynamic config
+tcp:
+  routers:
+    e3dc.rscp:
+      entrypoints:
+        - e3dc.rscp
+      service: e3dc.rscp
+      rule: "ClientIP(`10.0.0.0/8`)"
+  services:
+    e3dc.rscp:
+      loadbalancer:
+        servers:
+          # E3DC Target IP
+          - address: "10.11.12.15:5033"
+```
+
+### Unsupported features configuration schemes
+
+Currently, the following features of pye3dc are not supported:
 
 - Web Connections
 - Local connections when offline, using the backup user.
+
+## Upstream source
+
+The extension is based on [Python E3DC
+library](https://github.com/fsantini/python-e3dc) from @fsantini. The general considerations mentioned in his project do apply to this integration.
 
 ***
 

@@ -14,11 +14,14 @@
     "customizations": {
         "vscode": {
             "extensions": [
+                "DavidAnson.vscode-markdownlint",
                 "github.vscode-pull-request-github",
+                "joffreykern.markdown-toc",
                 "ms-python.black-formatter",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "ryanluker.vscode-coverage-gutters",
+                "stkb.rewrap",
                 "visualstudioexptteam.vscodeintellicode"
             ],
             "settings": {
