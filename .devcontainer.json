@@ -16,13 +16,13 @@
             "extensions": [
                 "DavidAnson.vscode-markdownlint",
                 "github.vscode-pull-request-github",
-                "joffreykern.markdown-toc",
                 "ms-python.black-formatter",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "ryanluker.vscode-coverage-gutters",
                 "stkb.rewrap",
-                "visualstudioexptteam.vscodeintellicode"
+                "visualstudioexptteam.vscodeintellicode",
+                "yzhang.markdown-all-in-one"
             ],
             "settings": {
                 "editor.formatOnPaste": false,
@@ -31,6 +31,7 @@
                 "editor.tabSize": 4,
                 "files.eol": "\n",
                 "files.trimTrailingWhitespace": true,
+                "markdown.extension.toc.levels": "2..6",
                 "python.analysis.autoSearchPaths": false,
                 "python.editor.codeActionsOnSave": {
                     "source.organizeImports": true
