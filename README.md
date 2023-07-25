@@ -25,6 +25,22 @@ serial numbers etc., I recommend not to attach this to the issue directly, get
 in touch on the issue and I'll give you a filedrop hosted on a private server of
 me.
 
+- [Disclaimer](#disclaimer)
+- [Installation](#installation)
+  - [HACS Installation](#hacs-installation)
+  - [Manual Installation](#manual-installation)
+- [Configuration](#configuration)
+  - [RSCP configuration](#rscp-configuration)
+  - [Probable causes of connection problems](#probable-causes-of-connection-problems)
+    - [Password limitations](#password-limitations)
+    - [Network restriction](#network-restriction)
+  - [Unsupported features configuration schemes](#unsupported-features-configuration-schemes)
+- [Services](#services)
+  - [Set power limits](#set-power-limits)
+  - [Clear current power limits](#clear-current-power-limits)
+  - [Initate manual battery charging](#initate-manual-battery-charging)
+- [Upstream source](#upstream-source)
+
 ## Disclaimer
 
 This integration is provided without any warranty or support by E3DC
@@ -157,13 +173,13 @@ call replaces the settings made by the last. It will not allow you to change the
 system defined minimum discharge rate at the moment, as I am not sure if this is
 actually a sensible thing to do.
 
-## Clear current power limits
+### Clear current power limits
 
 `clear_power_limits` will drop any active power limit. It will not emit an error
 if none has been set. Prefer this to use `set_power_limits` and setting the
 values to the system defined maximum.
 
-## Initate manual battery charging
+### Initate manual battery charging
 
 The service `manual_charge` will start charging the specified amount of energy
 into the battery, taking it from the grid if neccessary. The idea behind this is
