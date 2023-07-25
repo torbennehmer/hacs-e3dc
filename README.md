@@ -19,11 +19,13 @@ testing until I can get the integration accepted to HA core (no timeline for
 that, sorry).
 
 If you encounter problems, please file an issue at the integrations issue
-tracker. In the course of working with you, I'll probably want a diagnostic
-dump. As the dump will contain probably sensitvie information like MAC adresses,
-serial numbers etc., I recommend not to attach this to the issue directly, get
-in touch on the issue and I'll give you a filedrop hosted on a private server of
-me.
+tracker. If possible, add a diagnostics dump always. This is important also for
+enhancements if they target new data or information to be retrieved from the
+unit to see what it has to offer. Always check that dump if you want to further
+redact information in it. The MACs and the units serial number are redacted
+already, but check for yourself! If you find information in the dump that you
+consider private, please file a bug request so that I can update the anonymizing
+code.
 
 - [Disclaimer](#disclaimer)
 - [Installation](#installation)

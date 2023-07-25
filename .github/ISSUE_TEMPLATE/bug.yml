@@ -44,7 +44,11 @@ body:
 - type: textarea
   attributes:
     label: "Debug logs"
-    description: "To enable debug logs check this https://www.home-assistant.io/integrations/logger/, this **needs** to include _everything_ from startup of Home Assistant to the point where you encounter the issue. Please do not attach a diagnostic dump for privacy reasons."
+    description: "To enable debug logs check this https://www.home-assistant.io/integrations/logger/, this **needs** to include _everything_ from startup of Home Assistant to the point where you encounter the issue."
     render: text
   validations:
     required: true
+- type: textarea
+  attributes:
+    label: "Diagnostics dump"
+    description: "Drag the diagnostics dump file here - please check for things you might want to redact before posting, see also https://www.home-assistant.io/integrations/diagnostics/ for info"

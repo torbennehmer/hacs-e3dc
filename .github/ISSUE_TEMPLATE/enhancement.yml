@@ -44,4 +44,9 @@ body:
     label: "Additional context"
     description: "Add any other context or screenshots about the feature request here."
   validations:
-    required: true
+    required: false
+
+- type: textarea
+  attributes:
+    label: "Diagnostics dump"
+    description: "Drag the diagnostics dump file here - please check for things you might want to redact before posting, see also https://www.home-assistant.io/integrations/diagnostics/ for info"
