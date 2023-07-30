@@ -1,6 +1,6 @@
 {
     "name": "torbennehmer/hacs-e3dc",
-    "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.10-bullseye",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
         8124
@@ -48,7 +48,15 @@
                     "zsh": {
                         "path": "/usr/bin/zsh"
                     }
-                }
+                },
+                "yaml.customTags": [
+                    "!input scalar",
+                    "!secret scalar",
+                    "!include_dir_named scalar",
+                    "!include_dir_list scalar",
+                    "!include_dir_merge_list scalar",
+                    "!include_dir_merge_named scalar"
+                ]
             }
         }
     },
