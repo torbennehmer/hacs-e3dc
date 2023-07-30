@@ -192,9 +192,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["manual-charge-active"] = rscpFindTag(
             request_data, "EMS_MANUAL_CHARGE_ACTIVE"
         )[2]
+        # these seem to be kWhs
         self._mydata["manual-charge-energy"] = rscpFindTag(
             request_data, "EMS_MANUAL_CHARGE_ENERGY_COUNTER"
         )[2]
+        # The timestamp seem to correctly show the UTC Date when manual charging started
+        # Not yet enabled, just for reference.
+        # self._mydata["manual-charge-start"] = rscpFindTag(
+        #     request_data, "EMS_MANUAL_CHARGE_LASTSTART"
+        # )[2]
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.

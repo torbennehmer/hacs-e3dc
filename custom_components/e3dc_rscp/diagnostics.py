@@ -22,7 +22,7 @@ async def async_get_config_entry_diagnostics(
     coordinator: E3DCCoordinator = hass.data[DOMAIN][entry.unique_id]
     e3dc: E3DC = coordinator.e3dc
 
-    return {
+    result: dict[str, Any] = {
         "current_data": coordinator.data,
         "get_system_info": e3dc.get_system_info(),
         "get_system_status": e3dc.get_system_status(),
@@ -53,3 +53,20 @@ async def async_get_config_entry_diagnostics(
             keepAlive=True,
         ),
     }
+
+    # Redact possibly sensitive information from the dump
+
+    result["current_data"]["system-mac"] = "<redacted>"
+    result["get_system_info"]["macAddress"] = "<redacted>"
+    result["get_system_info"][
+        "serial"
+    ] = f"{result['get_system_info']['serial'][:3]}<redacted>"
+
+    for pvi in result["get_pvis_data"]:
+        pvi["serialNumber"] = f"{pvi['serialNumber'][:3]}<redacted>"
+
+    for bat in result["get_batteries_data"]:
+        for dcb in bat["dcbs"]:
+            dcb["serialCode"] = f"{dcb['serialCode'][:3]}<redacted>"
+
+    return result
