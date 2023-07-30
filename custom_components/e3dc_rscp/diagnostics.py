@@ -67,6 +67,8 @@ async def async_get_config_entry_diagnostics(
 
     for bat in result["get_batteries_data"]:
         for dcb in bat["dcbs"]:
-            dcb["serialCode"] = f"{dcb['serialCode'][:3]}<redacted>"
+            bat["dcbs"][dcb][
+                "serialCode"
+            ] = f"{bat['dcbs'][dcb]['serialCode'][:3]}<redacted>"
 
     return result
