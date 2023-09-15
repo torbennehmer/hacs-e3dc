@@ -1,9 +1,10 @@
 """Diagnostics support for E3DC RSCP."""
 from __future__ import annotations
 
+from collections.abc import Callable
 import logging
 from traceback import format_exception
-from typing import Any, Callable
+from typing import Any
 
 from e3dc import E3DC
 
@@ -27,7 +28,7 @@ async def async_get_config_entry_diagnostics(
 
 
 class _DiagnosticsDumper:
-    """Helper class to collect a diagnostic dump in a failsafe way"""
+    """Helper class to collect a diagnostic dump in a failsafe way."""
 
     e3dc: E3DC = None
     coordinator: E3DCCoordinator = None
@@ -36,14 +37,14 @@ class _DiagnosticsDumper:
     result: dict[str, Any] = {}
 
     def __init__(self, _hass: HomeAssistant, _entry: ConfigEntry):
-        """Initialize the dumper and set up a few references"""
+        """Initialize the dumper and set up a few references."""
         self.hass = _hass
         self.entry = _entry
         self.coordinator = self.hass.data[DOMAIN][self.entry.unique_id]
         self.e3dc = self.coordinator.e3dc
 
     def create_dump(self):
-        """Create the dump data and redact pricate data, central call-in point"""
+        """Create the dump data and redact pricate data, central call-in point."""
         self._collect_data()
         self._redact_private_information_from_dump()
 
@@ -52,7 +53,7 @@ class _DiagnosticsDumper:
         return self.result
 
     def _collect_data(self):
-        """Collect the individual dumped data successivley"""
+        """Collect the individual dumped data successivley."""
         self.result: dict[str, Any] = {
             "current_data": self.coordinator.data,
             "get_system_info": self._query_data_for_dump(self.e3dc.get_system_info),
@@ -96,7 +97,7 @@ class _DiagnosticsDumper:
         }
 
     def _query_data_for_dump(self, call: Callable[[], Any]) -> Any:
-        """Query an individual data point using a lambda, protect by exception handling"""
+        """Query an individual data point using a lambda, protect by exception handling."""
         try:
             tmp = call()
             return tmp
