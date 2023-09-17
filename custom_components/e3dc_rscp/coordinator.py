@@ -57,6 +57,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_connect(self):
         """Establish connection to E3DC."""
+
         try:
             self.e3dc: E3DC = await self.hass.async_add_executor_job(
                 create_e3dcinstance,
@@ -64,23 +65,24 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.password,
                 self.host,
                 self.rscpkey,
-                self._e3dcconfig,
             )
         except Exception as ex:
             raise ConfigEntryAuthFailed from ex
 
-        _LOGGER.debug("async_connect setting up additional powermeters")
         # get the additional powermeters and re-create
         # the e3dc object with the proper configuration.
         self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
         for powermeter in self._e3dcconfig["powermeters"]:
-            powermeter["name"] = (
-                powermeter["typeName"].replace("_TYPE").lower()
-                + "_"
-                + str(powermeter["index"])
-            )
-            powermeter["key"] = "additional_powermeter_" + str(powermeter["index"])
-        _LOGGER.debug(self._e3dcconfig)
+            if powermeter["index"] == 0:
+                powermeter["name"] = "pm_root"
+                powermeter["key"] = "root_powermeter"
+            else:
+                powermeter["name"] = (
+                    powermeter["typeName"].replace("_TYPE", "").lower()
+                    + "_"
+                    + str(powermeter["index"])
+                )
+                powermeter["key"] = "additional_powermeter_" + str(powermeter["index"])
 
         delete_e3dcinstance(self.e3dc)
 
@@ -162,7 +164,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling additional powermeters")
         powermeters_data: dict[
             str, Any | None
-        ] = await self.hass.async_add_executor_job(self.e3dc.get_powermeters_data)
+        ] = await self.hass.async_add_executor_job(
+            self.e3dc.get_powermeters_data, None, True
+        )
         self._process_powermeters_data(powermeters_data)
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
@@ -183,8 +187,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("Skipping power metrics poll.")
 
-        for item in self._mydata.items():
-            _LOGGER.debug(item)
         return self._mydata
 
     def _process_power_settings(self, power_settings: dict[str, Any | None]):
@@ -507,17 +509,26 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
 
 def create_e3dcinstance(
-    username: str, password: str, host: str, rscpkey: str, config: dict
+    username: str, password: str, host: str, rscpkey: str, config: dict = None
 ) -> E3DC:
     """Create the actual E3DC instance, this will try to connect and authenticate."""
-    e3dc = E3DC(
-        E3DC.CONNECT_LOCAL,
-        username=username,
-        password=password,
-        ipAddress=host,
-        key=rscpkey,
-        configuration=config,
-    )
+    if config is None:
+        e3dc = E3DC(
+            E3DC.CONNECT_LOCAL,
+            username=username,
+            password=password,
+            ipAddress=host,
+            key=rscpkey,
+        )
+    else:
+        e3dc = E3DC(
+            E3DC.CONNECT_LOCAL,
+            username=username,
+            password=password,
+            ipAddress=host,
+            key=rscpkey,
+            configuration=config,
+        )
     return e3dc
 
 
