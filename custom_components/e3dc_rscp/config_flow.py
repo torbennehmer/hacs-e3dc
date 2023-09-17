@@ -76,6 +76,7 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             password=self._password,
             host=self._host,
             rscpkey=self._rscpkey,
+            config={},
         )
 
     async def validate_input(self) -> str | None:
