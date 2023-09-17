@@ -142,6 +142,54 @@
       },
       "manual-charge-energy": {
         "name": "Energy charged from grid"
+      },
+      "additional_powermeter_0_energy": {
+        "name": "Additional Powermeter 0 Energy"
+      },
+      "additional_powermeter_1_energy": {
+        "name": "Additional Powermeter 1 Energy"
+      },
+      "additional_powermeter_2_energy": {
+        "name": "Additional Powermeter 2 Energy"
+      },
+      "additional_powermeter_3_energy": {
+        "name": "Additional Powermeter 3 Energy"
+      },
+      "additional_powermeter_4_energy": {
+        "name": "Additional Powermeter 4 Energy"
+      },
+      "additional_powermeter_5_energy": {
+        "name": "Additional Powermeter 5 Energy"
+      },
+      "additional_powermeter_6_energy": {
+        "name": "Additional Powermeter 6 Energy"
+      },
+      "additional_powermeter_7_energy": {
+        "name": "Additional Powermeter 7 Energy"
+      },
+      "additional_powermeter_0_power": {
+        "name": "Additional Powermeter 0 Power"
+      },
+      "additional_powermeter_1_power": {
+        "name": "Additional Powermeter 1 Power"
+      },
+      "additional_powermeter_2_power": {
+        "name": "Additional Powermeter 2 Power"
+      },
+      "additional_powermeter_3_power": {
+        "name": "Additional Powermeter 3 Power"
+      },
+      "additional_powermeter_4_power": {
+        "name": "Additional Powermeter 4 Power"
+      },
+      "additional_powermeter_5_power": {
+        "name": "Additional Powermeter 5 Power"
+      },
+      "additional_powermeter_6_power": {
+        "name": "Additional Powermeter 6 Power"
+      },
+      "additional_powermeter_7_power": {
+        "name": "Additional Powermeter 7 Power"
       }
     },
     "switch": {

@@ -6,6 +6,7 @@ from time import time
 from typing import Any
 import pytz
 
+
 from e3dc import E3DC  # Missing Exports:; SendError,
 from e3dc._rscpLib import rscpFindTag
 
@@ -30,6 +31,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
 
     e3dc: E3DC = None
+    _e3dcconfig: dict[str, Any] = {}
     _mydata: dict[str, Any] = {}
     _sw_version: str = ""
     _update_guard_powersettings: bool = False
@@ -42,13 +44,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.username: str | None = config_entry.data.get(CONF_USERNAME)
         self.password: str | None = config_entry.data.get(CONF_PASSWORD)
         self.rscpkey: str | None = config_entry.data.get(CONF_RSCPKEY)
-        self.e3dcconfig = {}
         assert isinstance(config_entry.unique_id, str)
         self.uid: str = config_entry.unique_id
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=10)
         )
+
+    def get_e3dcconfig(self) -> dict:
+        """Return the E3DC config dict."""
+        return self._e3dcconfig
 
     async def async_connect(self):
         """Establish connection to E3DC."""
@@ -59,14 +64,26 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.password,
                 self.host,
                 self.rscpkey,
-                self.e3dcconfig,
+                self._e3dcconfig,
             )
         except Exception as ex:
             raise ConfigEntryAuthFailed from ex
 
-        # get the additional powermeters and re-create the e3dc object with the proper configuration.
-        self.e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
+        _LOGGER.debug("async_connect setting up additional powermeters")
+        # get the additional powermeters and re-create
+        # the e3dc object with the proper configuration.
+        self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
+        for powermeter in self._e3dcconfig["powermeters"]:
+            powermeter["name"] = (
+                powermeter["typeName"].replace("_TYPE").lower()
+                + "_"
+                + str(powermeter["index"])
+            )
+            powermeter["key"] = "additional_powermeter_" + str(powermeter["index"])
+        _LOGGER.debug(self._e3dcconfig)
+
         delete_e3dcinstance(self.e3dc)
+
         try:
             self.e3dc: E3DC = await self.hass.async_add_executor_job(
                 create_e3dcinstance,
@@ -74,7 +91,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.password,
                 self.host,
                 self.rscpkey,
-                self.e3dcconfig,
+                self._e3dcconfig,
             )
         except Exception as ex:
             raise ConfigEntryAuthFailed from ex
@@ -145,7 +162,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling additional powermeters")
         powermeters_data: dict[
             str, Any | None
-        ] = await self.hass.async_add_executor_job(self.e3dc.get_powermeters_data, True)
+        ] = await self.hass.async_add_executor_job(self.e3dc.get_powermeters_data)
         self._process_powermeters_data(powermeters_data)
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
@@ -166,6 +183,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("Skipping power metrics poll.")
 
+        for item in self._mydata.items():
+            _LOGGER.debug(item)
         return self._mydata
 
     def _process_power_settings(self, power_settings: dict[str, Any | None]):
@@ -231,27 +250,18 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _process_powermeters_data(self, powermeters_data) -> None:
         for powermeter_data in powermeters_data:
             if powermeter_data["index"] != 0:
-                self._mydata["powermeters"][powermeter_data["index"]]["name"] = (
-                    powermeter_data["typeName"].replace("TYPE", "").lower()
-                    + "_"
-                    + powermeter_data["index"]
-                )
-                self._mydata["powermeters"][powermeter_data["index"]][
-                    "type"
-                ] = powermeter_data["type"]
-                self._mydata["powermeters"][powermeter_data["index"]][
-                    "typeName"
-                ] = powermeter_data["typeName"]
-                self._mydata["powermeters"][powermeter_data["index"]]["power"] = (
-                    powermeter_data["power"]["L1"]
-                    + powermeter_data["power"]["L2"]
-                    + powermeter_data["power"]["L3"]
-                )
-                self._mydata["powermeters"][powermeter_data["index"]]["energy"] = (
-                    powermeter_data["energy"]["L1"]
-                    + powermeter_data["energy"]["L2"]
-                    + powermeter_data["energy"]["L3"]
-                )
+                for powermeter_config in self._e3dcconfig["powermeters"]:
+                    if powermeter_data["index"] == powermeter_config["index"]:
+                        self._mydata[powermeter_config["key"] + "_power"] = (
+                            powermeter_data["power"]["L1"]
+                            + powermeter_data["power"]["L2"]
+                            + powermeter_data["power"]["L3"]
+                        )
+                        self._mydata[powermeter_config["key"] + "_energy"] = (
+                            powermeter_data["energy"]["L1"]
+                            + powermeter_data["energy"]["L2"]
+                            + powermeter_data["energy"]["L3"]
+                        )
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
@@ -515,8 +525,3 @@ def delete_e3dcinstance(e3dc: E3DC) -> None:
     """Delete the actual E3DC instance."""
     del e3dc
     return
-
-
-def get_powermeters_data(self) -> dict[str, Any]:
-    """Return the powermeter data of the E3DC instance."""
-    return self._mydata["powermeters"]
