@@ -38,12 +38,8 @@ set_power_limits:
 
 
 manual_charge:
-  name: Control manual charging
-  description:
   fields:
     device_id:
-      name: E3DC Device ID
-      description: E3DC Device ID
       required: true
       example: "64d3b74a1bcf319288844ff9e93e4010"
       selector:
