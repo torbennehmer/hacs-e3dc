@@ -1,33 +1,23 @@
 clear_power_limits:
-  name: Clear power limits
-  description: Clears any active power limit of the E3DC unit
   fields:
     device_id:
-      name: E3DC Device ID
-      description: E3DC Device ID
       required: true
-      example: "S10-412345678"
+      example: "64d3b74a1bcf319288844ff9e93e4010"
       selector:
         device:
           filter:
             integration: e3dc_rscp
 
 set_power_limits:
-  name: Set power limits
-  description: Sets the maximum charge/discharge limits of the E3DC unit
   fields:
     device_id:
-      name: E3DC Device ID
-      description: E3DC Device ID
       required: true
-      example: "S10-412345678"
+      example: "64d3b74a1bcf319288844ff9e93e4010"
       selector:
         device:
           filter:
             integration: e3dc_rscp
     max_charge:
-      name: Maximum Charge (W)
-      description: Maximum allowed battery charge in Watts
       required: false
       example: "1000"
       selector:
@@ -37,8 +27,6 @@ set_power_limits:
           mode: box
           step: 100
     max_discharge:
-      name: Maximum Discharge (W)
-      description: Maximum allowed battery discharge in Watts
       required: false
       example: "1000"
       selector:
@@ -51,20 +39,18 @@ set_power_limits:
 
 manual_charge:
   name: Control manual charging
-  description: Starts or stops manual charging, set charge amount to zero to stop charging if it is running.
+  description:
   fields:
     device_id:
       name: E3DC Device ID
       description: E3DC Device ID
       required: true
-      example: "S10-412345678"
+      example: "64d3b74a1bcf319288844ff9e93e4010"
       selector:
         device:
           filter:
             integration: e3dc_rscp
     charge_amount:
-      name: Charge amount (Wh)
-      description: Amount to charge in Wh
       required: true
       example: "1000"
       selector:

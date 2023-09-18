@@ -189,8 +189,15 @@ to take advantage of dynamic electricity providers like Tibber. Charge your
 battery when electricity is cheap even if you have no solar power available, for
 example in windy winter nights/days.
 
+Keep conversion losses and battery wear in your mind as well, you'll probably
+need at least a 40-50% difference in costs to make it worth if you actually
+charge from the grid.
+
 Be aware, that calls to this operation seem to be limited, however, this is not
-documented. As always, use at your own risk and discretion.
+documented. Additionally, there may be local laws that regulate if you may
+charge a larger battery from the grid.
+
+Use this feature at your own risk and discretion.
 
 ## Upstream source
 

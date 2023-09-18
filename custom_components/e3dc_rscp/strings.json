@@ -152,5 +152,49 @@
         "name": "SmartPower powersaving"
       }
     }
+  },
+  "services": {
+    "clear_power_limits": {
+      "name": "Clear power limits",
+      "description": "Clears any active power limit of the E3DC unit.",
+      "fields": {
+        "device_id": {
+          "name": "E3DC Device ID",
+          "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+        }
+      }
+    },
+    "set_power_limits": {
+      "name": "Set power limits",
+      "description": "Sets the maximum charge/discharge limits of the E3DC unit.",
+      "fields": {
+        "device_id": {
+          "name": "E3DC Device ID",
+          "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+        },
+        "max_charge": {
+          "name": "Maximum Charge (W)",
+          "description": "Maximum allowed battery charge in Watts."
+        },
+        "max_discharge": {
+          "name": "Maximum Discharge (W)",
+          "description": "Maximum allowed battery discharge in Watts."
+        }
+      }
+    },
+    "manual_charge": {
+      "name": "Control manual charging",
+      "description": "Starts or stops manual charging, set charge amount to zero to stop charging if it is running. Keep conversion losses and battery wear in your mind. Additionally, there may be local laws regualting charging your battery fro the grid. Use this feature at your own risk and discretion.",
+      "fields": {
+        "device_id": {
+          "name": "E3DC Device ID",
+          "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+        },
+        "charge_amount": {
+          "name": "Charge amount (Wh)",
+          "description": "Amount to charge in Wh."
+        }
+      }
+    }
   }
 }
