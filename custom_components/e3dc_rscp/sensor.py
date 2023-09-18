@@ -390,8 +390,10 @@ async def async_setup_entry(
     for powermeter_config in coordinator.get_e3dcconfig()["powermeters"]:
         if powermeter_config["index"] != 0:
             energy_description = SensorEntityDescription(
-                key=powermeter_config["key"] + "_energy",
-                translation_key=powermeter_config["key"] + "_energy",
+                has_entity_name=True,
+                name=powermeter_config["name"] + " - total",
+                key=powermeter_config["key"] + "_total",
+                translation_key=powermeter_config["key"] + "_total",
                 icon="mdi:meter-electric",
                 native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
                 suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -404,8 +406,10 @@ async def async_setup_entry(
             )
 
             power_description = SensorEntityDescription(
-                key=powermeter_config["key"] + "_power",
-                translation_key=powermeter_config["key"] + "_power",
+                has_entity_name=True,
+                name=powermeter_config["name"],
+                key=powermeter_config["key"],
+                translation_key=powermeter_config["key"],
                 icon="mdi:meter-electric",
                 native_unit_of_measurement=UnitOfPower.WATT,
                 suggested_unit_of_measurement=UnitOfPower.KILO_WATT,

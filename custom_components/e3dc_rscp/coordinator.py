@@ -74,15 +74,20 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
         for powermeter in self._e3dcconfig["powermeters"]:
             if powermeter["index"] == 0:
-                powermeter["name"] = "pm_root"
-                powermeter["key"] = "root_powermeter"
+                powermeter["name"] = "Root PM"
+                powermeter["key"] = "root_pm"
             else:
                 powermeter["name"] = (
-                    powermeter["typeName"].replace("_TYPE", "").lower()
+                    powermeter["typeName"]
+                    .replace("PM_TYPE_", "")
+                    .replace("_", " ")
+                    .capitalize()
+                )
+                powermeter["key"] = (
+                    powermeter["typeName"].replace("PM_TYPE_", "").lower()
                     + "_"
                     + str(powermeter["index"])
                 )
-                powermeter["key"] = "additional_powermeter_" + str(powermeter["index"])
 
         delete_e3dcinstance(self.e3dc)
 
@@ -254,12 +259,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if powermeter_data["index"] != 0:
                 for powermeter_config in self._e3dcconfig["powermeters"]:
                     if powermeter_data["index"] == powermeter_config["index"]:
-                        self._mydata[powermeter_config["key"] + "_power"] = (
+                        self._mydata[powermeter_config["key"]] = (
                             powermeter_data["power"]["L1"]
                             + powermeter_data["power"]["L2"]
                             + powermeter_data["power"]["L3"]
                         )
-                        self._mydata[powermeter_config["key"] + "_energy"] = (
+                        self._mydata[powermeter_config["key"] + "_total"] = (
                             powermeter_data["energy"]["L1"]
                             + powermeter_data["energy"]["L2"]
                             + powermeter_data["energy"]["L3"]
