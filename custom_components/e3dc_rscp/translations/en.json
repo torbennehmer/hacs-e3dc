@@ -152,5 +152,49 @@
                 "name": "SmartPower powersaving"
             }
         }
+    },
+    "services": {
+        "clear_power_limits": {
+            "name": "Clear power limits",
+            "description": "Clears any active power limit of the E3DC unit.",
+            "fields": {
+                "device_id": {
+                    "name": "E3DC Device ID",
+                    "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+                }
+            }
+        },
+        "set_power_limits": {
+            "name": "Set power limits",
+            "description": "Sets the maximum charge/discharge limits of the E3DC unit.",
+            "fields": {
+                "device_id": {
+                    "name": "E3DC Device ID",
+                    "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+                },
+                "max_charge": {
+                    "name": "Maximum Charge (W)",
+                    "description": "Maximum allowed battery charge in Watts."
+                },
+                "max_discharge": {
+                    "name": "Maximum Discharge (W)",
+                    "description": "Maximum allowed battery discharge in Watts."
+                }
+            }
+        },
+        "manual_charge": {
+            "name": "Control manual charging",
+            "description": "Starts or stops manual charging, set charge amount to zero to stop charging if it is running. Be aware, that this feature is officially only targeted for testing purposes. Depending on your local laws you might actually be required to register the battery at your electric company. Use this feature at your own risk.",
+            "fields": {
+                "device_id": {
+                    "name": "E3DC Device ID",
+                    "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+                },
+                "charge_amount": {
+                    "name": "Charge amount (Wh)",
+                    "description": "Amount to charge in Wh."
+                }
+            }
+        }
     }
 }
