@@ -6,7 +6,6 @@ from time import time
 from typing import Any
 import pytz
 
-
 from e3dc import E3DC  # Missing Exports:; SendError,
 from e3dc._rscpLib import rscpFindTag
 
@@ -51,13 +50,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=10)
         )
 
-    def get_e3dcconfig(self) -> dict:
-        """Return the E3DC config dict."""
-        return self._e3dcconfig
-
     async def async_connect(self):
         """Establish connection to E3DC."""
-
         try:
             self.e3dc: E3DC = await self.hass.async_add_executor_job(
                 create_e3dcinstance,
@@ -69,11 +63,38 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except Exception as ex:
             raise ConfigEntryAuthFailed from ex
 
-        # get the additional powermeters and re-create
-        # the e3dc object with the proper configuration.
+        await self._async_connect_additional_powermeters()
+        self._mydata["system-derate-percent"] = self.e3dc.deratePercent
+        self._mydata["system-derate-power"] = self.e3dc.deratePower
+        self._mydata["system-additional-source-available"] = (
+            self.e3dc.externalSourceAvailable != 0
+        )
+        self._mydata[
+            "system-battery-installed-capacity"
+        ] = self.e3dc.installedBatteryCapacity
+        self._mydata["system-battery-installed-peak"] = self.e3dc.installedPeakPower
+        self._mydata["system-ac-maxpower"] = self.e3dc.maxAcPower
+        self._mydata["system-battery-charge-max"] = self.e3dc.maxBatChargePower
+        self._mydata["system-battery-discharge-max"] = self.e3dc.maxBatDischargePower
+        self._mydata["system-mac"] = self.e3dc.macAddress
+        self._mydata["model"] = self.e3dc.model
+        self._mydata[
+            "system-battery-discharge-minimum-default"
+        ] = self.e3dc.startDischargeDefault
+
+        # Idea: Maybe Port this to e3dc lib, it can query this in one go during startup.
+        self._sw_version = await self._async_e3dc_request_single_tag(
+            "INFO_REQ_SW_RELEASE"
+        )
+
+        await self._load_timezone_settings()
+
+    async def _async_connect_additional_powermeters(self):
+        """Identifies the installed powermeters and re-establishes the connection to the E3DC with the corresponding powermeters config."""
+        ROOT_PM_INDEX = 0  # Index 0 is always the root powermeter of the E3DC
         self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
         for powermeter in self._e3dcconfig["powermeters"]:
-            if powermeter["index"] == 0:
+            if powermeter["index"] == ROOT_PM_INDEX:
                 powermeter["name"] = "Root PM"
                 powermeter["key"] = "root_pm"
             else:
@@ -102,31 +123,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         except Exception as ex:
             raise ConfigEntryAuthFailed from ex
-
-        self._mydata["system-derate-percent"] = self.e3dc.deratePercent
-        self._mydata["system-derate-power"] = self.e3dc.deratePower
-        self._mydata["system-additional-source-available"] = (
-            self.e3dc.externalSourceAvailable != 0
-        )
-        self._mydata[
-            "system-battery-installed-capacity"
-        ] = self.e3dc.installedBatteryCapacity
-        self._mydata["system-battery-installed-peak"] = self.e3dc.installedPeakPower
-        self._mydata["system-ac-maxpower"] = self.e3dc.maxAcPower
-        self._mydata["system-battery-charge-max"] = self.e3dc.maxBatChargePower
-        self._mydata["system-battery-discharge-max"] = self.e3dc.maxBatDischargePower
-        self._mydata["system-mac"] = self.e3dc.macAddress
-        self._mydata["model"] = self.e3dc.model
-        self._mydata[
-            "system-battery-discharge-minimum-default"
-        ] = self.e3dc.startDischargeDefault
-
-        # Idea: Maybe Port this to e3dc lib, it can query this in one go during startup.
-        self._sw_version = await self._async_e3dc_request_single_tag(
-            "INFO_REQ_SW_RELEASE"
-        )
-
-        await self._load_timezone_settings()
 
     async def _async_e3dc_request_single_tag(self, tag: str) -> Any:
         """Send a single tag request to E3DC, wraps lib call for async usage, supplies defaults."""
@@ -511,6 +507,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("Manual charging could not be activated")
         else:
             _LOGGER.debug("Successfully started manual charging")
+
+    def get_e3dcconfig(self) -> dict:
+        """Return the E3DC config dict."""
+        return self._e3dcconfig
 
 
 def create_e3dcinstance(
