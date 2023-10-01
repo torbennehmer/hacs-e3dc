@@ -1,5 +1,5 @@
 colorlog==6.7.0
 homeassistant>=2023.8.0
 pip>=21.0,<23.3
-ruff==0.0.287
+ruff==0.0.291
 pye3dc==0.7.6
