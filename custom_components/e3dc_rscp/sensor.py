@@ -392,8 +392,8 @@ async def async_setup_entry(
             energy_description = SensorEntityDescription(
                 has_entity_name=True,
                 name=powermeter_config["name"] + " - total",
-                key=powermeter_config["key"] + "_total",
-                translation_key=powermeter_config["key"] + "_total",
+                key=powermeter_config["key"] + "-total",
+                translation_key=powermeter_config["key"] + "-total",
                 icon="mdi:meter-electric",
                 native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
                 suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,

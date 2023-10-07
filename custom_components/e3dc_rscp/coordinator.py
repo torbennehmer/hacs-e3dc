@@ -96,7 +96,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for powermeter in self._e3dcconfig["powermeters"]:
             if powermeter["index"] == ROOT_PM_INDEX:
                 powermeter["name"] = "Root PM"
-                powermeter["key"] = "root_pm"
+                powermeter["key"] = "root-pm"
             else:
                 powermeter["name"] = (
                     powermeter["typeName"]
@@ -105,8 +105,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     .capitalize()
                 )
                 powermeter["key"] = (
-                    powermeter["typeName"].replace("PM_TYPE_", "").lower()
-                    + "_"
+                    powermeter["typeName"]
+                    .replace("PM_TYPE_", "")
+                    .replace("_", "-")
+                    .lower()
+                    + "-"
                     + str(powermeter["index"])
                 )
 
@@ -260,7 +263,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             + powermeter_data["power"]["L2"]
                             + powermeter_data["power"]["L3"]
                         )
-                        self._mydata[powermeter_config["key"] + "_total"] = (
+                        self._mydata[powermeter_config["key"] + "-total"] = (
                             powermeter_data["energy"]["L1"]
                             + powermeter_data["energy"]["L2"]
                             + powermeter_data["energy"]["L3"]
