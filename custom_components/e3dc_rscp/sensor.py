@@ -16,7 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, POWERMETER_ID_ROOT
 from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -386,9 +386,9 @@ async def async_setup_entry(
         for description in SENSOR_DESCRIPTIONS
     ]
 
-    # Add Sensor descriptions for additional powermeters
+    # Add Sensor descriptions for additional powermeters, skipp root PM
     for powermeter_config in coordinator.get_e3dcconfig()["powermeters"]:
-        if powermeter_config["index"] != 0:
+        if powermeter_config["index"] != POWERMETER_ID_ROOT:
             energy_description = SensorEntityDescription(
                 has_entity_name=True,
                 name=powermeter_config["name"] + " - total",

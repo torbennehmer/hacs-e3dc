@@ -92,9 +92,6 @@
       "battery-discharge": {
         "name": "Battery discharge"
       },
-      "additional-production": {
-        "name": "Additional source production"
-      },
       "grid-production": {
         "name": "Export to grid"
       },

@@ -92,9 +92,6 @@
             "battery-discharge": {
                 "name": "Battery discharge"
             },
-            "additional-production": {
-                "name": "Additional source production"
-            },
             "grid-production": {
                 "name": "Export to grid"
             },
@@ -142,6 +139,60 @@
             },
             "manual-charge-energy": {
                 "name": "Energy charged from grid"
+            },
+            "undefined": {
+                "name": "Undefined Powermeter"
+            },
+            "root-pm": {
+                "name": "Root Powermeter"
+            },
+            "additional": {
+                "name": "Additional powermeter"
+            },
+            "additional-production": {
+                "name": "Additional production"
+            },
+            "additional-consumption": {
+                "name": "Additional consumption"
+            },
+            "farm": {
+                "name": "Farm"
+            },
+            "unused": {
+                "name": "Unused powermeter"
+            },
+            "wallbox": {
+                "name": "Wallbox"
+            },
+            "farm-additional": {
+                "name": "Farm additional powermeter"
+            },
+            "undefined-total": {
+                "name": "Undefined Powermeter - total"
+            },
+            "root-pm-total": {
+                "name": "Root Powermeter - total"
+            },
+            "additional-total": {
+                "name": "Additional Powermeter - total"
+            },
+            "additional-production-total": {
+                "name": "Additional production - total"
+            },
+            "additional-consumption-total": {
+                "name": "Additional consumption - total"
+            },
+            "farm-total": {
+                "name": "Farm - total"
+            },
+            "unused-total": {
+                "name": "Unused powermeter - total"
+            },
+            "wallbox-total": {
+                "name": "Wallbox - total"
+            },
+            "farm-additional-total": {
+                "name": "Farm additional powermeter - total"
             }
         },
         "switch": {

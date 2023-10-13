@@ -20,7 +20,7 @@ from homeassistant.helpers.update_coordinator import (  # CoordinatorEntity,; Up
     DataUpdateCoordinator,
 )
 
-from .const import CONF_RSCPKEY, DOMAIN
+from .const import CONF_RSCPKEY, DOMAIN, POWERMETER_ID_ROOT
 
 _LOGGER = logging.getLogger(__name__)
 _STAT_REFRESH_INTERVAL = 60
@@ -90,11 +90,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._load_timezone_settings()
 
     async def _async_connect_additional_powermeters(self):
-        """Identifies the installed powermeters and re-establishes the connection to the E3DC with the corresponding powermeters config."""
-        ROOT_PM_INDEX = 0  # Index 0 is always the root powermeter of the E3DC
+        """Identify the installed powermeters and reconnect to E3DC with the corresponding powermeters config."""
         self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
         for powermeter in self._e3dcconfig["powermeters"]:
-            if powermeter["index"] == ROOT_PM_INDEX:
+            if powermeter["index"] == POWERMETER_ID_ROOT:
                 powermeter["name"] = "Root PM"
                 powermeter["key"] = "root-pm"
             else:
@@ -255,7 +254,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _process_powermeters_data(self, powermeters_data) -> None:
         for powermeter_data in powermeters_data:
-            if powermeter_data["index"] != 0:
+            if powermeter_data["index"] != POWERMETER_ID_ROOT:
                 for powermeter_config in self._e3dcconfig["powermeters"]:
                     if powermeter_data["index"] == powermeter_config["index"]:
                         self._mydata[powermeter_config["key"]] = (
@@ -517,26 +516,25 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
 
 def create_e3dcinstance(
-    username: str, password: str, host: str, rscpkey: str, config: dict = None
+    username: str,
+    password: str,
+    host: str,
+    rscpkey: str,
+    config: dict[str, Any] | None = None,
 ) -> E3DC:
     """Create the actual E3DC instance, this will try to connect and authenticate."""
     if config is None:
-        e3dc = E3DC(
-            E3DC.CONNECT_LOCAL,
-            username=username,
-            password=password,
-            ipAddress=host,
-            key=rscpkey,
-        )
-    else:
-        e3dc = E3DC(
-            E3DC.CONNECT_LOCAL,
-            username=username,
-            password=password,
-            ipAddress=host,
-            key=rscpkey,
-            configuration=config,
-        )
+        config = {}
+
+    e3dc = E3DC(
+        E3DC.CONNECT_LOCAL,
+        username=username,
+        password=password,
+        ipAddress=host,
+        key=rscpkey,
+        configuration=config,
+    )
+
     return e3dc
 
 
