@@ -30,6 +30,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
 
     e3dc: E3DC = None
+    _e3dcconfig: dict[str, Any] = {}
     _mydata: dict[str, Any] = {}
     _sw_version: str = ""
     _update_guard_powersettings: bool = False
@@ -62,6 +63,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except Exception as ex:
             raise ConfigEntryAuthFailed from ex
 
+        await self._async_connect_additional_powermeters()
         self._mydata["system-derate-percent"] = self.e3dc.deratePercent
         self._mydata["system-derate-power"] = self.e3dc.deratePower
         self._mydata["system-additional-source-available"] = (
@@ -86,6 +88,44 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         await self._load_timezone_settings()
+
+    async def _async_connect_additional_powermeters(self):
+        """Identifies the installed powermeters and re-establishes the connection to the E3DC with the corresponding powermeters config."""
+        ROOT_PM_INDEX = 0  # Index 0 is always the root powermeter of the E3DC
+        self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
+        for powermeter in self._e3dcconfig["powermeters"]:
+            if powermeter["index"] == ROOT_PM_INDEX:
+                powermeter["name"] = "Root PM"
+                powermeter["key"] = "root-pm"
+            else:
+                powermeter["name"] = (
+                    powermeter["typeName"]
+                    .replace("PM_TYPE_", "")
+                    .replace("_", " ")
+                    .capitalize()
+                )
+                powermeter["key"] = (
+                    powermeter["typeName"]
+                    .replace("PM_TYPE_", "")
+                    .replace("_", "-")
+                    .lower()
+                    + "-"
+                    + str(powermeter["index"])
+                )
+
+        delete_e3dcinstance(self.e3dc)
+
+        try:
+            self.e3dc: E3DC = await self.hass.async_add_executor_job(
+                create_e3dcinstance,
+                self.username,
+                self.password,
+                self.host,
+                self.rscpkey,
+                self._e3dcconfig,
+            )
+        except Exception as ex:
+            raise ConfigEntryAuthFailed from ex
 
     async def _async_e3dc_request_single_tag(self, tag: str) -> Any:
         """Send a single tag request to E3DC, wraps lib call for async usage, supplies defaults."""
@@ -124,6 +164,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.e3dc.sendRequest, ("EMS_REQ_GET_MANUAL_CHARGE", "None", None), 3, True
         )
         self._process_manual_charge(request_data)
+
+        _LOGGER.debug("Polling additional powermeters")
+        powermeters_data: dict[
+            str, Any | None
+        ] = await self.hass.async_add_executor_job(
+            self.e3dc.get_powermeters_data, None, True
+        )
+        self._process_powermeters_data(powermeters_data)
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
@@ -204,6 +252,22 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # self._mydata["manual-charge-start"] = rscpFindTag(
         #     request_data, "EMS_MANUAL_CHARGE_LASTSTART"
         # )[2]
+
+    def _process_powermeters_data(self, powermeters_data) -> None:
+        for powermeter_data in powermeters_data:
+            if powermeter_data["index"] != 0:
+                for powermeter_config in self._e3dcconfig["powermeters"]:
+                    if powermeter_data["index"] == powermeter_config["index"]:
+                        self._mydata[powermeter_config["key"]] = (
+                            powermeter_data["power"]["L1"]
+                            + powermeter_data["power"]["L2"]
+                            + powermeter_data["power"]["L3"]
+                        )
+                        self._mydata[powermeter_config["key"] + "-total"] = (
+                            powermeter_data["energy"]["L1"]
+                            + powermeter_data["energy"]["L2"]
+                            + powermeter_data["energy"]["L3"]
+                        )
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
@@ -447,14 +511,36 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("Successfully started manual charging")
 
+    def get_e3dcconfig(self) -> dict:
+        """Return the E3DC config dict."""
+        return self._e3dcconfig
 
-def create_e3dcinstance(username: str, password: str, host: str, rscpkey: str) -> E3DC:
+
+def create_e3dcinstance(
+    username: str, password: str, host: str, rscpkey: str, config: dict = None
+) -> E3DC:
     """Create the actual E3DC instance, this will try to connect and authenticate."""
-    e3dc = E3DC(
-        E3DC.CONNECT_LOCAL,
-        username=username,
-        password=password,
-        ipAddress=host,
-        key=rscpkey,
-    )
+    if config is None:
+        e3dc = E3DC(
+            E3DC.CONNECT_LOCAL,
+            username=username,
+            password=password,
+            ipAddress=host,
+            key=rscpkey,
+        )
+    else:
+        e3dc = E3DC(
+            E3DC.CONNECT_LOCAL,
+            username=username,
+            password=password,
+            ipAddress=host,
+            key=rscpkey,
+            configuration=config,
+        )
     return e3dc
+
+
+def delete_e3dcinstance(e3dc: E3DC) -> None:
+    """Delete the actual E3DC instance."""
+    del e3dc
+    return
