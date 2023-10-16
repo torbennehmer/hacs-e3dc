@@ -189,15 +189,24 @@ to take advantage of dynamic electricity providers like Tibber. Charge your
 battery when electricity is cheap even if you have no solar power available, for
 example in windy winter nights/days.
 
-Keep conversion losses and battery wear in your mind as well, you'll probably
-need at least a 40-50% difference in costs to make it worth if you actually
-charge from the grid.
+**Read the following before using this functionality on your own risk:**
 
-Be aware, that calls to this operation seem to be limited, however, this is not
-documented. Additionally, there may be local laws that regulate if you may
-charge a larger battery from the grid.
+- Calls to this operation are rate-limited, your E3DC probaby will not accept
+  more than one call every few hours. One unit reported to me had a wait time
+  of two hours, apparently. The website mentions that this operation can only
+  be called once a day and limits the charge amount to 3 kWh. This, again,
+  is unconfirmed, so your milage may vary.
+- Important from a monetary point of view: You will have losses from two AC/DC
+  conversions (load and unload), as opposed to one when charging from the PV.
+  A single conversion will probably cost you 10-15% in stored power. So,
+  charging 10 kWh from the Grid will approximate only 7-8 kWh when using it.
+  Also, the wear on the battery should be considered. Following that, you'll
+  want significant savings, not just a few cents.
+- Check if your local laws and regulations do allow you to charge your
+  battery from the grid for consuming power later in the first place.
+- Check the impact on any warranty from E3DC you may have.
 
-Use this feature at your own risk and discretion.
+To stress this once more: Use this feature at your own risk.
 
 ## Upstream source
 
