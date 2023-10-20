@@ -8,6 +8,7 @@ import pytz
 
 from e3dc import E3DC  # Missing Exports:; SendError,
 from e3dc._rscpLib import rscpFindTag
+from e3dc._rscpTags import RscpTag, RscpType
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
@@ -84,7 +85,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         # Idea: Maybe Port this to e3dc lib, it can query this in one go during startup.
         self._sw_version = await self._async_e3dc_request_single_tag(
-            "INFO_REQ_SW_RELEASE"
+            RscpTag.INFO_REQ_SW_RELEASE
         )
 
         await self._load_timezone_settings()
@@ -160,7 +161,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Polling manual charge information")
         request_data = await self.hass.async_add_executor_job(
-            self.e3dc.sendRequest, ("EMS_REQ_GET_MANUAL_CHARGE", "None", None), 3, True
+            self.e3dc.sendRequest,
+            (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None),
+            3,
+            True,
         )
         self._process_manual_charge(request_data)
 
@@ -237,14 +241,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _process_manual_charge(self, request_data) -> None:
         """Parse manual charge status."""
         self._mydata["manual-charge-active"] = rscpFindTag(
-            request_data, "EMS_MANUAL_CHARGE_ACTIVE"
+            request_data, RscpTag.EMS_MANUAL_CHARGE_ACTIVE
         )[2]
         # these seem to be kAh per individual cell, so this is considered very strange.
         # To get this working for a start, we assume 3,65 V per cell, taking my own unit
         # as a base, but this obviously will need some real work to base this on
         # current voltages.
         self._mydata["manual-charge-energy"] = (
-            3.65 * rscpFindTag(request_data, "EMS_MANUAL_CHARGE_ENERGY_COUNTER")[2]
+            3.65
+            * rscpFindTag(request_data, RscpTag.EMS_MANUAL_CHARGE_ENERGY_COUNTER)[2]
         )
         # The timestamp seem to correctly show the UTC Date when manual charging started
         # Not yet enabled, just for reference.
@@ -275,7 +280,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         try:
             tz_name: str = await self._async_e3dc_request_single_tag(
-                "INFO_REQ_TIME_ZONE"
+                RscpTag.INFO_REQ_TIME_ZONE
             )
         except:
             _LOGGER.exception("Failed to loade timezone from E3DC")
@@ -295,10 +300,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             try:
                 # Fallback to compute the offset using current times from E3DC:
                 ts_local: int = int(
-                    await self._async_e3dc_request_single_tag("INFO_REQ_TIME")
+                    await self._async_e3dc_request_single_tag(RscpTag.INFO_REQ_TIME)
                 )
                 ts_utc: int = int(
-                    await self._async_e3dc_request_single_tag("INFO_REQ_UTC_TIME")
+                    await self._async_e3dc_request_single_tag(RscpTag.INFO_REQ_UTC_TIME)
                 )
                 delta: int = ts_local - ts_utc
                 tz_offset = int(1800 * round(delta / 1800))
@@ -495,7 +500,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # no update guard necessary, as we're called from a service, not an entity
             result_data = await self.hass.async_add_executor_job(
                 self.e3dc.sendRequest,
-                ("EMS_REQ_START_MANUAL_CHARGE", "Uint32", charge_amount),
+                (RscpTag.EMS_REQ_START_MANUAL_CHARGE, RscpType.Uint32, charge_amount),
                 3,
                 True,
             )
