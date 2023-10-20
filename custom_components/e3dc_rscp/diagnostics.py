@@ -7,6 +7,7 @@ from traceback import format_exception
 from typing import Any
 
 from e3dc import E3DC
+from e3dc._rscpTags import RscpTag, RscpType
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -73,22 +74,26 @@ class _DiagnosticsDumper:
             ),
             "EMS_REQ_GET_MANUAL_CHARGE": self._query_data_for_dump(
                 lambda: self.e3dc.sendRequestTag(
-                    "EMS_REQ_GET_MANUAL_CHARGE", keepAlive=True
+                    RscpTag.EMS_REQ_GET_MANUAL_CHARGE, keepAlive=True
                 )
             ),
             "DB_REQ_HISTORY_DATA_DAY": self._query_data_for_dump(
                 lambda: self.e3dc.sendRequest(
                     (
-                        "DB_REQ_HISTORY_DATA_DAY",
+                        RscpTag.DB_REQ_HISTORY_DATA_DAY,
                         "Container",
                         [
                             (
-                                "DB_REQ_HISTORY_TIME_START",
-                                "Uint64",
+                                RscpTag.DB_REQ_HISTORY_TIME_START,
+                                RscpType.Uint64,
                                 self.coordinator.data["db-day-startts"],
                             ),
-                            ("DB_REQ_HISTORY_TIME_INTERVAL", "Uint64", 86400),
-                            ("DB_REQ_HISTORY_TIME_SPAN", "Uint64", 86400),
+                            (
+                                RscpTag.DB_REQ_HISTORY_TIME_INTERVAL,
+                                RscpType.Uint64,
+                                86400,
+                            ),
+                            (RscpTag.DB_REQ_HISTORY_TIME_SPAN, RscpType.Uint64, 86400),
                         ],
                     ),
                     keepAlive=True,
