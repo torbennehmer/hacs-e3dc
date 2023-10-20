@@ -91,8 +91,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._load_timezone_settings()
 
     async def _async_connect_additional_powermeters(self):
-        """Identify the installed powermeters and reconnect to E3DC with the corresponding
-        powermeters config."""
+        """Identify the installed powermeters and reconnect to E3DC with the corresponding powermeters config."""
         self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
         for powermeter in self._e3dcconfig["powermeters"]:
             if powermeter["index"] == POWERMETER_ID_ROOT:
