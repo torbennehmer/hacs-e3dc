@@ -113,9 +113,9 @@ class _DiagnosticsDumper:
             return {"exception": format_exception(ex)}
 
     def _redact_private_information(self, data: Any):
-        """Redact data recursively so that it can be shared"""
+        """Redact data recursively so that it can be shared."""
 
-        if isinstance(data, (dict, list)):
+        if isinstance(data, dict | list):
             for key, value in (
                 data.items() if isinstance(data, dict) else enumerate(data)
             ):
