@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import logging
+import re
 from traceback import format_exception
 from typing import Any
 
@@ -16,6 +17,8 @@ from .const import DOMAIN
 from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+_redact_regex = re.compile("(system-mac|macAddress|serial)", re.IGNORECASE)
 
 
 async def async_get_config_entry_diagnostics(
@@ -47,7 +50,7 @@ class _DiagnosticsDumper:
     def create_dump(self):
         """Create the dump data and redact pricate data, central call-in point."""
         self._collect_data()
-        self._redact_private_information_from_dump()
+        self._redact_private_information(self.result)
 
     def get_dump(self) -> dict[str, Any]:
         """Get the collected data."""
@@ -109,19 +112,13 @@ class _DiagnosticsDumper:
         except Exception as ex:  # pylint: disable=broad-exception-caught
             return {"exception": format_exception(ex)}
 
-    def _redact_private_information_from_dump(self):
-        """Redact sensitive data from the dump so that it can be shared."""
-        self.result["current_data"]["system-mac"] = "<redacted>"
-        self.result["get_system_info"]["macAddress"] = "<redacted>"
-        self.result["get_system_info"][
-            "serial"
-        ] = f"{self.result['get_system_info']['serial'][:3]}<redacted>"
+    def _redact_private_information(self, data: Any):
+        """Redact data recursively so that it can be shared."""
 
-        for pvi in self.result["get_pvis_data"]:
-            pvi["serialNumber"] = f"{pvi['serialNumber'][:3]}<redacted>"
-
-        for bat in self.result["get_batteries_data"]:
-            for dcb in bat["dcbs"]:
-                bat["dcbs"][dcb][
-                    "serialCode"
-                ] = f"{bat['dcbs'][dcb]['serialCode'][:3]}<redacted>"
+        if isinstance(data, dict | list):
+            for key, value in (
+                data.items() if isinstance(data, dict) else enumerate(data)
+            ):
+                if isinstance(value, str) and _redact_regex.search(key) is not None:
+                    data[key] = f"{value[:3]}<redacted>"
+                self._redact_private_information(value)
