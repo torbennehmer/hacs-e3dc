@@ -95,13 +95,20 @@ def _resolve_device_id(hass: HomeAssistant, devid: str) -> E3DCCoordinator:
             f"{SERVICE_SET_POWER_LIMITS}: Unkown device ID {devid}."
         )
 
-    identifier: tuple(str, str) = next(iter(dev.identifiers))
-    if identifier[0] != DOMAIN:
+    identifier: tuple(str, str)  # = next(iter(dev.identifiers))
+    uid: str | None = None
+
+    for identifier in dev.identifiers:
+        domain: str = identifier[0]
+        if domain == DOMAIN:
+            uid = identifier[1]
+            break
+
+    if uid is None:
         raise HomeAssistantError(
             f"{SERVICE_SET_POWER_LIMITS}: Device {devid} is no E3DC."
         )
 
-    uid: str = identifier[1]
     coordinator: E3DCCoordinator = hass.data[DOMAIN][uid]
     _device_map[devid] = coordinator
     return coordinator
