@@ -22,7 +22,7 @@ from .coordinator import E3DCCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
-    # CONFIG AND DIAGNOSTIC SENSORS
+    # DIAGNOSTIC SENSORS
     SensorEntityDescription(
         key="system-derate-percent",
         translation_key="system-derate-percent",
@@ -108,28 +108,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         entity_registry_enabled_default=False,
     ),
     SensorEntityDescription(
-        key="pset-limit-charge",
-        translation_key="pset-limit-charge",
-        icon="mdi:battery-arrow-up-outline",
-        entity_category=EntityCategory.CONFIG,
-        native_unit_of_measurement=UnitOfPower.WATT,
-        suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
-        suggested_display_precision=1,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    SensorEntityDescription(
-        key="pset-limit-discharge",
-        translation_key="pset-limit-discharge",
-        icon="mdi:battery-arrow-down-outline",
-        entity_category=EntityCategory.CONFIG,
-        native_unit_of_measurement=UnitOfPower.WATT,
-        suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
-        suggested_display_precision=1,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    SensorEntityDescription(
         key="pset-limit-discharge-minimum",
         translation_key="pset-limit-discharge-minimum",
         icon="mdi:battery-arrow-down-outline",
@@ -145,7 +123,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         key="system-battery-discharge-minimum-default",
         translation_key="system-battery-discharge-minimum-default",
         icon="mdi:battery-arrow-down-outline",
-        entity_category=EntityCategory.CONFIG,
+        entity_category=EntityCategory.DIAGNOSTIC,
         native_unit_of_measurement=UnitOfPower.WATT,
         suggested_unit_of_measurement=UnitOfPower.WATT,
         suggested_display_precision=0,
@@ -292,6 +270,26 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         suggested_display_precision=2,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="pset-limit-charge",
+        translation_key="pset-limit-charge",
+        icon="mdi:battery-arrow-up-outline",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
+        suggested_display_precision=1,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="pset-limit-discharge",
+        translation_key="pset-limit-discharge",
+        icon="mdi:battery-arrow-down-outline",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
+        suggested_display_precision=1,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     # LONGTERM STATISTIC SENSORS
     SensorEntityDescription(

@@ -31,7 +31,7 @@ class E3DCBinarySensorEntityDescription(BinarySensorEntityDescription):
 
 
 SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
-    # CONFIG AND DIAGNOSTIC SENSORS
+    # DIAGNOSTIC SENSORS
     E3DCBinarySensorEntityDescription(
         key="system-additional-source-available",
         translation_key="system-additional-source-available",
@@ -40,15 +40,14 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         on_icon="mdi:power-plug-outline",
         off_icon="mdi:power-plug-off-outline",
     ),
+    # DEVICE SENSORS
     E3DCBinarySensorEntityDescription(
         key="pset-limit-enabled",
         translation_key="pset-limit-enabled",
-        entity_category=EntityCategory.CONFIG,
         device_class=BinarySensorDeviceClass.RUNNING,
         on_icon="mdi:signal",
         off_icon="mdi:signal-off",
     ),
-    # DEVICE SENSORS
     E3DCBinarySensorEntityDescription(
         key="manual-charge-active",
         translation_key="manual-charge-active",
