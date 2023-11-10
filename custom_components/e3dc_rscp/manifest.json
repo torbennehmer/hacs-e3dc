@@ -12,7 +12,7 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/torbennehmer/hacs-e3dc/issues",
   "requirements": [
-    "pye3dc==0.8.2"
+    "pye3dc==0.8.3"
   ],
   "ssdp": [],
   "version": "3.4.2",
