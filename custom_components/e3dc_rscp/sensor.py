@@ -386,36 +386,36 @@ async def async_setup_entry(
 
     # Add Sensor descriptions for additional powermeters, skipp root PM
     for powermeter_config in coordinator.get_e3dcconfig()["powermeters"]:
-        if powermeter_config["index"] != POWERMETER_ID_ROOT:
-            energy_description = SensorEntityDescription(
-                has_entity_name=True,
-                name=powermeter_config["name"] + " - total",
-                key=powermeter_config["key"] + "-total",
-                translation_key=powermeter_config["key"] + "-total",
-                icon="mdi:meter-electric",
-                native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-                suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-                suggested_display_precision=2,
-                device_class=SensorDeviceClass.ENERGY,
-                state_class=SensorStateClass.TOTAL_INCREASING,
-            )
-            entities.append(
-                E3DCSensor(coordinator, energy_description, entry.unique_id)
-            )
+        if powermeter_config["index"] == POWERMETER_ID_ROOT:
+            continue
 
-            power_description = SensorEntityDescription(
-                has_entity_name=True,
-                name=powermeter_config["name"],
-                key=powermeter_config["key"],
-                translation_key=powermeter_config["key"],
-                icon="mdi:meter-electric",
-                native_unit_of_measurement=UnitOfPower.WATT,
-                suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
-                suggested_display_precision=1,
-                device_class=SensorDeviceClass.POWER,
-                state_class=SensorStateClass.MEASUREMENT,
-            )
-            entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
+        energy_description = SensorEntityDescription(
+            has_entity_name=True,
+            name=powermeter_config["name"] + " - total",
+            key=powermeter_config["key"] + "-total",
+            translation_key=powermeter_config["key"] + "-total",
+            icon="mdi:meter-electric",
+            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+            suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+            suggested_display_precision=2,
+            device_class=SensorDeviceClass.ENERGY,
+            state_class=powermeter_config["total-state-class"],
+        )
+        entities.append(E3DCSensor(coordinator, energy_description, entry.unique_id))
+
+        power_description = SensorEntityDescription(
+            has_entity_name=True,
+            name=powermeter_config["name"],
+            key=powermeter_config["key"],
+            translation_key=powermeter_config["key"],
+            icon="mdi:meter-electric",
+            native_unit_of_measurement=UnitOfPower.WATT,
+            suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
+            suggested_display_precision=1,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
 
     async_add_entities(entities)
 

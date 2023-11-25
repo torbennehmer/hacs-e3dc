@@ -8,7 +8,7 @@ import pytz
 
 from e3dc import E3DC  # Missing Exports:; SendError,
 from e3dc._rscpLib import rscpFindTag
-from e3dc._rscpTags import RscpTag, RscpType
+from e3dc._rscpTags import RscpTag, RscpType, PowermeterType
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
@@ -19,6 +19,9 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import (  # CoordinatorEntity,; UpdateFailed,
     DataUpdateCoordinator,
+)
+from homeassistant.components.sensor import (
+    SensorStateClass,
 )
 
 from .const import CONF_RSCPKEY, DOMAIN, POWERMETER_ID_ROOT
@@ -91,12 +94,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._load_timezone_settings()
 
     async def _async_connect_additional_powermeters(self):
-        """Identify the installed powermeters and reconnect to E3DC with the corresponding powermeters config."""
+        """Identify the installed powermeters and reconnect to E3DC with this config."""
+        # TODO: Restructure config so that we are indexed by powemeter ID.
         self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
         for powermeter in self._e3dcconfig["powermeters"]:
             if powermeter["index"] == POWERMETER_ID_ROOT:
                 powermeter["name"] = "Root PM"
                 powermeter["key"] = "root-pm"
+                powermeter["total-state-class"] = SensorStateClass.TOTAL
+                powermeter["negate-measure"] = False
+
             else:
                 powermeter["name"] = (
                     powermeter["typeName"]
@@ -112,6 +119,23 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     + "-"
                     + str(powermeter["index"])
                 )
+
+                match powermeter["type"]:
+                    case PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION:
+                        powermeter[
+                            "total-state-class"
+                        ] = SensorStateClass.TOTAL_INCREASING
+                        powermeter["negate-measure"] = True
+
+                    case PowermeterType.PM_TYPE_ADDITIONAL_CONSUMPTION:
+                        powermeter[
+                            "total-state-class"
+                        ] = SensorStateClass.TOTAL_INCREASING
+                        powermeter["negate-measure"] = False
+
+                    case _:
+                        powermeter["total-state-class"] = SensorStateClass.TOTAL
+                        powermeter["negate-measure"] = False
 
         delete_e3dcinstance(self.e3dc)
 
@@ -259,19 +283,27 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _process_powermeters_data(self, powermeters_data) -> None:
         for powermeter_data in powermeters_data:
-            if powermeter_data["index"] != POWERMETER_ID_ROOT:
-                for powermeter_config in self._e3dcconfig["powermeters"]:
-                    if powermeter_data["index"] == powermeter_config["index"]:
-                        self._mydata[powermeter_config["key"]] = (
-                            powermeter_data["power"]["L1"]
-                            + powermeter_data["power"]["L2"]
-                            + powermeter_data["power"]["L3"]
-                        )
-                        self._mydata[powermeter_config["key"] + "-total"] = (
-                            powermeter_data["energy"]["L1"]
-                            + powermeter_data["energy"]["L2"]
-                            + powermeter_data["energy"]["L3"]
-                        )
+            if powermeter_data["index"] == POWERMETER_ID_ROOT:
+                continue
+
+            for powermeter_config in self._e3dcconfig["powermeters"]:
+                if powermeter_data["index"] != powermeter_config["index"]:
+                    continue
+
+                self._mydata[powermeter_config["key"]] = (
+                    powermeter_data["power"]["L1"]
+                    + powermeter_data["power"]["L2"]
+                    + powermeter_data["power"]["L3"]
+                )
+                self._mydata[powermeter_config["key"] + "-total"] = (
+                    powermeter_data["energy"]["L1"]
+                    + powermeter_data["energy"]["L2"]
+                    + powermeter_data["energy"]["L3"]
+                )
+
+                if powermeter_config["negate-measure"]:
+                    self._mydata[powermeter_config["key"]] *= -1
+                    self._mydata[powermeter_config["key"] + "-total"] *= -1
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.

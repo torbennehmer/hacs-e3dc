@@ -62,6 +62,7 @@ class _DiagnosticsDumper:
             "current_data": self.coordinator.data,
             "get_system_info": self._query_data_for_dump(self.e3dc.get_system_info),
             "get_system_status": self._query_data_for_dump(self.e3dc.get_system_status),
+            "e3dc_config": self._query_data_for_dump(self.coordinator.get_e3dcconfig),
             "poll": self._query_data_for_dump(self.e3dc.poll),
             "switches": self._query_data_for_dump(self.e3dc.poll_switches),
             "get_pvis_data": self._query_data_for_dump(self.e3dc.get_pvis_data),
