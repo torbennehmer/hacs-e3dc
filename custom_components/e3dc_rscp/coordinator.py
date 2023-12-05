@@ -271,10 +271,13 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # To get this working for a start, we assume 3,65 V per cell, taking my own unit
         # as a base, but this obviously will need some real work to base this on
         # current voltages.
-        self._mydata["manual-charge-energy"] = (
+        # Round to Watts, this should prevent negative values in the magnitude of 10^-6,
+        # which are probably floating point errors.
+        tmp = (
             3.65
             * rscpFindTag(request_data, RscpTag.EMS_MANUAL_CHARGE_ENERGY_COUNTER)[2]
         )
+        self._mydata["manual-charge-energy"] = round(tmp, 3)
         # The timestamp seem to correctly show the UTC Date when manual charging started
         # Not yet enabled, just for reference.
         # self._mydata["manual-charge-start"] = rscpFindTag(
