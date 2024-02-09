@@ -2,6 +2,8 @@
 import logging
 from typing import Final
 
+from e3dc._rscpTags import PowermeterType
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -16,7 +18,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, POWERMETER_ID_ROOT
+from .const import DOMAIN
 from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -385,8 +387,8 @@ async def async_setup_entry(
     ]
 
     # Add Sensor descriptions for additional powermeters, skipp root PM
-    for powermeter_config in coordinator.get_e3dcconfig()["powermeters"]:
-        if powermeter_config["index"] == POWERMETER_ID_ROOT:
+    for powermeter_config in coordinator.proxy.e3dc_config["powermeters"]:
+        if powermeter_config["type"] == PowermeterType.PM_TYPE_ROOT.value:
             continue
 
         energy_description = SensorEntityDescription(

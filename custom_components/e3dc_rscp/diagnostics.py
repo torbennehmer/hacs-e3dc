@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 from .coordinator import E3DCCoordinator
+from .e3dc_proxy import E3DCProxy
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class _DiagnosticsDumper:
 
     e3dc: E3DC = None
     coordinator: E3DCCoordinator = None
+    proxy: E3DCProxy = None
     hass: HomeAssistant = None
     entry: ConfigEntry = None
     result: dict[str, Any] = {}
@@ -45,7 +47,8 @@ class _DiagnosticsDumper:
         self.hass = _hass
         self.entry = _entry
         self.coordinator = self.hass.data[DOMAIN][self.entry.unique_id]
-        self.e3dc = self.coordinator.e3dc
+        self.proxy = self.coordinator.proxy
+        self.e3dc = self.proxy.e3dc
 
     def create_dump(self):
         """Create the dump data and redact pricate data, central call-in point."""
@@ -62,7 +65,7 @@ class _DiagnosticsDumper:
             "current_data": self.coordinator.data,
             "get_system_info": self._query_data_for_dump(self.e3dc.get_system_info),
             "get_system_status": self._query_data_for_dump(self.e3dc.get_system_status),
-            "e3dc_config": self._query_data_for_dump(self.coordinator.get_e3dcconfig),
+            "e3dc_config": self.proxy.e3dc_config,
             "poll": self._query_data_for_dump(self.e3dc.poll),
             "switches": self._query_data_for_dump(self.e3dc.poll_switches),
             "get_pvis_data": self._query_data_for_dump(self.e3dc.get_pvis_data),

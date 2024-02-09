@@ -144,4 +144,4 @@ async def _async_manual_charge(hass: HomeAssistant, call: ServiceCall) -> None:
         hass, call.data.get(ATTR_DEVICEID)
     )
     charge_amount: int = call.data.get(ATTR_CHARGE_AMOUNT)
-    await coordinator.async_manual_charge(charge_amount=charge_amount)
+    await coordinator.async_manual_charge(charge_amount_wh=charge_amount)

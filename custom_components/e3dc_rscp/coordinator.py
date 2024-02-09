@@ -6,25 +6,18 @@ from time import time
 from typing import Any
 import pytz
 
-from e3dc import E3DC  # Missing Exports:; SendError,
-from e3dc._rscpLib import rscpFindTag
-from e3dc._rscpTags import RscpTag, RscpType, PowermeterType
+from e3dc._rscpTags import PowermeterType
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.util.dt import as_timestamp, start_of_local_day
-from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import (  # CoordinatorEntity,; UpdateFailed,
-    DataUpdateCoordinator,
-)
-from homeassistant.components.sensor import (
-    SensorStateClass,
-)
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.components.sensor import SensorStateClass
 
-from .const import CONF_RSCPKEY, DOMAIN, POWERMETER_ID_ROOT
+from .const import DOMAIN
+from .e3dc_proxy import E3DCProxy
 
 _LOGGER = logging.getLogger(__name__)
 _STAT_REFRESH_INTERVAL = 60
@@ -33,8 +26,7 @@ _STAT_REFRESH_INTERVAL = 60
 class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
 
-    e3dc: E3DC = None
-    _e3dcconfig: dict[str, Any] = {}
+    proxy: E3DCProxy = None
     _mydata: dict[str, Any] = {}
     _sw_version: str = ""
     _update_guard_powersettings: bool = False
@@ -43,12 +35,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize E3DC Coordinator and connect."""
-        self.host: str | None = config_entry.data.get(CONF_HOST)
-        self.username: str | None = config_entry.data.get(CONF_USERNAME)
-        self.password: str | None = config_entry.data.get(CONF_PASSWORD)
-        self.rscpkey: str | None = config_entry.data.get(CONF_RSCPKEY)
         assert isinstance(config_entry.unique_id, str)
         self.uid: str = config_entry.unique_id
+        self.proxy = E3DCProxy(hass, config_entry)
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=10)
@@ -56,39 +45,37 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_connect(self):
         """Establish connection to E3DC."""
-        try:
-            self.e3dc: E3DC = await self.hass.async_add_executor_job(
-                create_e3dcinstance,
-                self.username,
-                self.password,
-                self.host,
-                self.rscpkey,
-            )
-        except Exception as ex:
-            raise ConfigEntryAuthFailed from ex
 
+        # TODO: Beautify this, make the code flow with the connects/disconnects more natural.
+        # Have a call to autoconf, then connect with it.
+        await self.hass.async_add_executor_job(self.proxy.connect)
         await self._async_connect_additional_powermeters()
-        self._mydata["system-derate-percent"] = self.e3dc.deratePercent
-        self._mydata["system-derate-power"] = self.e3dc.deratePower
+
+        self._mydata["system-derate-percent"] = self.proxy.e3dc.deratePercent
+        self._mydata["system-derate-power"] = self.proxy.e3dc.deratePower
         self._mydata["system-additional-source-available"] = (
-            self.e3dc.externalSourceAvailable != 0
+            self.proxy.e3dc.externalSourceAvailable != 0
         )
         self._mydata[
             "system-battery-installed-capacity"
-        ] = self.e3dc.installedBatteryCapacity
-        self._mydata["system-battery-installed-peak"] = self.e3dc.installedPeakPower
-        self._mydata["system-ac-maxpower"] = self.e3dc.maxAcPower
-        self._mydata["system-battery-charge-max"] = self.e3dc.maxBatChargePower
-        self._mydata["system-battery-discharge-max"] = self.e3dc.maxBatDischargePower
-        self._mydata["system-mac"] = self.e3dc.macAddress
-        self._mydata["model"] = self.e3dc.model
+        ] = self.proxy.e3dc.installedBatteryCapacity
+        self._mydata[
+            "system-battery-installed-peak"
+        ] = self.proxy.e3dc.installedPeakPower
+        self._mydata["system-ac-maxpower"] = self.proxy.e3dc.maxAcPower
+        self._mydata["system-battery-charge-max"] = self.proxy.e3dc.maxBatChargePower
+        self._mydata[
+            "system-battery-discharge-max"
+        ] = self.proxy.e3dc.maxBatDischargePower
+        self._mydata["system-mac"] = self.proxy.e3dc.macAddress
+        self._mydata["model"] = self.proxy.e3dc.model
         self._mydata[
             "system-battery-discharge-minimum-default"
-        ] = self.e3dc.startDischargeDefault
+        ] = self.proxy.e3dc.startDischargeDefault
 
         # Idea: Maybe Port this to e3dc lib, it can query this in one go during startup.
-        self._sw_version = await self._async_e3dc_request_single_tag(
-            RscpTag.INFO_REQ_SW_RELEASE
+        self._sw_version = await self.hass.async_add_executor_job(
+            self.proxy.get_software_version
         )
 
         await self._load_timezone_settings()
@@ -96,9 +83,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_connect_additional_powermeters(self):
         """Identify the installed powermeters and reconnect to E3DC with this config."""
         # TODO: Restructure config so that we are indexed by powemeter ID.
-        self._e3dcconfig["powermeters"] = self.e3dc.get_powermeters()
-        for powermeter in self._e3dcconfig["powermeters"]:
-            if powermeter["index"] == POWERMETER_ID_ROOT:
+        self.proxy.e3dc_config["powermeters"] = await self.hass.async_add_executor_job(
+            self.proxy.get_powermeters
+        )
+
+        for powermeter in self.proxy.e3dc_config["powermeters"]:
+            if powermeter["type"] == PowermeterType.PM_TYPE_ROOT.value:
                 powermeter["name"] = "Root PM"
                 powermeter["key"] = "root-pm"
                 powermeter["total-state-class"] = SensorStateClass.TOTAL
@@ -121,13 +111,13 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
 
                 match powermeter["type"]:
-                    case PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION:
+                    case PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value:
                         powermeter[
                             "total-state-class"
                         ] = SensorStateClass.TOTAL_INCREASING
                         powermeter["negate-measure"] = True
 
-                    case PowermeterType.PM_TYPE_ADDITIONAL_CONSUMPTION:
+                    case PowermeterType.PM_TYPE_ADDITIONAL_CONSUMPTION.value:
                         powermeter[
                             "total-state-class"
                         ] = SensorStateClass.TOTAL_INCREASING
@@ -137,28 +127,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         powermeter["total-state-class"] = SensorStateClass.TOTAL
                         powermeter["negate-measure"] = False
 
-        delete_e3dcinstance(self.e3dc)
-
-        try:
-            self.e3dc: E3DC = await self.hass.async_add_executor_job(
-                create_e3dcinstance,
-                self.username,
-                self.password,
-                self.host,
-                self.rscpkey,
-                self._e3dcconfig,
-            )
-        except Exception as ex:
-            raise ConfigEntryAuthFailed from ex
-
-    async def _async_e3dc_request_single_tag(self, tag: str) -> Any:
-        """Send a single tag request to E3DC, wraps lib call for async usage, supplies defaults."""
-
-        # Signature for reference: Tag, Retries, Keepalive
-        result = await self.hass.async_add_executor_job(
-            self.e3dc.sendRequestTag, tag, 3, True
+        await self.hass.async_add_executor_job(self.proxy.disconnect)
+        await self.hass.async_add_executor_job(
+            self.proxy.connect,
+            self.proxy.e3dc_config,
         )
-        return result
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update all data required by our entities in one go."""
@@ -167,38 +140,24 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # connect did already retrieve all static values.
 
         _LOGGER.debug("Polling general status information")
-        poll_data: dict[str, Any] = await self.hass.async_add_executor_job(
-            self.e3dc.poll, True
-        )
-        self._process_poll(poll_data)
+        data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.poll)
+        self._process_poll(data)
 
+        # TODO: Check if we need to replace this with a safe IPC sync
         if self._update_guard_powersettings is False:
             _LOGGER.debug("Poll power settings")
-            power_settings: dict[
-                str, Any | None
-            ] = await self.hass.async_add_executor_job(
-                self.e3dc.get_power_settings, True
-            )
-            self._process_power_settings(power_settings)
+            data = await self.hass.async_add_executor_job(self.proxy.get_power_settings)
+            self._process_power_settings(data)
         else:
             _LOGGER.debug("Not polling powersettings, they are updating right now")
 
         _LOGGER.debug("Polling manual charge information")
-        request_data = await self.hass.async_add_executor_job(
-            self.e3dc.sendRequest,
-            (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None),
-            3,
-            True,
-        )
-        self._process_manual_charge(request_data)
+        data = await self.hass.async_add_executor_job(self.proxy.get_manual_charge)
+        self._process_manual_charge(data)
 
         _LOGGER.debug("Polling additional powermeters")
-        powermeters_data: dict[
-            str, Any | None
-        ] = await self.hass.async_add_executor_job(
-            self.e3dc.get_powermeters_data, None, True
-        )
-        self._process_powermeters_data(powermeters_data)
+        data = await self.hass.async_add_executor_job(self.proxy.get_powermeters_data)
+        self._process_powermeters_data(data)
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
@@ -206,10 +165,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._next_stat_update < time():
             _LOGGER.debug("Polling today's power metrics")
             db_data_today: dict[str, Any] = await self.hass.async_add_executor_job(
-                self.e3dc.get_db_data_timestamp,
-                self._get_db_data_day_timestamp(),
-                86400,
-                True,
+                self.proxy.get_db_data, self._get_db_data_day_timestamp(), 86400
             )
             self._process_db_data_today(db_data_today)
             self._next_stat_update = time() + _STAT_REFRESH_INTERVAL
@@ -264,64 +220,20 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _process_manual_charge(self, request_data) -> None:
         """Parse manual charge status."""
-        self._mydata["manual-charge-active"] = rscpFindTag(
-            request_data, RscpTag.EMS_MANUAL_CHARGE_ACTIVE
-        )[2]
-        # these seem to be kAh per individual cell, so this is considered very strange.
-        # To get this working for a start, we assume 3,65 V per cell, taking my own unit
-        # as a base, but this obviously will need some real work to base this on
-        # current voltages.
-        # Round to Watts, this should prevent negative values in the magnitude of 10^-6,
-        # which are probably floating point errors.
-        tmp = (
-            3.65
-            * rscpFindTag(request_data, RscpTag.EMS_MANUAL_CHARGE_ENERGY_COUNTER)[2]
-        )
-        self._mydata["manual-charge-energy"] = round(tmp, 3)
-        # The timestamp seem to correctly show the UTC Date when manual charging started
-        # Not yet enabled, just for reference.
-        # self._mydata["manual-charge-start"] = rscpFindTag(
-        #     request_data, "EMS_MANUAL_CHARGE_LASTSTART"
-        # )[2]
+        self._mydata["manual-charge-active"] = request_data["active"]
+        self._mydata["manual-charge-energy"] = request_data["energy"]
 
-    def _process_powermeters_data(self, powermeters_data) -> None:
-        for powermeter_data in powermeters_data:
-            if powermeter_data["index"] == POWERMETER_ID_ROOT:
-                continue
-
-            for powermeter_config in self._e3dcconfig["powermeters"]:
-                if powermeter_data["index"] != powermeter_config["index"]:
-                    continue
-
-                self._mydata[powermeter_config["key"]] = (
-                    powermeter_data["power"]["L1"]
-                    + powermeter_data["power"]["L2"]
-                    + powermeter_data["power"]["L3"]
-                )
-                self._mydata[powermeter_config["key"] + "-total"] = (
-                    powermeter_data["energy"]["L1"]
-                    + powermeter_data["energy"]["L2"]
-                    + powermeter_data["energy"]["L3"]
-                )
-
-                if powermeter_config["negate-measure"]:
-                    self._mydata[powermeter_config["key"]] *= -1
-                    self._mydata[powermeter_config["key"] + "-total"] *= -1
+    def _process_powermeters_data(self, request_data) -> None:
+        """Transfer additional sources to existing data."""
+        for key, value in request_data.items():
+            self._mydata[key] = value
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
 
         Required to correctly retrieve power statistics for today.
         """
-        try:
-            tz_name: str = await self._async_e3dc_request_single_tag(
-                RscpTag.INFO_REQ_TIME_ZONE
-            )
-        except:
-            _LOGGER.exception("Failed to loade timezone from E3DC")
-            # Once we have better exception handling available, we need to throw
-            # proper HomeAssistantErrors at this point.
-            raise
+        tz_name: str = await self.hass.async_add_executor_job(self.proxy.get_timezone)
 
         tz_offset: int | None = None
         try:
@@ -329,24 +241,18 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             dt_tmp: datetime = datetime.now(tz_info)
             tz_offset = dt_tmp.utcoffset().seconds
         except pytz.UnknownTimeZoneError:
-            _LOGGER.exception("Failed to load timezone from E3DC")
+            _LOGGER.exception("Failed to load timezone from E3DC, falling back to heuristics.")
 
         if tz_offset is None:
-            try:
-                # Fallback to compute the offset using current times from E3DC:
-                ts_local: int = int(
-                    await self._async_e3dc_request_single_tag(RscpTag.INFO_REQ_TIME)
-                )
-                ts_utc: int = int(
-                    await self._async_e3dc_request_single_tag(RscpTag.INFO_REQ_UTC_TIME)
-                )
-                delta: int = ts_local - ts_utc
-                tz_offset = int(1800 * round(delta / 1800))
-            except:
-                _LOGGER.exception("Failed to load timestamps from E3DC")
-                # Once we have better exception handling available, we need to throw
-                # proper HomeAssistantErrors at this point.
-                raise
+            # Fallback to compute the offset using current times from E3DC:
+            ts_local: int = await self.hass.async_add_executor_job(
+                self.proxy.get_time
+            )
+            ts_utc: int = await self.hass.async_add_executor_job(
+                self.proxy.get_timeutc
+            )
+            delta: int = ts_local - ts_utc
+            tz_offset = int(1800 * round(delta / 1800))
 
         self._mydata["e3dc_timezone"] = tz_name
         self._timezone_offset = tz_offset
@@ -367,20 +273,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Move to local time, the Timestamp needed by the E3DC DB queries are
         # not in UTC as they should be.
         today_ts += self._timezone_offset
-        _LOGGER.debug(
-            "Midnight DB query timestamp is %s, applied offset: %s",
-            today_ts,
-            self._timezone_offset,
-        )
         return today_ts
 
     def device_info(self) -> DeviceInfo:
         """Return default device info structure."""
         return DeviceInfo(
             manufacturer="E3DC",
-            model=self.e3dc.model,
-            name=self.e3dc.model,
-            connections={(dr.CONNECTION_NETWORK_MAC, self.e3dc.macAddress)},
+            model=self.proxy.e3dc.model,
+            name=self.proxy.e3dc.model,
+            connections={(dr.CONNECTION_NETWORK_MAC, self.proxy.e3dc.macAddress)},
             identifiers={(DOMAIN, self.uid)},
             sw_version=self._sw_version,
             configuration_url="https://s10.e3dc.com/",
@@ -388,66 +289,32 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_weather_regulated_charge(self, enabled: bool) -> bool:
         """Enable or disable weather regulated charging."""
-
-        _LOGGER.debug("Updating weather regulated charging to %s", enabled)
-
-        self._update_guard_powersettings = True
-        self._mydata["pset-weatherregulationenabled"] = enabled
+        _LOGGER.debug("Updating weather regulated chargsing to %s", enabled)
 
         try:
-            new_value: bool = await self.hass.async_add_executor_job(
-                self.e3dc.set_weather_regulated_charge, enabled, True
+            self._update_guard_powersettings = True
+            await self.hass.async_add_executor_job(
+                self.proxy.set_weather_regulated_charge, enabled
             )
-        except:
-            _LOGGER.exception(
-                "Failed to update weather regulated charging to %s", enabled
-            )
-            # Once we have better exception handling available, we need to throw
-            # proper HomeAssistantErrors at this point.
-            raise
-        else:
-            # Ignore newValue at this point, needs fixing e3dc lib.
-            new_value = enabled
-            self._mydata["pset-weatherregulationenabled"] = new_value
+            self._mydata["pset-weatherregulationenabled"] = enabled
         finally:
             self._update_guard_powersettings = False
-
-        if new_value != enabled:
-            raise HomeAssistantError(
-                f"Failed to update weather regulated charging to {enabled}"
-            )
 
         _LOGGER.debug("Successfully updated weather regulated charging to %s", enabled)
         return True
 
     async def async_set_powersave(self, enabled: bool) -> bool:
         """Enable or disable SmartPower powersaving."""
-
         _LOGGER.debug("Updating powersaving to %s", enabled)
 
-        self._update_guard_powersettings = True
-        self._mydata["pset-powersaving-enabled"] = enabled
-
         try:
-            new_value: bool = await self.hass.async_add_executor_job(
-                self.e3dc.set_powersave, enabled, True
-            )
-        except:
-            _LOGGER.exception("Failed to update powersaving to %s", enabled)
-            # Once we have better exception handling available, we need to throw
-            # proper HomeAssistantErrors at this point.
-            raise
-        else:
-            # Ignore newValue at this point, needs fixing e3dc lib.
-            new_value = enabled
-            self._mydata["pset-powersaving-enabled"] = new_value
+            self._update_guard_powersettings = True
+            await self.hass.async_add_executor_job(self.proxy.set_powersave, enabled)
+            self._mydata["pset-powersaving-enabled"] = enabled
         finally:
             self._update_guard_powersettings = False
 
-        if new_value != enabled:
-            raise HomeAssistantError(f"Failed to update powersaving to {enabled}")
-
-        _LOGGER.debug("Successfully updated powersaving to %s", enabled)
+        _LOGGER.debug("Updated powersaving to %s", enabled)
         return True
 
     async def async_clear_power_limits(self) -> None:
@@ -455,23 +322,13 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Clearing any active power limit.")
 
-        try:
-            # Call RSCP service.
-            # no update guard necessary, as we're called from a service, not an entity
-            result: int = await self.hass.async_add_executor_job(
-                self.e3dc.set_power_limits, False, None, None, None, True
-            )
-        except Exception as ex:
-            _LOGGER.exception("Failed to clear power limits")
-            raise HomeAssistantError("Failed to clear power limits") from ex
+        # Call RSCP service.
+        # no update guard necessary, as we're called from a service, not an entity
+        await self.hass.async_add_executor_job(
+            self.proxy.set_power_limits, False, None, None, None
+        )
 
-        if result == -1:
-            raise HomeAssistantError("Failed to clear power limits")
-
-        if result == 1:
-            _LOGGER.warning("The given power limits are not optimal, continuing anyway")
-        else:
-            _LOGGER.debug("Successfully cleared the power limits")
+        _LOGGER.debug("Successfully cleared the power limits")
 
     async def async_set_power_limits(
         self, max_charge: int | None, max_discharge: int | None
@@ -485,14 +342,19 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "max_charge or max_discharge."
             )
 
-        if max_charge is not None and max_charge > self.e3dc.maxBatChargePower:
-            _LOGGER.warning("Limiting max_charge to %s", self.e3dc.maxBatChargePower)
-            max_charge = self.e3dc.maxBatChargePower
-        if max_discharge is not None and max_discharge > self.e3dc.maxBatDischargePower:
+        if max_charge is not None and max_charge > self.proxy.e3dc.maxBatChargePower:
             _LOGGER.warning(
-                "Limiting max_discharge to %s", self.e3dc.maxBatDischargePower
+                "Limiting max_charge to %s", self.proxy.e3dc.maxBatChargePower
             )
-            max_discharge = self.e3dc.maxBatDischargePower
+            max_charge = self.proxy.e3dc.maxBatChargePower
+        if (
+            max_discharge is not None
+            and max_discharge > self.proxy.e3dc.maxBatDischargePower
+        ):
+            _LOGGER.warning(
+                "Limiting max_discharge to %s", self.proxy.e3dc.maxBatDischargePower
+            )
+            max_discharge = self.proxy.e3dc.maxBatDischargePower
 
         _LOGGER.debug(
             "Enabling power limits, max_charge: %s, max_discharge: %s",
@@ -500,85 +362,28 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             max_discharge,
         )
 
-        try:
-            # Call RSCP service.
-            # no update guard necessary, as we're called from a service, not an entity
-            result: int = await self.hass.async_add_executor_job(
-                self.e3dc.set_power_limits, True, max_charge, max_discharge, None, True
-            )
-        except Exception as ex:
-            _LOGGER.exception("Failed to set power limits")
-            raise HomeAssistantError("Failed to set power limits") from ex
+        await self.hass.async_add_executor_job(
+            self.proxy.set_power_limits, True, max_charge, max_discharge, None
+        )
 
-        if result == -1:
-            raise HomeAssistantError("Failed to set power limits")
+        _LOGGER.debug("Successfully set the power limits")
 
-        if result == 1:
-            _LOGGER.warning("The given power limits are not optimal, continuing anyway")
-        else:
-            _LOGGER.debug("Successfully set the power limits")
-
-    async def async_manual_charge(self, charge_amount: int) -> None:
+    async def async_manual_charge(self, charge_amount_wh: int) -> None:
         """Start manual charging the given amount, zero will stop charging."""
 
         # Validate the arguments
-        if charge_amount < 0:
+        if charge_amount_wh < 0:
             raise ValueError("Charge amount must be positive or zero.")
 
         _LOGGER.debug(
-            "Starting manual charge of: %s",
-            charge_amount,
+            "Starting manual charge of: %s Wh",
+            charge_amount_wh,
         )
 
-        try:
-            # Call RSCP service.
-            # no update guard necessary, as we're called from a service, not an entity
-            result_data = await self.hass.async_add_executor_job(
-                self.e3dc.sendRequest,
-                (RscpTag.EMS_REQ_START_MANUAL_CHARGE, RscpType.Uint32, charge_amount),
-                3,
-                True,
-            )
-        except Exception as ex:
-            _LOGGER.exception("Failed to initiate manual charging")
-            raise HomeAssistantError("Failed to initiate manual charging") from ex
+        # Call RSCP service.
+        # no update guard necessary, as we're called from a service, not an entity
+        await self.hass.async_add_executor_job(
+            self.proxy.start_manual_charge, charge_amount_wh
+        )
 
-        result: bool = result_data[2]
-
-        if not result:
-            _LOGGER.warning("Manual charging could not be activated")
-        else:
-            _LOGGER.debug("Successfully started manual charging")
-
-    def get_e3dcconfig(self) -> dict:
-        """Return the E3DC config dict."""
-        return self._e3dcconfig
-
-
-def create_e3dcinstance(
-    username: str,
-    password: str,
-    host: str,
-    rscpkey: str,
-    config: dict[str, Any] | None = None,
-) -> E3DC:
-    """Create the actual E3DC instance, this will try to connect and authenticate."""
-    if config is None:
-        config = {}
-
-    e3dc = E3DC(
-        E3DC.CONNECT_LOCAL,
-        username=username,
-        password=password,
-        ipAddress=host,
-        key=rscpkey,
-        configuration=config,
-    )
-
-    return e3dc
-
-
-def delete_e3dcinstance(e3dc: E3DC) -> None:
-    """Delete the actual E3DC instance."""
-    del e3dc
-    return
+        _LOGGER.debug("Manual charging start command has been sent.")
