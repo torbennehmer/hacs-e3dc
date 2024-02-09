@@ -7,7 +7,6 @@ CONF_VERSION = 1
 DOMAIN = "e3dc_rscp"
 ERROR_AUTH_INVALID = "invalid_auth"
 ERROR_CANNOT_CONNECT = "cannot_connect"
-POWERMETER_ID_ROOT = 0
 SERVICE_CLEAR_POWER_LIMITS = "clear_power_limits"
 SERVICE_SET_POWER_LIMITS = "set_power_limits"
 SERVICE_MANUAL_CHARGE = "manual_charge"

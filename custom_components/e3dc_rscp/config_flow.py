@@ -5,7 +5,6 @@ from collections.abc import Mapping
 import logging
 from typing import Any
 
-from e3dc import E3DC, AuthenticationError, CommunicationError, RSCPKeyError
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -16,7 +15,7 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ConfigEntryAuthFailed
 from homeassistant.helpers.selector import (
     TextSelector,
     TextSelectorConfig,
@@ -30,7 +29,7 @@ from .const import (
     ERROR_AUTH_INVALID,
     ERROR_CANNOT_CONNECT,
 )
-from .coordinator import create_e3dcinstance
+from .e3dc_proxy import E3DCProxy
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,14 +45,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-class CannotConnect(HomeAssistantError):
-    """Error to indicate we cannot connect."""
-
-
-class InvalidAuth(HomeAssistantError):
-    """Error to indicate there is invalid auth."""
-
-
 class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for E3DC Remote Storage Control Protocol."""
 
@@ -64,35 +55,30 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._username: str | None = None
         self._password: str | None = None
         self._rscpkey: str | None = None
-        self._e3dc: E3DC = None
+        self._proxy: E3DCProxy = None
 
     def _async_check_login(self) -> None:
         assert isinstance(self._username, str)
         assert isinstance(self._password, str)
         assert isinstance(self._host, str)
         assert isinstance(self._rscpkey, str)
-        self._e3dc = create_e3dcinstance(
-            username=self._username,
-            password=self._password,
-            host=self._host,
-            rscpkey=self._rscpkey,
-        )
+
+        self._proxy = E3DCProxy(self.hass, {
+            CONF_HOST: self._host,
+            CONF_USERNAME: self._username,
+            CONF_PASSWORD: self._password,
+            CONF_RSCPKEY: self._rscpkey
+        })
+        self._proxy.connect()
 
     async def validate_input(self) -> str | None:
         """Validate the user input allows us to connect."""
-
         try:
             await self.hass.async_add_executor_job(self._async_check_login)
-        except (RSCPKeyError, AuthenticationError):
+        except ConfigEntryAuthFailed:
             return ERROR_AUTH_INVALID
-        except CommunicationError:
+        except HomeAssistantError:
             return ERROR_CANNOT_CONNECT
-        # NotAvailableError not yet exported
-        # SendError not yet exported
-
-        if self._e3dc is None:
-            return ERROR_CANNOT_CONNECT
-
         return None
 
     async def async_step_user(
@@ -113,14 +99,14 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return self._show_setup_form_init({"base": error})
 
         await self.async_set_unique_id(
-            f"{self._e3dc.serialNumberPrefix}{self._e3dc.serialNumber}"
+            f"{self._proxy.e3dc.serialNumberPrefix}{self._proxy.e3dc.serialNumber}"
         )
         self._abort_if_unique_id_configured()
         final_data: dict[str, Any] = user_input
         final_data[CONF_API_VERSION] = CONF_VERSION
 
         return self.async_create_entry(
-            title=f"E3DC {self._e3dc.model}", data=final_data
+            title=f"E3DC {self._proxy.e3dc.model}", data=final_data
         )
 
     def _show_setup_form_init(self, errors: dict[str, str] | None = None) -> FlowResult:
