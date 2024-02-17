@@ -111,9 +111,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
 
                 match powermeter["type"]:
-                    case (
-                        PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value,
-                        PowermeterType.PM_TYPE_ADDITIONAL.value
+                    case ( PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value
+                          | PowermeterType.PM_TYPE_ADDITIONAL.value
                     ):
                         powermeter[
                             "total-state-class"
