@@ -118,28 +118,35 @@ class E3DCProxy:
     @e3dc_call
     def get_manual_charge(self) -> dict[str, Any]:
         """Poll manual charging state."""
-        data = self.e3dc.sendRequest(
-            (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None), keepAlive=True
-        )
+        try:
+            data = self.e3dc.sendRequest(
+                (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None), keepAlive=True
+            )
 
-        result: dict[str, Any] = {}
-        result["active"] = rscpFindTag(data, RscpTag.EMS_MANUAL_CHARGE_ACTIVE)[2]
+            result: dict[str, Any] = {}
+            result["active"] = rscpFindTag(data, RscpTag.EMS_MANUAL_CHARGE_ACTIVE)[2]
 
-        # These seem to be kAh per individual cell, so this is considered very strange.
-        # To get this working for a start, we assume 3,65 V per cell, taking my own unit
-        # as a base, but this obviously will need some real work to base this on
-        # current voltages.
-        # Round to Watts, this should prevent negative values in the magnitude of 10^-6,
-        # which are probably floating point errors.
-        tmp = rscpFindTag(data, RscpTag.EMS_MANUAL_CHARGE_ENERGY_COUNTER)[2]
-        powerfactor = 3.65
-        result["energy"] = round(tmp * powerfactor, 3)
+            # These seem to be kAh per individual cell, so this is considered very strange.
+            # To get this working for a start, we assume 3,65 V per cell, taking my own unit
+            # as a base, but this obviously will need some real work to base this on
+            # current voltages.
+            # Round to Watts, this should prevent negative values in the magnitude of 10^-6,
+            # which are probably floating point errors.
+            tmp = rscpFindTag(data, RscpTag.EMS_MANUAL_CHARGE_ENERGY_COUNTER)[2]
+            powerfactor = 3.65
+            result["energy"] = round(tmp * powerfactor, 3)
 
-        # The timestamp seem to correctly show the UTC Date when manual charging started
-        # Not yet enabled, just for reference.
-        # self._mydata["manual-charge-start"] = rscpFindTag(
-        #     request_data, "EMS_MANUAL_CHARGE_LASTSTART"
-        # )[2]
+            # The timestamp seem to correctly show the UTC Date when manual charging started
+            # Not yet enabled, just for reference.
+            # self._mydata["manual-charge-start"] = rscpFindTag(
+            #     request_data, "EMS_MANUAL_CHARGE_LASTSTART"
+            # )[2]
+        except SendError:
+            _LOGGER.debug("Failed to query manual charging data, might be related to a recent E3DC API change, ignoring the error, reverting to empty defaults.")
+            result: dict[str, Any] = {}
+            result["active"] = False
+            result["energy"] = 0
+            result["possible_API_bug"] = "got send error"
 
         return result
 
