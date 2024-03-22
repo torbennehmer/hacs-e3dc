@@ -1,4 +1,5 @@
 """Diagnostics support for E3DC RSCP."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -124,6 +125,10 @@ class _DiagnosticsDumper:
             for key, value in (
                 data.items() if isinstance(data, dict) else enumerate(data)
             ):
-                if isinstance(value, str) and _redact_regex.search(key) is not None:
+                if (
+                    isinstance(value, str)
+                    and isinstance(key, str)
+                    and _redact_regex.search(key) is not None
+                ):
                     data[key] = f"{value[:3]}<redacted>"
                 self._redact_private_information(value)
