@@ -15,6 +15,6 @@
     "pye3dc==0.9.1"
   ],
   "ssdp": [],
-  "version": "3.6.1",
+  "version": "3.6.2",
   "zeroconf": []
 }
