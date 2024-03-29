@@ -10,6 +10,7 @@ from e3dc._rscpTags import PowermeterType
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util.dt import as_timestamp, start_of_local_day
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
@@ -142,34 +143,27 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # connect did already retrieve all static values.
 
         _LOGGER.debug("Polling general status information")
-        data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.poll)
-        self._process_poll(data)
+        await self._load_and_process_poll()
 
         # TODO: Check if we need to replace this with a safe IPC sync
         if self._update_guard_powersettings is False:
             _LOGGER.debug("Poll power settings")
-            data = await self.hass.async_add_executor_job(self.proxy.get_power_settings)
-            self._process_power_settings(data)
+            await self._load_and_process_power_settings()
         else:
             _LOGGER.debug("Not polling powersettings, they are updating right now")
 
         _LOGGER.debug("Polling manual charge information")
-        data = await self.hass.async_add_executor_job(self.proxy.get_manual_charge)
-        self._process_manual_charge(data)
+        await self._load_and_process_manual_charge()
 
         _LOGGER.debug("Polling additional powermeters")
-        data = await self.hass.async_add_executor_job(self.proxy.get_powermeters_data)
-        self._process_powermeters_data(data)
+        await self._load_and_process_powermeters_data()
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
         # before the end of the day.
         if self._next_stat_update < time():
             _LOGGER.debug("Polling today's power metrics")
-            db_data_today: dict[str, Any] = await self.hass.async_add_executor_job(
-                self.proxy.get_db_data, self._get_db_data_day_timestamp(), 86400
-            )
-            self._process_db_data_today(db_data_today)
+            await self._load_and_process_db_data_today()
             self._next_stat_update = time() + _STAT_REFRESH_INTERVAL
             # TODO: Reduce interval further, but take start_ts into account to get an
             # end of day reading of the metric.
@@ -178,8 +172,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return self._mydata
 
-    def _process_power_settings(self, power_settings: dict[str, Any | None]):
-        """Process retrieved power settings."""
+    async def _load_and_process_power_settings(self):
+        """Load and process power settings."""
+        try:
+            power_settings: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.get_power_settings)
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load power settings, not updating data: %s", ex)
+            return
+
         self._mydata["pset-limit-charge"] = power_settings["maxChargePower"]
         self._mydata["pset-limit-discharge"] = power_settings["maxDischargePower"]
         self._mydata["pset-limit-discharge-minimum"] = power_settings[
@@ -191,7 +191,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "weatherRegulatedChargeEnabled"
         ]
 
-    def _process_poll(self, poll_data: dict[str, Any]):
+    async def _load_and_process_poll(self):
+        """Load and process standard poll data."""
+        try:
+            poll_data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.poll)
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to poll, not updating data: %s", ex)
+            return
+
         self._mydata["additional-production"] = poll_data["production"]["add"]
         self._mydata["autarky"] = poll_data["autarky"]
         self._mydata["battery-charge"] = max(0, poll_data["consumption"]["battery"])
@@ -208,8 +215,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["solar-production"] = poll_data["production"]["solar"]
         self._mydata["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
 
-    def _process_db_data_today(self, db_data: dict[str, Any | None]) -> None:
-        """Process retrieved db data settings."""
+    async def _load_and_process_db_data_today(self) -> None:
+        """Load and process retrieved db data settings."""
+        try:
+            db_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_db_data, self._get_db_data_day_timestamp(), 86400
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load daily stats, not updating data: %s", ex)
+            return
+
         self._mydata["db-day-autarky"] = db_data["autarky"]
         self._mydata["db-day-battery-charge"] = db_data["bat_power_in"]
         self._mydata["db-day-battery-discharge"] = db_data["bat_power_out"]
@@ -220,13 +235,25 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["db-day-solar-production"] = db_data["solarProduction"]
         self._mydata["db-day-startts"] = db_data["startTimestamp"]
 
-    def _process_manual_charge(self, request_data) -> None:
-        """Parse manual charge status."""
+    async def _load_and_process_manual_charge(self) -> None:
+        """Loand and process manual charge status."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.get_manual_charge)
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load manual charge state, not updating data: %s", ex)
+            return
+
         self._mydata["manual-charge-active"] = request_data["active"]
         self._mydata["manual-charge-energy"] = request_data["energy"]
 
-    def _process_powermeters_data(self, request_data) -> None:
-        """Transfer additional sources to existing data."""
+    async def _load_and_process_powermeters_data(self) -> None:
+        """Load and process additional sources to existing data."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.get_powermeters_data)
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load powermeters, not updating data: %s", ex)
+            return
+
         for key, value in request_data.items():
             self._mydata[key] = value
 
