@@ -52,25 +52,26 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self.hass.async_add_executor_job(self.proxy.connect)
         await self._async_connect_additional_powermeters()
 
-        self._mydata["system-derate-percent"] = self.proxy.e3dc.deratePercent
-        self._mydata["system-derate-power"] = self.proxy.e3dc.deratePower
-        self._mydata["system-additional-source-available"] = (
+        self._mydata[self.uid] = {}
+        self._mydata[self.uid]["system-derate-percent"] = self.proxy.e3dc.deratePercent
+        self._mydata[self.uid]["system-derate-power"] = self.proxy.e3dc.deratePower
+        self._mydata[self.uid]["system-additional-source-available"] = (
             self.proxy.e3dc.externalSourceAvailable != 0
         )
-        self._mydata[
+        self._mydata[self.uid][
             "system-battery-installed-capacity"
         ] = self.proxy.e3dc.installedBatteryCapacity
-        self._mydata[
+        self._mydata[self.uid][
             "system-battery-installed-peak"
         ] = self.proxy.e3dc.installedPeakPower
-        self._mydata["system-ac-maxpower"] = self.proxy.e3dc.maxAcPower
-        self._mydata["system-battery-charge-max"] = self.proxy.e3dc.maxBatChargePower
-        self._mydata[
+        self._mydata[self.uid]["system-ac-maxpower"] = self.proxy.e3dc.maxAcPower
+        self._mydata[self.uid]["system-battery-charge-max"] = self.proxy.e3dc.maxBatChargePower
+        self._mydata[self.uid][
             "system-battery-discharge-max"
         ] = self.proxy.e3dc.maxBatDischargePower
-        self._mydata["system-mac"] = self.proxy.e3dc.macAddress
-        self._mydata["model"] = self.proxy.e3dc.model
-        self._mydata[
+        self._mydata[self.uid]["system-mac"] = self.proxy.e3dc.macAddress
+        self._mydata[self.uid]["model"] = self.proxy.e3dc.model
+        self._mydata[self.uid][
             "system-battery-discharge-minimum-default"
         ] = self.proxy.e3dc.startDischargeDefault
 
@@ -170,7 +171,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("Skipping power metrics poll.")
 
-        return self._mydata
+        return self._mydata[self.uid]
 
     async def _load_and_process_power_settings(self):
         """Load and process power settings."""
@@ -180,14 +181,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("Failed to load power settings, not updating data: %s", ex)
             return
 
-        self._mydata["pset-limit-charge"] = power_settings["maxChargePower"]
-        self._mydata["pset-limit-discharge"] = power_settings["maxDischargePower"]
-        self._mydata["pset-limit-discharge-minimum"] = power_settings[
+        self._mydata[self.uid]["pset-limit-charge"] = power_settings["maxChargePower"]
+        self._mydata[self.uid]["pset-limit-discharge"] = power_settings["maxDischargePower"]
+        self._mydata[self.uid]["pset-limit-discharge-minimum"] = power_settings[
             "dischargeStartPower"
         ]
-        self._mydata["pset-limit-enabled"] = power_settings["powerLimitsUsed"]
-        self._mydata["pset-powersaving-enabled"] = power_settings["powerSaveEnabled"]
-        self._mydata["pset-weatherregulationenabled"] = power_settings[
+        self._mydata[self.uid]["pset-limit-enabled"] = power_settings["powerLimitsUsed"]
+        self._mydata[self.uid]["pset-powersaving-enabled"] = power_settings["powerSaveEnabled"]
+        self._mydata[self.uid]["pset-weatherregulationenabled"] = power_settings[
             "weatherRegulatedChargeEnabled"
         ]
 
@@ -199,21 +200,21 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("Failed to poll, not updating data: %s", ex)
             return
 
-        self._mydata["additional-production"] = poll_data["production"]["add"]
-        self._mydata["autarky"] = poll_data["autarky"]
-        self._mydata["battery-charge"] = max(0, poll_data["consumption"]["battery"])
-        self._mydata["battery-discharge"] = (
+        self._mydata[self.uid]["additional-production"] = poll_data["production"]["add"]
+        self._mydata[self.uid]["autarky"] = poll_data["autarky"]
+        self._mydata[self.uid]["battery-charge"] = max(0, poll_data["consumption"]["battery"])
+        self._mydata[self.uid]["battery-discharge"] = (
             min(0, poll_data["consumption"]["battery"]) * -1
         )
-        self._mydata["battery-netchange"] = poll_data["consumption"]["battery"]
-        self._mydata["grid-consumption"] = max(0, poll_data["production"]["grid"])
-        self._mydata["grid-netchange"] = poll_data["production"]["grid"]
-        self._mydata["grid-production"] = min(0, poll_data["production"]["grid"]) * -1
-        self._mydata["house-consumption"] = poll_data["consumption"]["house"]
-        self._mydata["selfconsumption"] = poll_data["selfConsumption"]
-        self._mydata["soc"] = poll_data["stateOfCharge"]
-        self._mydata["solar-production"] = poll_data["production"]["solar"]
-        self._mydata["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
+        self._mydata[self.uid]["battery-netchange"] = poll_data["consumption"]["battery"]
+        self._mydata[self.uid]["grid-consumption"] = max(0, poll_data["production"]["grid"])
+        self._mydata[self.uid]["grid-netchange"] = poll_data["production"]["grid"]
+        self._mydata[self.uid]["grid-production"] = min(0, poll_data["production"]["grid"]) * -1
+        self._mydata[self.uid]["house-consumption"] = poll_data["consumption"]["house"]
+        self._mydata[self.uid]["selfconsumption"] = poll_data["selfConsumption"]
+        self._mydata[self.uid]["soc"] = poll_data["stateOfCharge"]
+        self._mydata[self.uid]["solar-production"] = poll_data["production"]["solar"]
+        self._mydata[self.uid]["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
 
     async def _load_and_process_db_data_today(self) -> None:
         """Load and process retrieved db data settings."""
@@ -225,15 +226,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("Failed to load daily stats, not updating data: %s", ex)
             return
 
-        self._mydata["db-day-autarky"] = db_data["autarky"]
-        self._mydata["db-day-battery-charge"] = db_data["bat_power_in"]
-        self._mydata["db-day-battery-discharge"] = db_data["bat_power_out"]
-        self._mydata["db-day-grid-consumption"] = db_data["grid_power_out"]
-        self._mydata["db-day-grid-production"] = db_data["grid_power_in"]
-        self._mydata["db-day-house-consumption"] = db_data["consumption"]
-        self._mydata["db-day-selfconsumption"] = db_data["consumed_production"]
-        self._mydata["db-day-solar-production"] = db_data["solarProduction"]
-        self._mydata["db-day-startts"] = db_data["startTimestamp"]
+        self._mydata[self.uid]["db-day-autarky"] = db_data["autarky"]
+        self._mydata[self.uid]["db-day-battery-charge"] = db_data["bat_power_in"]
+        self._mydata[self.uid]["db-day-battery-discharge"] = db_data["bat_power_out"]
+        self._mydata[self.uid]["db-day-grid-consumption"] = db_data["grid_power_out"]
+        self._mydata[self.uid]["db-day-grid-production"] = db_data["grid_power_in"]
+        self._mydata[self.uid]["db-day-house-consumption"] = db_data["consumption"]
+        self._mydata[self.uid]["db-day-selfconsumption"] = db_data["consumed_production"]
+        self._mydata[self.uid]["db-day-solar-production"] = db_data["solarProduction"]
+        self._mydata[self.uid]["db-day-startts"] = db_data["startTimestamp"]
 
     async def _load_and_process_manual_charge(self) -> None:
         """Loand and process manual charge status."""
@@ -243,8 +244,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("Failed to load manual charge state, not updating data: %s", ex)
             return
 
-        self._mydata["manual-charge-active"] = request_data["active"]
-        self._mydata["manual-charge-energy"] = request_data["energy"]
+        self._mydata[self.uid]["manual-charge-active"] = request_data["active"]
+        self._mydata[self.uid]["manual-charge-energy"] = request_data["energy"]
 
     async def _load_and_process_powermeters_data(self) -> None:
         """Load and process additional sources to existing data."""
@@ -255,7 +256,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return
 
         for key, value in request_data.items():
-            self._mydata[key] = value
+            self._mydata[self.uid][key] = value
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
@@ -283,7 +284,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             delta: int = ts_local - ts_utc
             tz_offset = int(1800 * round(delta / 1800))
 
-        self._mydata["e3dc_timezone"] = tz_name
+        self._mydata[self.uid]["e3dc_timezone"] = tz_name
         self._timezone_offset = tz_offset
 
     def _get_db_data_day_timestamp(self) -> int:
@@ -325,7 +326,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             await self.hass.async_add_executor_job(
                 self.proxy.set_weather_regulated_charge, enabled
             )
-            self._mydata["pset-weatherregulationenabled"] = enabled
+            self._mydata[self.uid]["pset-weatherregulationenabled"] = enabled
         finally:
             self._update_guard_powersettings = False
 
@@ -339,7 +340,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             self._update_guard_powersettings = True
             await self.hass.async_add_executor_job(self.proxy.set_powersave, enabled)
-            self._mydata["pset-powersaving-enabled"] = enabled
+            self._mydata[self.uid]["pset-powersaving-enabled"] = enabled
         finally:
             self._update_guard_powersettings = False
 
