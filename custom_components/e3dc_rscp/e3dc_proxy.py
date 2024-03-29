@@ -28,27 +28,27 @@ def e3dc_call(func):
         try:
             return func(*args, **kwargs)
         except NotAvailableError as ex:
-            _LOGGER.exception("E3DC is unavailable: %s", ex)
+            _LOGGER.debug("E3DC is unavailable: %s", ex, exc_info=True)
             raise HomeAssistantError(
                 "Communication Failure: E3DC mot available"
             ) from ex
         except SendError as ex:
-            _LOGGER.exception("Communication error with E3DC: %s", ex)
+            _LOGGER.debug("Communication error with E3DC: %s", ex, exc_info=True)
             raise HomeAssistantError(
                 "Communication Failure: Failed to send data"
             ) from ex
         except AuthenticationError as ex:
-            _LOGGER.exception("Failed to authenticate with E3DC: %s", ex)
+            _LOGGER.debug("Failed to authenticate with E3DC: %s", ex, exc_info=True)
             raise ConfigEntryAuthFailed("Failed to authenticate with E3DC") from ex
         except RSCPKeyError as ex:
-            _LOGGER.exception("Encryption error with E3DC, key invalid: %s", ex)
+            _LOGGER.debug("Encryption error with E3DC, key invalid: %s", ex, exc_info=True)
             raise ConfigEntryAuthFailed(
                 "Encryption Error with E3DC, key invalid"
             ) from ex
         except (HomeAssistantError, ConfigEntryAuthFailed):
             raise
         except Exception as ex:
-            _LOGGER.exception("Fatal error when talking to E3DC: %s", ex)
+            _LOGGER.debug("Fatal error when talking to E3DC: %s", ex, exc_info=True)
             raise HomeAssistantError("Fatal error when talking to E3DC") from ex
 
     return wrapper_handle_e3dc_ex
@@ -146,7 +146,6 @@ class E3DCProxy:
             result: dict[str, Any] = {}
             result["active"] = False
             result["energy"] = 0
-            result["possible_API_bug"] = "got send error"
 
         return result
 
