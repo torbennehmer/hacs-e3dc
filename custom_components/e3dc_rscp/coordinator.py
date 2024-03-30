@@ -27,8 +27,6 @@ _STAT_REFRESH_INTERVAL = 60
 class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
 
-    proxy: E3DCProxy = None
-    _mydata: dict[str, Any] = {}
     _sw_version: str = ""
     _update_guard_powersettings: bool = False
     _timezone_offset: int = 0
@@ -39,6 +37,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         assert isinstance(config_entry.unique_id, str)
         self.uid: str = config_entry.unique_id
         self.proxy = E3DCProxy(hass, config_entry)
+        self._mydata: dict[str, Any] = {}
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=10)
