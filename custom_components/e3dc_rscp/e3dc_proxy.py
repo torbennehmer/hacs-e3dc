@@ -57,21 +57,17 @@ def e3dc_call(func):
 class E3DCProxy:
     """Proxies requests to pye3dc, takes care of error and async handling."""
 
-    # TODO: move to readonly properties
-    e3dc: E3DC = None
-    e3dc_config: dict[str, Any] = None
-    _hass: HomeAssistant = None
-    _config: ConfigEntry = None
-    _host: str
-    _username: str
-    _password: str
-    _rscpkey: str
-
     def __init__(self, _hass: HomeAssistant, _config: ConfigEntry | dict[str, str]):
         """Initialize E3DC Proxy and connect."""
-        self._hass = _hass
-        self._config = _config
-        self.e3dc_config = {}
+        # TODO: move to readonly properties
+        self.e3dc: E3DC = None
+        self.e3dc_config: dict[str, Any] = {}
+        self._hass: HomeAssistant = _hass
+        self._config: ConfigEntry = _config
+        self._host: str
+        self._username: str
+        self._password: str
+        self._rscpkey: str
 
         if isinstance(_config, ConfigEntry):
             self._host = self._config.data.get(CONF_HOST)
