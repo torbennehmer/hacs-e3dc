@@ -36,20 +36,14 @@ async def async_get_config_entry_diagnostics(
 class _DiagnosticsDumper:
     """Helper class to collect a diagnostic dump in a failsafe way."""
 
-    e3dc: E3DC = None
-    coordinator: E3DCCoordinator = None
-    proxy: E3DCProxy = None
-    hass: HomeAssistant = None
-    entry: ConfigEntry = None
-    result: dict[str, Any] = {}
-
     def __init__(self, _hass: HomeAssistant, _entry: ConfigEntry):
         """Initialize the dumper and set up a few references."""
-        self.hass = _hass
-        self.entry = _entry
-        self.coordinator = self.hass.data[DOMAIN][self.entry.unique_id]
-        self.proxy = self.coordinator.proxy
-        self.e3dc = self.proxy.e3dc
+        self.hass: HomeAssistant = _hass
+        self.entry: ConfigEntry = _entry
+        self.coordinator: E3DCCoordinator = self.hass.data[DOMAIN][self.entry.unique_id]
+        self.proxy: E3DCProxy = self.coordinator.proxy
+        self.e3dc: E3DC = self.proxy.e3dc
+        self.result: dict[str, Any] = {}
 
     def create_dump(self):
         """Create the dump data and redact pricate data, central call-in point."""

@@ -85,10 +85,7 @@ async def async_setup_entry(
 class E3DCSwitch(CoordinatorEntity, SwitchEntity):
     """Custom E3DC Switch Implementation."""
 
-    coordinator: E3DCCoordinator
-    entity_description: E3DCSwitchEntityDescription
     _attr_has_entity_name = True
-    _has_custom_icons: bool = False
 
     def __init__(
         self,
@@ -98,10 +95,11 @@ class E3DCSwitch(CoordinatorEntity, SwitchEntity):
     ) -> None:
         """Initialize the Sensor."""
         super().__init__(coordinator)
-        self.entity_description = description
+        self.coordinator: E3DCCoordinator = coordinator
+        self.entity_description: E3DCSwitchEntityDescription = description
         self._attr_is_on = self.coordinator.data.get(self.entity_description.key)
         self._attr_unique_id = f"{uid}_{description.key}"
-        self._has_custom_icons = (
+        self._has_custom_icons: bool = (
             self.entity_description.on_icon is not None
             and self.entity_description.off_icon is not None
         )

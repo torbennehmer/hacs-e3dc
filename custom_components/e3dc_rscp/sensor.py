@@ -425,8 +425,6 @@ async def async_setup_entry(
 class E3DCSensor(CoordinatorEntity, SensorEntity):
     """Custom E3DC Sensor implementation."""
 
-    coordinator: E3DCCoordinator
-    entity_description: SensorEntityDescription
     _attr_has_entity_name = True
 
     def __init__(
@@ -437,7 +435,8 @@ class E3DCSensor(CoordinatorEntity, SensorEntity):
     ) -> None:
         """Initialize the Sensor."""
         super().__init__(coordinator)
-        self.entity_description = description
+        self.coordinator: E3DCCoordinator = coordinator
+        self.entity_description: SensorEntityDescription = description
         self._attr_unique_id = f"{uid}_{description.key}"
 
     @property

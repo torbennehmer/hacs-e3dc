@@ -74,10 +74,7 @@ async def async_setup_entry(
 class E3DCBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Custom E3DC Binary Sensor implementation."""
 
-    coordinator: E3DCCoordinator
-    entity_description: E3DCBinarySensorEntityDescription
     _attr_has_entity_name: bool = True
-    _custom_icons: bool = False
 
     def __init__(
         self,
@@ -87,9 +84,10 @@ class E3DCBinarySensor(CoordinatorEntity, BinarySensorEntity):
     ) -> None:
         """Initialize the Sensor."""
         super().__init__(coordinator)
-        self.entity_description = description
+        self.coordinator: E3DCCoordinator = coordinator
+        self.entity_description: E3DCBinarySensorEntityDescription = description
         self._attr_unique_id = f"{uid}_{description.key}"
-        self._custom_icons = (
+        self._custom_icons: bool = (
             self.entity_description.on_icon is not None
             and self.entity_description.off_icon is not None
         )
