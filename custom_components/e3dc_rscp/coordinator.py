@@ -142,6 +142,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Polling general status information")
         await self._load_and_process_poll()
+        await self._load_and_process_poll_switches()
 
         # TODO: Check if we need to replace this with a safe IPC sync
         if self._update_guard_powersettings is False:
@@ -212,6 +213,41 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["soc"] = poll_data["stateOfCharge"]
         self._mydata["solar-production"] = poll_data["production"]["solar"]
         self._mydata["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
+
+    async def _load_and_process_poll_switches(self):
+        """Load and process switches poll data."""
+        try:
+            poll_data: list[dict] = await self.hass.async_add_executor_job(self.proxy.poll_switches)
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to poll switches, not updating data: %s", ex)
+            return
+        
+        sg0_status=False
+        sg1_status=False
+        for switch in poll_data:         
+            if switch["name"] == "SG0":
+                #48 seems to be the value for switch off
+                if switch["status"] == 48:
+                 sg0_status = False
+                else:
+                  sg0_status = True
+            if switch["name"] == "SG1":
+                #48 seems to be the value for switch off
+                if switch["status"] == 48:
+                 sg1_status = False
+                else:
+                  sg1_status = True
+
+        if sg0_status is True and sg1_status is False:
+            self._mydata["smartgrid"] = "blocked"
+        elif sg0_status is False and sg1_status is False:
+            self._mydata["smartgrid"] = "normal"
+        elif sg0_status is False and sg1_status is True:
+            self._mydata["smartgrid"] = "recommendation_on"
+        elif sg0_status is True and sg1_status is True:
+            self._mydata["smartgrid"] = "startup"
+        else:
+            self._mydata["smartgrid"] = "Normal"
 
     async def _load_and_process_db_data_today(self) -> None:
         """Load and process retrieved db data settings."""

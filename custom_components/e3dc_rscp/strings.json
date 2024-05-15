@@ -193,6 +193,9 @@
       },
       "farm-additional-total": {
         "name": "Farm additional powermeter - total"
+      },
+      "smartgrid": {
+        "name": "SmartGrid Status"
       }
     },
     "switch": {

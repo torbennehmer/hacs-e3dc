@@ -372,6 +372,14 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    SensorEntityDescription(
+        key="smartgrid",
+        translation_key="smartgrid",
+        icon="mdi:solar-power",
+        device_class=SensorDeviceClass.ENUM,
+        state_class=SensorStateClass.MEASUREMENT,
+        options=["blocked", "normal", "recommendation_on", "startup"],
+    ),
 )
 
 
