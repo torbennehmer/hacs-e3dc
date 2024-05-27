@@ -247,7 +247,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         elif sg0_status is True and sg1_status is True:
             self._mydata["smartgrid"] = "startup"
         else:
-            self._mydata["smartgrid"] = "Normal"
+            self._mydata["smartgrid"] = "normal"
 
     async def _load_and_process_db_data_today(self) -> None:
         """Load and process retrieved db data settings."""
