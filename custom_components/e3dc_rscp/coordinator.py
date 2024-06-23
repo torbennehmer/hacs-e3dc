@@ -57,22 +57,22 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["system-additional-source-available"] = (
             self.proxy.e3dc.externalSourceAvailable != 0
         )
-        self._mydata[
-            "system-battery-installed-capacity"
-        ] = self.proxy.e3dc.installedBatteryCapacity
-        self._mydata[
-            "system-battery-installed-peak"
-        ] = self.proxy.e3dc.installedPeakPower
+        self._mydata["system-battery-installed-capacity"] = (
+            self.proxy.e3dc.installedBatteryCapacity
+        )
+        self._mydata["system-battery-installed-peak"] = (
+            self.proxy.e3dc.installedPeakPower
+        )
         self._mydata["system-ac-maxpower"] = self.proxy.e3dc.maxAcPower
         self._mydata["system-battery-charge-max"] = self.proxy.e3dc.maxBatChargePower
-        self._mydata[
-            "system-battery-discharge-max"
-        ] = self.proxy.e3dc.maxBatDischargePower
+        self._mydata["system-battery-discharge-max"] = (
+            self.proxy.e3dc.maxBatDischargePower
+        )
         self._mydata["system-mac"] = self.proxy.e3dc.macAddress
         self._mydata["model"] = self.proxy.e3dc.model
-        self._mydata[
-            "system-battery-discharge-minimum-default"
-        ] = self.proxy.e3dc.startDischargeDefault
+        self._mydata["system-battery-discharge-minimum-default"] = (
+            self.proxy.e3dc.startDischargeDefault
+        )
 
         # Idea: Maybe Port this to e3dc lib, it can query this in one go during startup.
         self._sw_version = await self.hass.async_add_executor_job(
@@ -122,18 +122,19 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
 
                 match powermeter["type"]:
-                    case ( PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value
-                          | PowermeterType.PM_TYPE_ADDITIONAL.value
+                    case (
+                        PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value
+                        | PowermeterType.PM_TYPE_ADDITIONAL.value
                     ):
-                        powermeter[
-                            "total-state-class"
-                        ] = SensorStateClass.TOTAL_INCREASING
+                        powermeter["total-state-class"] = (
+                            SensorStateClass.TOTAL_INCREASING
+                        )
                         powermeter["negate-measure"] = True
 
                     case PowermeterType.PM_TYPE_ADDITIONAL_CONSUMPTION.value:
-                        powermeter[
-                            "total-state-class"
-                        ] = SensorStateClass.TOTAL_INCREASING
+                        powermeter["total-state-class"] = (
+                            SensorStateClass.TOTAL_INCREASING
+                        )
                         powermeter["negate-measure"] = False
 
                     case _:
@@ -189,7 +190,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _load_and_process_power_settings(self):
         """Load and process power settings."""
         try:
-            power_settings: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.get_power_settings)
+            power_settings: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_power_settings
+            )
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to load power settings, not updating data: %s", ex)
             return
@@ -208,7 +211,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _load_and_process_poll(self):
         """Load and process standard poll data."""
         try:
-            poll_data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.poll)
+            poll_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.poll
+            )
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to poll, not updating data: %s", ex)
             return
@@ -252,9 +257,13 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _load_and_process_manual_charge(self) -> None:
         """Loand and process manual charge status."""
         try:
-            request_data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.get_manual_charge)
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_manual_charge
+            )
         except HomeAssistantError as ex:
-            _LOGGER.warning("Failed to load manual charge state, not updating data: %s", ex)
+            _LOGGER.warning(
+                "Failed to load manual charge state, not updating data: %s", ex
+            )
             return
 
         self._mydata["manual-charge-active"] = request_data["active"]
@@ -263,7 +272,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _load_and_process_powermeters_data(self) -> None:
         """Load and process additional sources to existing data."""
         try:
-            request_data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.get_powermeters_data)
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_powermeters_data
+            )
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to load powermeters, not updating data: %s", ex)
             return
@@ -274,17 +285,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _load_and_process_wallbox_data(self) -> None:
         """Load and process wallbox data to existing data."""
         try:
-            request_data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.get_wallbox_data)
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_wallbox_data
+            )
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
             return
 
         for key, value in request_data.items():
-            wallbox_key = "wallbox-" + key
-            self._mydata[wallbox_key] = value
-            _LOGGER.info("Key: %s, Value: %s", wallbox_key, value)
-
-
+            self._mydata["wallbox-" + key] = value
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
@@ -299,16 +308,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             dt_tmp: datetime = datetime.now(tz_info)
             tz_offset = dt_tmp.utcoffset().seconds
         except pytz.UnknownTimeZoneError:
-            _LOGGER.exception("Failed to load timezone from E3DC, falling back to heuristics.")
+            _LOGGER.exception(
+                "Failed to load timezone from E3DC, falling back to heuristics."
+            )
 
         if tz_offset is None:
             # Fallback to compute the offset using current times from E3DC:
-            ts_local: int = await self.hass.async_add_executor_job(
-                self.proxy.get_time
-            )
-            ts_utc: int = await self.hass.async_add_executor_job(
-                self.proxy.get_timeutc
-            )
+            ts_local: int = await self.hass.async_add_executor_job(self.proxy.get_time)
+            ts_utc: int = await self.hass.async_add_executor_job(self.proxy.get_timeutc)
             delta: int = ts_local - ts_utc
             tz_offset = int(1800 * round(delta / 1800))
 
@@ -375,6 +382,38 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Updated powersaving to %s", enabled)
         return True
 
+    async def async_set_wallbox_sunmode(self, enabled: bool) -> bool:
+        """Enable or disable wallbox sun mode."""
+        _LOGGER.debug("Updating wallbox sun mode to %s", enabled)
+
+        try:
+            self._update_guard_powersettings = True
+            await self.hass.async_add_executor_job(
+                self.proxy.set_wallbox_sunmode, enabled
+            )
+            self._mydata["wallbox-sunModeOn"] = enabled
+        finally:
+            self._update_guard_powersettings = False
+
+        _LOGGER.debug("Successfully updated wallbox sun mode to %s", enabled)
+        return True
+
+    async def async_set_wallbox_schuko(self, enabled: bool) -> bool:
+        """Enable or disable wallbox schuko."""
+        _LOGGER.debug("Updating wallbox schuko to %s", enabled)
+
+        try:
+            await self.hass.async_add_executor_job(
+                self.proxy.set_wallbox_schuko, enabled
+            )
+            self._mydata["wallbox-schukoOn"] = enabled
+        except Exception as ex:
+            _LOGGER.error("Failed to set wallbox schuko to %s: %s", enabled, ex)
+            return False
+
+        _LOGGER.debug("Successfully updated wallbox schuko to %s", enabled)
+        return True
+
     async def async_clear_power_limits(self) -> None:
         """Clear any active power limit."""
 
@@ -387,6 +426,29 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         _LOGGER.debug("Successfully cleared the power limits")
+
+    async def async_set_wallbox_max_charge_current(self, current: int | None) -> None:
+        """Set the wallbox max charge current."""
+
+        # Validate the argument
+        if current is None or current <= 0:
+            raise ValueError(
+                "async_set_wallbox_max_charge_current must be called with a positive current value."
+            )
+
+        MAX_CHARGE_CURRENT = 32  # Maximum allowed current in Amperes
+
+        if current > MAX_CHARGE_CURRENT:
+            _LOGGER.warning("Limiting current to %s", MAX_CHARGE_CURRENT)
+            current = MAX_CHARGE_CURRENT
+
+        _LOGGER.debug("Setting wallbox max charge current to %s", current)
+
+        await self.hass.async_add_executor_job(
+            self.proxy.set_wallbox_max_charge_current, current
+        )
+
+        _LOGGER.debug("Successfully set the wallbox max charge current to %s", current)
 
     async def async_set_power_limits(
         self, max_charge: int | None, max_discharge: int | None

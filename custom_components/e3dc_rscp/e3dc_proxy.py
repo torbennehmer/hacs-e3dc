@@ -1,4 +1,5 @@
 """Diagnostics support for E3DC RSCP."""
+
 from __future__ import annotations
 
 from functools import wraps
@@ -41,7 +42,9 @@ def e3dc_call(func):
             _LOGGER.debug("Failed to authenticate with E3DC: %s", ex, exc_info=True)
             raise ConfigEntryAuthFailed("Failed to authenticate with E3DC") from ex
         except RSCPKeyError as ex:
-            _LOGGER.debug("Encryption error with E3DC, key invalid: %s", ex, exc_info=True)
+            _LOGGER.debug(
+                "Encryption error with E3DC, key invalid: %s", ex, exc_info=True
+            )
             raise ConfigEntryAuthFailed(
                 "Encryption Error with E3DC, key invalid"
             ) from ex
@@ -116,7 +119,8 @@ class E3DCProxy:
         """Poll manual charging state."""
         try:
             data = self.e3dc.sendRequest(
-                (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None), keepAlive=True
+                (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None),
+                keepAlive=True,
             )
 
             result: dict[str, Any] = {}
@@ -138,7 +142,9 @@ class E3DCProxy:
             #     request_data, "EMS_MANUAL_CHARGE_LASTSTART"
             # )[2]
         except SendError:
-            _LOGGER.debug("Failed to query manual charging data, might be related to a recent E3DC API change, ignoring the error, reverting to empty defaults.")
+            _LOGGER.debug(
+                "Failed to query manual charging data, might be related to a recent E3DC API change, ignoring the error, reverting to empty defaults."
+            )
             result: dict[str, Any] = {}
             result["active"] = False
             result["energy"] = 0
@@ -158,7 +164,7 @@ class E3DCProxy:
     @e3dc_call
     def get_wallbox_data(self) -> dict[str, Any]:
         return self.e3dc.get_wallbox_data(keepAlive=True)
-    
+
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:
         """Poll all powermeters for their current readings."""
@@ -229,6 +235,43 @@ class E3DCProxy:
 
         if not result:
             _LOGGER.warning("Manual charging could not be activated")
+
+    @e3dc_call
+    def set_wallbox_sunmode(self, enabled: bool, wbIndex: int = 0):
+        result: bool = self.e3dc.set_wallbox_sunmode(enabled, wbIndex, True)
+        if result == False:
+            raise HomeAssistantError("Failed to set wallbox to sunmode %s", enabled)
+
+    @e3dc_call
+    def set_wallbox_schuko(self, enabled: bool, wbIndex: int = 0):
+        result: bool = self.e3dc.set_wallbox_schuko(enabled, wbIndex, True)
+        if result == False:
+            raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
+
+    @e3dc_call
+    def set_wallbox_max_charge_current(
+        self, max_charge_current: int, wbIndex: int = 0
+    ) -> bool:
+        """Sets the maximum charge current of the wallbox via RSCP protocol locally.
+
+        Args:
+            max_charge_current (int): maximum allowed charge current in A
+            wbIndex (Optional[int]): index of the requested wallbox
+
+        Returns:
+            True if success (wallbox has understood the request, but might have clipped the value)
+            False if error
+        """
+
+        MAX_CHARGE_CURRENT = 32  # Maximum allowed current in Amperes
+
+        if max_charge_current > MAX_CHARGE_CURRENT:
+            _LOGGER.warning("Limiting max_charge_current to %s", MAX_CHARGE_CURRENT)
+            max_charge_current = MAX_CHARGE_CURRENT
+
+        return self.e3dc.set_wallbox_max_charge_current(
+            max_charge_current, wbIndex, keepAlive=True
+        )
 
     @e3dc_call
     def set_power_limits(

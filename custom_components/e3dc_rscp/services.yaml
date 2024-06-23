@@ -36,6 +36,24 @@ set_power_limits:
           mode: box
           step: 100
 
+set_wallbox_max_charge_current:
+  fields:
+    device_id:
+      required: true
+      example: "64d3b74a1bcf319288844ff9e93e4010"
+      selector:
+        device:
+          filter:
+            integration: e3dc_rscp
+    max_charge_current:
+      required: false
+      example: "16"
+      selector:
+        number:
+          min: 0
+          unit_of_measurement: A
+          mode: box
+          step: 1
 
 manual_charge:
   fields:

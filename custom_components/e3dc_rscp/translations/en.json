@@ -255,6 +255,12 @@
             },
             "pset-powersaving-enabled": {
                 "name": "SmartPower powersaving"
+            },
+            "wallbox_sunmode": {
+                "name": "Wallbox Sunmode"
+            },
+            "wallbox_schuko": {
+                "name": "Wallbox Sunmode"
             }
         }
     },
@@ -284,6 +290,20 @@
                 "max_discharge": {
                     "name": "Maximum Discharge (W)",
                     "description": "Maximum allowed battery discharge in Watts."
+                }
+            }
+        },
+        "set_wallbox_max_charge_current": {
+            "name": "Set Wallbox Charge Maximum",
+            "description": "Sets the maximum charge limits of the Wallbox",
+            "fields": {
+                "device_id": {
+                    "name": "E3DC Device ID",
+                    "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+                },
+                "max_charge_current": {
+                    "name": "Maximum Charging Current (A)",
+                    "description": "Maximum allowed Charging via Wallbox in Ampere."
                 }
             }
         },

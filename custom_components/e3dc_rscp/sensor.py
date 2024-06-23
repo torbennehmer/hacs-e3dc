@@ -1,4 +1,5 @@
 """E3DC sensor platform."""
+
 import logging
 from typing import Final
 
@@ -486,7 +487,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         translation_key="wallbox-sunModeOn",
         icon="mdi:white-balance-sunny",
         device_class=None,
-    ),  
+    ),
 )
 
 

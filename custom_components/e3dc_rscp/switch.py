@@ -1,4 +1,5 @@
 """E3DC Switch platform."""
+
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 import logging
@@ -28,12 +29,12 @@ class E3DCSwitchEntityDescription(SwitchEntityDescription):
 
     on_icon: str | None = None
     off_icon: str | None = None
-    async_turn_on_action: Callable[
-        [E3DCCoordinator], Coroutine[Any, Any, bool]
-    ] | None = None
-    async_turn_off_action: Callable[
-        [E3DCCoordinator], Coroutine[Any, Any, bool]
-    ] | None = None
+    async_turn_on_action: (
+        Callable[[E3DCCoordinator], Coroutine[Any, Any, bool]] | None
+    ) = None
+    async_turn_off_action: (
+        Callable[[E3DCCoordinator], Coroutine[Any, Any, bool]] | None
+    ) = None
 
 
 SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
@@ -62,6 +63,34 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
             True
         ),
         async_turn_off_action=lambda coordinator: coordinator.async_set_weather_regulated_charge(
+            False
+        ),
+    ),
+    E3DCSwitchEntityDescription(
+        key="wallbox_sunmode",
+        translation_key="wallbox-sunmode",
+        name="Wallbox Sun Mode",
+        on_icon="mdi:weather-sunny",
+        off_icon="mdi:weather-sunny-off",
+        device_class=SwitchDeviceClass.SWITCH,
+        async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_sunmode(
+            True
+        ),
+        async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_sunmode(
+            False
+        ),
+    ),
+    E3DCSwitchEntityDescription(
+        key="wallbox_schuko",
+        translation_key="wallbox-schuko",
+        name="Wallbox Schuko",
+        on_icon="mdi:power-plug",
+        off_icon="mdi:power-plug-off",
+        device_class=SwitchDeviceClass.SWITCH,
+        async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_schuko(
+            True
+        ),
+        async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_schuko(
             False
         ),
     ),
