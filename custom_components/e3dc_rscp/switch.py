@@ -67,6 +67,7 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         ),
     ),
     E3DCSwitchEntityDescription(
+        # TODO: Figure out how the icons match the on/off state
         key="wallbox_sunmode",
         translation_key="wallbox-sunmode",
         name="Wallbox Sun Mode",
