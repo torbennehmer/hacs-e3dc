@@ -374,8 +374,8 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
-        key="wallbox-appSoftware",
-        translation_key="wallbox-appSoftware",
+        key="wallbox-appsoftware",
+        translation_key="wallbox-appsoftware",
         icon="mdi:information-outline",
         device_class=None,
     ),
