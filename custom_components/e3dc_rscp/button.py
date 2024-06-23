@@ -34,13 +34,13 @@ class E3DCButtonEntityDescription(ButtonEntityDescription):
 
 BUTTONS: Final[tuple[E3DCButtonEntityDescription, ...]] = (
     E3DCButtonEntityDescription(
-        key="toggle_wallbox_phases",
+        key="wallbox-toggle_wallbox_phases",
         translation_key="wallbox-toggle_wallbox_phases",
         icon="mdi:sine-wave",
         async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_phases(),
     ),
     E3DCButtonEntityDescription(
-        key="toggle_wallbox_charging",
+        key="wallbox-toggle_wallbox_charging",
         translation_key="wallbox-toggle_wallbox_charging",
         icon="mdi:car-electric",
         async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_charging(),
@@ -52,12 +52,15 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Initialize Button Platform."""
-    _LOGGER.debug("Async Setup Button")
     assert isinstance(entry.unique_id, str)
     coordinator: E3DCCoordinator = hass.data[DOMAIN][entry.unique_id]
+
     entities: list[E3DCButton] = [
-        E3DCButton(coordinator, description, entry.unique_id) for description in BUTTONS
+        E3DCButton(coordinator, description, entry.unique_id)
+        for description in BUTTONS
+        if coordinator._wallbox_installed or not description.key.startswith("wallbox-")
     ]
+
     async_add_entities(entities)
 
 
@@ -74,7 +77,6 @@ class E3DCButton(CoordinatorEntity, ButtonEntity):
     ) -> None:
         """Initialize the Button."""
         super().__init__(coordinator)
-        _LOGGER.debug("Initializing Button %s", description.key)
         self.coordinator: E3DCCoordinator = coordinator
         self.entity_description: E3DCButtonEntityDescription = description
         self._attr_unique_id = f"{uid}_{description.key}"

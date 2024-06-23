@@ -500,6 +500,7 @@ async def async_setup_entry(
     entities: list[E3DCSensor] = [
         E3DCSensor(coordinator, description, entry.unique_id)
         for description in SENSOR_DESCRIPTIONS
+        if coordinator._wallbox_installed or not description.key.startswith("wallbox-")
     ]
 
     # Add Sensor descriptions for additional powermeters, skipp root PM

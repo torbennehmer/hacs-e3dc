@@ -68,7 +68,7 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
     ),
     E3DCSwitchEntityDescription(
         # TODO: Figure out how the icons match the on/off state
-        key="wallbox_sunmode",
+        key="wallbox-sunmode",
         translation_key="wallbox-sunmode",
         name="Wallbox Sun Mode",
         on_icon="mdi:weather-sunny",
@@ -82,7 +82,7 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         ),
     ),
     E3DCSwitchEntityDescription(
-        key="wallbox_schuko",
+        key="wallbox-schuko",
         translation_key="wallbox-schuko",
         name="Wallbox Schuko",
         on_icon="mdi:power-plug",
@@ -108,6 +108,7 @@ async def async_setup_entry(
     entities: list[E3DCSwitch] = [
         E3DCSwitch(coordinator, description, entry.unique_id)
         for description in SWITCHES
+        if coordinator._wallbox_installed or not description.key.startswith("wallbox-")
     ]
     async_add_entities(entities)
 

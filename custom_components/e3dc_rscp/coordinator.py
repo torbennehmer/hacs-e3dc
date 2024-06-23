@@ -50,7 +50,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Have a call to autoconf, then connect with it.
         await self.hass.async_add_executor_job(self.proxy.connect)
         await self._async_connect_additional_powermeters()
-        await self._async_connect_wallbox()
 
         self._mydata["system-derate-percent"] = self.proxy.e3dc.deratePercent
         self._mydata["system-derate-power"] = self.proxy.e3dc.deratePower
@@ -81,15 +80,24 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         await self._load_timezone_settings()
 
-    async def _async_connect_wallbox(self):
-        """Connect to Wallbox if PM_TYPE_WALLBOX exists."""
+    async def async_identify_wallboxes(self):
+        """Identify availability of Wallboxes if get_wallbox_data() returns meaningful data."""
+        _LOGGER.debug("async_identify_wallboxes")
 
-        if "powermeters" in self.proxy.e3dc_config:
-            for powermeter in self.proxy.e3dc_config["powermeters"]:
-                if powermeter.get("type") == PowermeterType.PM_TYPE_WALLBOX.value:
-                    self._wallbox_installed = True
-                    return True
-        return False
+        # TODO: Find a more robust way to identify if a Wallbox is installed
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_wallbox_data
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
+            return
+
+        if request_data["appSoftware"] != None:
+            _LOGGER.debug("Wallbox has been found")
+            self._wallbox_installed = True
+        else:
+            _LOGGER.debug("No Wallbox has been found")
 
     async def _async_connect_additional_powermeters(self):
         """Identify the installed powermeters and reconnect to E3DC with this config."""
@@ -169,7 +177,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling additional powermeters")
         await self._load_and_process_powermeters_data()
 
-        if self._wallbox_installed is False:
+        if self._wallbox_installed is True:
             _LOGGER.debug("Polling wallbox")
             await self._load_and_process_wallbox_data()
 

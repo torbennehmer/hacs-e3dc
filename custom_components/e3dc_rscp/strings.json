@@ -250,10 +250,10 @@
       "pset-powersaving-enabled": {
         "name": "SmartPower powersaving"
       },
-      "wallbox_sunmode": {
+      "wallbox-sunmode": {
         "name": "Wallbox Sunmode"
       },
-      "wallbox_schuko": {
+      "wallbox-schuko": {
         "name": "Wallbox Sunmode"
       }
     },

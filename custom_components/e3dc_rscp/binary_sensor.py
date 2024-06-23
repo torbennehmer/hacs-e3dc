@@ -67,6 +67,7 @@ async def async_setup_entry(
     entities: list[E3DCBinarySensor] = [
         E3DCBinarySensor(coordinator, description, entry.unique_id)
         for description in SENSOR_DESCRIPTIONS
+        if coordinator._wallbox_installed or not description.key.startswith("wallbox-")
     ]
     async_add_entities(entities)
 
