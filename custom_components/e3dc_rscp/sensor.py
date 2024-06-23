@@ -374,32 +374,32 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
-        key="wallbox-appsoftware",
-        translation_key="wallbox-appsoftware",
+        key="wallbox-appSoftware",
+        translation_key="wallbox-app_software",
         icon="mdi:information-outline",
         device_class=None,
     ),
     SensorEntityDescription(
         key="wallbox-batteryToCar",
-        translation_key="wallbox-batteryToCar",
+        translation_key="wallbox-battery_to_car",
         icon="mdi:car-electric",
         device_class=None,
     ),
     SensorEntityDescription(
         key="wallbox-chargingActive",
-        translation_key="wallbox-chargingActive",
+        translation_key="wallbox-charging_active",
         icon="mdi:ev-station",
         device_class=None,
     ),
     SensorEntityDescription(
         key="wallbox-chargingCanceled",
-        translation_key="wallbox-chargingCanceled",
+        translation_key="wallbox-charging_canceled",
         icon="mdi:cancel",
         device_class=None,
     ),
     SensorEntityDescription(
         key="wallbox-consumptionNet",
-        translation_key="wallbox-consumptionNet",
+        translation_key="wallbox-consumption_net",
         icon="mdi:transmission-tower-import",
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
@@ -407,7 +407,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     ),
     SensorEntityDescription(
         key="wallbox-consumptionSun",
-        translation_key="wallbox-consumptionSun",
+        translation_key="wallbox-consumption_sun",
         icon="mdi:solar-power",
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
@@ -415,7 +415,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     ),
     SensorEntityDescription(
         key="wallbox-energyAll",
-        translation_key="wallbox-energyAll",
+        translation_key="wallbox-energy_all",
         icon="mdi:counter",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -425,7 +425,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     ),
     SensorEntityDescription(
         key="wallbox-energyNet",
-        translation_key="wallbox-energyNet",
+        translation_key="wallbox-energy_net",
         icon="mdi:counter",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -435,7 +435,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     ),
     SensorEntityDescription(
         key="wallbox-energySun",
-        translation_key="wallbox-energySun",
+        translation_key="wallbox-energy_sun",
         icon="mdi:counter",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -451,13 +451,13 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     ),
     SensorEntityDescription(
         key="wallbox-keyState",
-        translation_key="wallbox-keyState",
+        translation_key="wallbox-key_state",
         icon="mdi:key",
         device_class=None,
     ),
     SensorEntityDescription(
         key="wallbox-maxChargeCurrent",
-        translation_key="wallbox-maxChargeCurrent",
+        translation_key="wallbox-max_charge_current",
         icon="mdi:current-ac",
         native_unit_of_measurement="A",
         device_class=SensorDeviceClass.CURRENT,
@@ -471,7 +471,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     ),
     SensorEntityDescription(
         key="wallbox-schukoOn",
-        translation_key="wallbox-schukoOn",
+        translation_key="wallbox-schuko_on",
         icon="mdi:power-plug",
         device_class=None,
     ),
@@ -484,7 +484,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     ),
     SensorEntityDescription(
         key="wallbox-sunModeOn",
-        translation_key="wallbox-sunModeOn",
+        translation_key="wallbox-sun_mode_on",
         icon="mdi:white-balance-sunny",
         device_class=None,
     ),
