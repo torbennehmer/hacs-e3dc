@@ -262,6 +262,14 @@
             "wallbox_schuko": {
                 "name": "Wallbox Sunmode"
             }
+        },
+        "button": {
+            "wallbox-toggle_wallbox_charging": {
+                "name": "Wallbox Charging"
+            },
+            "wallbox-toggle_wallbox_phases": {
+                "name": "Wallbox Phases"
+            }
         }
     },
     "services": {

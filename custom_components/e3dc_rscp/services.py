@@ -137,7 +137,7 @@ async def _async_set_wallbox_max_charge_current(
     hass: HomeAssistant, call: ServiceCall
 ) -> None:
     """Extract service information and relay to coordinator."""
-    # ToDo: Addoption to select Wallbox
+    # TODO: Addoption to select Wallbox
     coordinator: E3DCCoordinator = _resolve_device_id(
         hass, call.data.get(ATTR_DEVICEID)
     )

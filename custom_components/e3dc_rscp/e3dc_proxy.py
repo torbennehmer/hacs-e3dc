@@ -249,6 +249,18 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
 
     @e3dc_call
+    def toggle_wallbox_charging(self, wbIndex: int = 0):
+        result: bool = self.e3dc.toggle_wallbox_charging(wbIndex, True)
+        if result == False:
+            raise HomeAssistantError("Failed to toggle wallbox charging")
+
+    @e3dc_call
+    def toggle_wallbox_phases(self, wbIndex: int = 0):
+        result: bool = self.e3dc.toggle_wallbox_phases(wbIndex, True)
+        if result == False:
+            raise HomeAssistantError("Failed to toggle wallbox phases")
+
+    @e3dc_call
     def set_wallbox_max_charge_current(
         self, max_charge_current: int, wbIndex: int = 0
     ) -> bool:

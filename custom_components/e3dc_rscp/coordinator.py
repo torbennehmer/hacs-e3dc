@@ -414,6 +414,32 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully updated wallbox schuko to %s", enabled)
         return True
 
+    async def async_toggle_wallbox_phases(self) -> bool:
+        """Toggle the Wallbox Phases between 1 and 3."""
+        _LOGGER.debug("Toggling the Wallbox Phases")
+
+        try:
+            await self.hass.async_add_executor_job(self.proxy.toggle_wallbox_phases)
+        except Exception as ex:
+            _LOGGER.error("Failed to toggle wallbox phases: %s", ex)
+            return False
+
+        _LOGGER.debug("Successfully toggled wallbox phases")
+        return True
+
+    async def async_toggle_wallbox_charging(self) -> bool:
+        """Toggle the Wallbox charging state."""
+        _LOGGER.debug("Toggling the Wallbox charging state")
+
+        try:
+            await self.hass.async_add_executor_job(self.proxy.toggle_wallbox_charging)
+        except Exception as ex:
+            _LOGGER.error("Failed to toggle wallbox charging state: %s", ex)
+            return False
+
+        _LOGGER.debug("Successfully toggled wallbox charging state")
+        return True
+
     async def async_clear_power_limits(self) -> None:
         """Clear any active power limit."""
 
