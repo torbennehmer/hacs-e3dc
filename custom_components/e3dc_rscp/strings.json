@@ -189,10 +189,58 @@
         "name": "Unused powermeter - total"
       },
       "wallbox-total": {
-        "name": "Wallbox - total"
+        "name": "Wallbox Wallbox - total"
       },
       "farm-additional-total": {
-        "name": "Farm additional powermeter - total"
+        "name": "Wallbox Farm additional powermeter - total"
+      },
+      "wallbox-appSoftware": {
+        "name": "Wallbox App Software"
+      },
+      "wallbox-batteryToCar": {
+        "name": "Wallbox Battery to Car"
+      },
+      "wallbox-chargingActive": {
+        "name": "Wallbox Charging Active"
+      },
+      "wallbox-chargingCanceled": {
+        "name": "Wallbox Charging Canceled"
+      },
+      "wallbox-consumptionNet": {
+        "name": "Wallbox Consumption Net"
+      },
+      "wallbox-consumptionSun": {
+        "name": "Wallbox Consumption Sun"
+      },
+      "wallbox-energyAll": {
+        "name": "Wallbox Energy All"
+      },
+      "wallbox-energyNet": {
+        "name": "Wallbox Energy Net"
+      },
+      "wallbox-energySun": {
+        "name": "Wallbox Energy Sun"
+      },
+      "wallbox-index": {
+        "name": "Wallbox Index"
+      },
+      "wallbox-keyState": {
+        "name": "Wallbox Key State"
+      },
+      "wallbox-maxChargeCurrent": {
+        "name": "Wallbox Max Charge Current"
+      },
+      "wallbox-phases": {
+        "name": "Wallbox Phases"
+      },
+      "wallbox-schukoOn": {
+        "name": "Wallbox Schuko On"
+      },
+      "wallbox-soc": {
+        "name": "Wallbox State of Charge"
+      },
+      "wallbox-sunModeOn": {
+        "name": "Wallbox Sun Mode On"
       }
     },
     "switch": {

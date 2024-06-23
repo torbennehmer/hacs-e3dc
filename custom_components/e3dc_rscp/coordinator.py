@@ -35,6 +35,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata: dict[str, Any] = {}
         self._sw_version: str = ""
         self._update_guard_powersettings: bool = False
+        self._wallbox_installed: bool = False
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
 
@@ -49,6 +50,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Have a call to autoconf, then connect with it.
         await self.hass.async_add_executor_job(self.proxy.connect)
         await self._async_connect_additional_powermeters()
+        await self._async_connect_wallbox()
 
         self._mydata["system-derate-percent"] = self.proxy.e3dc.deratePercent
         self._mydata["system-derate-power"] = self.proxy.e3dc.deratePower
@@ -78,6 +80,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         await self._load_timezone_settings()
+
+    async def _async_connect_wallbox(self):
+        """Connect to Wallbox if PM_TYPE_WALLBOX exists."""
+
+        if "powermeters" in self.proxy.e3dc_config:
+            for powermeter in self.proxy.e3dc_config["powermeters"]:
+                if powermeter.get("type") == PowermeterType.PM_TYPE_WALLBOX.value:
+                    self._wallbox_installed = True
+                    return True
+        return False
 
     async def _async_connect_additional_powermeters(self):
         """Identify the installed powermeters and reconnect to E3DC with this config."""
@@ -155,6 +167,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Polling additional powermeters")
         await self._load_and_process_powermeters_data()
+
+        if self._wallbox_installed is False:
+            _LOGGER.debug("Polling wallbox")
+            await self._load_and_process_wallbox_data()
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
@@ -254,6 +270,21 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         for key, value in request_data.items():
             self._mydata[key] = value
+
+    async def _load_and_process_wallbox_data(self) -> None:
+        """Load and process wallbox data to existing data."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(self.proxy.get_wallbox_data)
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
+            return
+
+        for key, value in request_data.items():
+            wallbox_key = "wallbox-" + key
+            self._mydata[wallbox_key] = value
+            _LOGGER.info("Key: %s, Value: %s", wallbox_key, value)
+
+
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
