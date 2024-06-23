@@ -194,7 +194,7 @@
       "farm-additional-total": {
         "name": "Wallbox Farm additional powermeter - total"
       },
-      "wallbox-appSoftware": {
+      "wallbox-appsoftware": {
         "name": "Wallbox App Software"
       },
       "wallbox-batteryToCar": {
