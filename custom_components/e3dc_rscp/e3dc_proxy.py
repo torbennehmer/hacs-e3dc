@@ -163,6 +163,7 @@ class E3DCProxy:
 
     @e3dc_call
     def get_wallbox_data(self) -> dict[str, Any]:
+        """Poll current wallbox readings."""
         return self.e3dc.get_wallbox_data(keepAlive=True)
 
     @e3dc_call
@@ -238,33 +239,67 @@ class E3DCProxy:
 
     @e3dc_call
     def set_wallbox_sunmode(self, enabled: bool, wbIndex: int = 0):
+        """Set wallbox charging mode to sunmode on/off.
+
+        Args:
+            enabled(bool): the desired state True = sun mode enabled, False = sun mode disabled
+            wbIndex (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+        """
         result: bool = self.e3dc.set_wallbox_sunmode(enabled, wbIndex, True)
-        if result == False:
+        if not result:
             raise HomeAssistantError("Failed to set wallbox to sunmode %s", enabled)
 
     @e3dc_call
     def set_wallbox_schuko(self, enabled: bool, wbIndex: int = 0):
+        """Set wallbox power outlet (schuko) to on/off.
+
+        Args:
+            enabled(bool): the desired state True = on, False = off
+            wbIndex (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+        """
         result: bool = self.e3dc.set_wallbox_schuko(enabled, wbIndex, True)
-        if result == False:
+        if not result:
             raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
 
     @e3dc_call
     def toggle_wallbox_charging(self, wbIndex: int = 0):
+        """Toggle charging of the wallbox
+
+        Args:
+            wbIndex (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+        """
         result: bool = self.e3dc.toggle_wallbox_charging(wbIndex, True)
-        if result == False:
+        if not result:
             raise HomeAssistantError("Failed to toggle wallbox charging")
 
     @e3dc_call
     def toggle_wallbox_phases(self, wbIndex: int = 0):
+        """Toggle the phases of wallbox charging between 1 and 3 phases.
+
+        Args:
+            wbIndex (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+        """
         result: bool = self.e3dc.toggle_wallbox_phases(wbIndex, True)
-        if result == False:
+        if not result:
             raise HomeAssistantError("Failed to toggle wallbox phases")
 
     @e3dc_call
     def set_wallbox_max_charge_current(
         self, max_charge_current: int, wbIndex: int = 0
     ) -> bool:
-        """Sets the maximum charge current of the wallbox via RSCP protocol locally.
+        """Set the maximum charge current of the wallbox via RSCP protocol locally.
 
         Args:
             max_charge_current (int): maximum allowed charge current in A

@@ -93,7 +93,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
             return
 
-        if request_data["appSoftware"] != None:
+        if request_data["appSoftware"] is not None:
             _LOGGER.debug("Wallbox has been found")
             self._wallbox_installed = True
         else:
