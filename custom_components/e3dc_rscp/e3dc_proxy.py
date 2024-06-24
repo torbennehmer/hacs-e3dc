@@ -247,6 +247,7 @@ class E3DCProxy:
 
         Returns:
             nothing
+
         """
         result: bool = self.e3dc.set_wallbox_sunmode(enabled, wbIndex, True)
         if not result:
@@ -262,6 +263,7 @@ class E3DCProxy:
 
         Returns:
             nothing
+
         """
         result: bool = self.e3dc.set_wallbox_schuko(enabled, wbIndex, True)
         if not result:
@@ -269,13 +271,14 @@ class E3DCProxy:
 
     @e3dc_call
     def toggle_wallbox_charging(self, wbIndex: int = 0):
-        """Toggle charging of the wallbox
+        """Toggle charging of the wallbox.
 
         Args:
             wbIndex (Optional[int]): index of the requested wallbox,
 
         Returns:
             nothing
+
         """
         result: bool = self.e3dc.toggle_wallbox_charging(wbIndex, True)
         if not result:
@@ -290,6 +293,7 @@ class E3DCProxy:
 
         Returns:
             nothing
+
         """
         result: bool = self.e3dc.toggle_wallbox_phases(wbIndex, True)
         if not result:
@@ -308,6 +312,7 @@ class E3DCProxy:
         Returns:
             True if success (wallbox has understood the request, but might have clipped the value)
             False if error
+
         """
 
         MAX_CHARGE_CURRENT = 32  # Maximum allowed current in Amperes
