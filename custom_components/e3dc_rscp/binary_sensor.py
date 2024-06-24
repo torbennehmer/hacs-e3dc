@@ -55,6 +55,44 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         on_icon="mdi:electric-switch-closed",
         off_icon="mdi:electric-switch",
     ),
+    E3DCBinarySensorEntityDescription(
+        key="wallbox-sunModeOn",
+        translation_key="wallbox-sun_mode_on",
+        icon="mdi:white-balance-sunny",
+        device_class=None,
+    ),
+    E3DCBinarySensorEntityDescription(
+        key="wallbox-schukoOn",
+        translation_key="wallbox-schuko_on",
+        icon="mdi:power-plug",
+        device_class=BinarySensorDeviceClass.POWER,
+    ),
+    E3DCBinarySensorEntityDescription(
+        key="wallbox-chargingActive",
+        translation_key="wallbox-charging_active",
+        icon="mdi:ev-station",
+        device_class=BinarySensorDeviceClass.POWER,
+    ),
+    E3DCBinarySensorEntityDescription(
+        key="wallbox-chargingCanceled",
+        translation_key="wallbox-charging_canceled",
+        icon="mdi:cancel",
+        device_class=None,
+    ),
+    E3DCBinarySensorEntityDescription(
+        key="wallbox-batteryToCar",
+        translation_key="wallbox-battery_to_car",
+        icon="mdi:car-electric",
+        device_class=None,
+        entity_registry_enabled_default=False,
+    ),
+    E3DCBinarySensorEntityDescription(
+        key="wallbox-keyState",
+        translation_key="wallbox-key_state",
+        icon="mdi:key",
+        device_class=BinarySensorDeviceClass.LOCK,
+        entity_registry_enabled_default=False,
+    ),
 )
 
 

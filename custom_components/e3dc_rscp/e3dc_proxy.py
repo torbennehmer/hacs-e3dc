@@ -288,6 +288,8 @@ class E3DCProxy:
     def toggle_wallbox_phases(self, wbIndex: int = 0):
         """Toggle the phases of wallbox charging between 1 and 3 phases.
 
+           Only works if "Phasen" in the portal/device is not set to Auto.
+
         Args:
             wbIndex (Optional[int]): index of the requested wallbox,
 
