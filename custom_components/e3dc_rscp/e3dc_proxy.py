@@ -1,5 +1,4 @@
 """Diagnostics support for E3DC RSCP."""
-
 from __future__ import annotations
 
 from functools import wraps
@@ -15,7 +14,7 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 
-from .const import CONF_RSCPKEY
+from .const import CONF_RSCPKEY, MAX_CHARGE_CURRENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,9 +41,7 @@ def e3dc_call(func):
             _LOGGER.debug("Failed to authenticate with E3DC: %s", ex, exc_info=True)
             raise ConfigEntryAuthFailed("Failed to authenticate with E3DC") from ex
         except RSCPKeyError as ex:
-            _LOGGER.debug(
-                "Encryption error with E3DC, key invalid: %s", ex, exc_info=True
-            )
+            _LOGGER.debug("Encryption error with E3DC, key invalid: %s", ex, exc_info=True)
             raise ConfigEntryAuthFailed(
                 "Encryption Error with E3DC, key invalid"
             ) from ex
@@ -119,8 +116,7 @@ class E3DCProxy:
         """Poll manual charging state."""
         try:
             data = self.e3dc.sendRequest(
-                (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None),
-                keepAlive=True,
+                (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None), keepAlive=True
             )
 
             result: dict[str, Any] = {}
@@ -142,9 +138,7 @@ class E3DCProxy:
             #     request_data, "EMS_MANUAL_CHARGE_LASTSTART"
             # )[2]
         except SendError:
-            _LOGGER.debug(
-                "Failed to query manual charging data, might be related to a recent E3DC API change, ignoring the error, reverting to empty defaults."
-            )
+            _LOGGER.debug("Failed to query manual charging data, might be related to a recent E3DC API change, ignoring the error, reverting to empty defaults.")
             result: dict[str, Any] = {}
             result["active"] = False
             result["energy"] = 0
@@ -238,8 +232,8 @@ class E3DCProxy:
             _LOGGER.warning("Manual charging could not be activated")
 
     @e3dc_call
-    def set_wallbox_sunmode(self, enabled: bool, wbIndex: int = 0):
-        """Set wallbox charging mode to sunmode on/off.
+    def set_wallbox_sun_mode(self, enabled: bool, wbIndex: int = 0):
+        """Set wallbox charging mode to sun mode on/off.
 
         Args:
             enabled(bool): the desired state True = sun mode enabled, False = sun mode disabled
@@ -251,7 +245,7 @@ class E3DCProxy:
         """
         result: bool = self.e3dc.set_wallbox_sunmode(enabled, wbIndex, True)
         if not result:
-            raise HomeAssistantError("Failed to set wallbox to sunmode %s", enabled)
+            raise HomeAssistantError("Failed to set wallbox to sun mode %s", enabled)
 
     @e3dc_call
     def set_wallbox_schuko(self, enabled: bool, wbIndex: int = 0):
@@ -316,8 +310,6 @@ class E3DCProxy:
             False if error
 
         """
-
-        MAX_CHARGE_CURRENT = 32  # Maximum allowed current in Amperes
 
         if max_charge_current > MAX_CHARGE_CURRENT:
             _LOGGER.warning("Limiting max_charge_current to %s", MAX_CHARGE_CURRENT)

@@ -162,8 +162,3 @@ cython_debug/
 # Home Assistant configuration
 config/*
 !config/configuration.yaml
-
-custom_components/python-e3dc
-python-e3dc
-custom_components/python-e3dc/*
-python-e3dc/*

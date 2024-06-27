@@ -11,6 +11,7 @@ SERVICE_CLEAR_POWER_LIMITS = "clear_power_limits"
 SERVICE_SET_POWER_LIMITS = "set_power_limits"
 SERVICE_MANUAL_CHARGE = "manual_charge"
 SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT = "set_wallbox_max_charge_current"
+MAX_CHARGE_CURRENT = 32  # Maximum allowed wallbox charging current in Amperes
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,

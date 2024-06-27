@@ -56,40 +56,46 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         off_icon="mdi:electric-switch",
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-sunModeOn",
-        translation_key="wallbox-sun_mode_on",
-        icon="mdi:white-balance-sunny",
+        key="wallbox-sun-mode-on",
+        translation_key="wallbox-sun-mode-on",
+        on_icon="mdi:weather-sunny",
+        off_icon="mdi:weather-sunny-off",
         device_class=None,
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-schukoOn",
-        translation_key="wallbox-schuko_on",
-        icon="mdi:power-plug",
+        key="wallbox-schuko-on",
+        translation_key="wallbox-schuko-on",
+        on_icon="mdi:power-plug",
+        off_icon="mdi:power-plug-off",
         device_class=BinarySensorDeviceClass.POWER,
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-chargingActive",
-        translation_key="wallbox-charging_active",
-        icon="mdi:ev-station",
+        key="wallbox-charging-active",
+        translation_key="wallbox-charging-active",
+        on_icon="mdi:car-electric",
+        off_icon="mdi:car-electric-outline",
         device_class=BinarySensorDeviceClass.POWER,
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-chargingCanceled",
-        translation_key="wallbox-charging_canceled",
-        icon="mdi:cancel",
+        key="wallbox-charging-canceled",
+        translation_key="wallbox-charging-canceled",
+        on_icon="mdi:cancel",
+        off_icon="mdi:check-circle-outline",
         device_class=None,
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-batteryToCar",
-        translation_key="wallbox-battery_to_car",
-        icon="mdi:car-electric",
+        key="wallbox-battery-to-car",
+        translation_key="wallbox-battery-to-car",
+        on_icon="mdi:battery-charging",
+        off_icon="mdi:battery-off",
         device_class=None,
         entity_registry_enabled_default=False,
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-keyState",
-        translation_key="wallbox-key_state",
-        icon="mdi:key",
+        key="wallbox-key-state",
+        translation_key="wallbox-key-state",
+        on_icon="mdi:key-variant",
+        off_icon="mdi:key-remove",
         device_class=BinarySensorDeviceClass.LOCK,
         entity_registry_enabled_default=False,
     ),
@@ -105,7 +111,7 @@ async def async_setup_entry(
     entities: list[E3DCBinarySensor] = [
         E3DCBinarySensor(coordinator, description, entry.unique_id)
         for description in SENSOR_DESCRIPTIONS
-        if coordinator._wallbox_installed or not description.key.startswith("wallbox-")
+        if coordinator.wallbox_installed or not description.key.startswith("wallbox-")
     ]
     async_add_entities(entities)
 

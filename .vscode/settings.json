@@ -3,8 +3,5 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
-    "python.formatting.provider": "black",
-    "files.associations": {
-        "*.yaml": "home-assistant"
-    }
+    "python.formatting.provider": "black"
 }

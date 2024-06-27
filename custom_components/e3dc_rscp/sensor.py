@@ -1,5 +1,4 @@
 """E3DC sensor platform."""
-
 import logging
 from typing import Final
 
@@ -374,15 +373,15 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
-        key="wallbox-appSoftware",
-        translation_key="wallbox-app_software",
+        key="wallbox-app-software",
+        translation_key="wallbox-app-software",
         icon="mdi:information-outline",
         device_class=None,
         entity_registry_enabled_default=False,
     ),
     SensorEntityDescription(
-        key="wallbox-consumptionNet",
-        translation_key="wallbox-consumption_net",
+        key="wallbox-consumption-net",
+        translation_key="wallbox-consumption-net",
         icon="mdi:transmission-tower-import",
         native_unit_of_measurement=UnitOfPower.WATT,
         suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
@@ -390,8 +389,8 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
-        key="wallbox-consumptionSun",
-        translation_key="wallbox-consumption_sun",
+        key="wallbox-consumption-sun",
+        translation_key="wallbox-consumption-sun",
         icon="mdi:solar-power",
         native_unit_of_measurement=UnitOfPower.WATT,
         suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
@@ -399,8 +398,8 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
-        key="wallbox-energyAll",
-        translation_key="wallbox-energy_all",
+        key="wallbox-energy-all",
+        translation_key="wallbox-energy-all",
         icon="mdi:counter",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -409,8 +408,8 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     SensorEntityDescription(
-        key="wallbox-energyNet",
-        translation_key="wallbox-energy_net",
+        key="wallbox-energy-net",
+        translation_key="wallbox-energy-net",
         icon="mdi:counter",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -419,8 +418,8 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     SensorEntityDescription(
-        key="wallbox-energySun",
-        translation_key="wallbox-energy_sun",
+        key="wallbox-energy-sun",
+        translation_key="wallbox-energy-sun",
         icon="mdi:counter",
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -436,8 +435,8 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         entity_registry_enabled_default=False,
     ),
     SensorEntityDescription(
-        key="wallbox-maxChargeCurrent",
-        translation_key="wallbox-max_charge_current",
+        key="wallbox-max-charge-current",
+        translation_key="wallbox-max-charge-current",
         icon="mdi:current-ac",
         native_unit_of_measurement="A",
         device_class=SensorDeviceClass.CURRENT,
@@ -453,6 +452,8 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         key="wallbox-soc",
         translation_key="wallbox-soc",
         icon="mdi:battery-charging",
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -469,7 +470,7 @@ async def async_setup_entry(
     entities: list[E3DCSensor] = [
         E3DCSensor(coordinator, description, entry.unique_id)
         for description in SENSOR_DESCRIPTIONS
-        if coordinator._wallbox_installed or not description.key.startswith("wallbox-")
+        if coordinator.wallbox_installed or not description.key.startswith("wallbox-")
     ]
 
     # Add Sensor descriptions for additional powermeters, skipp root PM

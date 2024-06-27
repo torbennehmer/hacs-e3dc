@@ -29,12 +29,12 @@ class E3DCSwitchEntityDescription(SwitchEntityDescription):
 
     on_icon: str | None = None
     off_icon: str | None = None
-    async_turn_on_action: (
-        Callable[[E3DCCoordinator], Coroutine[Any, Any, bool]] | None
-    ) = None
-    async_turn_off_action: (
-        Callable[[E3DCCoordinator], Coroutine[Any, Any, bool]] | None
-    ) = None
+    async_turn_on_action: Callable[
+        [E3DCCoordinator], Coroutine[Any, Any, bool]
+    ] | None = None
+    async_turn_off_action: Callable[
+        [E3DCCoordinator], Coroutine[Any, Any, bool]
+    ] | None = None
 
 
 SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
@@ -69,16 +69,16 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
     # REGULAR SWITCHES
     E3DCSwitchEntityDescription(
         # TODO: Figure out how the icons match the on/off state
-        key="wallbox-sunmode",
-        translation_key="wallbox-sunmode",
+        key="wallbox-sun-mode",
+        translation_key="wallbox-sun-mode",
         name="Wallbox Sun Mode",
         on_icon="mdi:weather-sunny",
         off_icon="mdi:weather-sunny-off",
         device_class=SwitchDeviceClass.SWITCH,
-        async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_sunmode(
+        async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_sun_mode(
             True
         ),
-        async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_sunmode(
+        async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_sun_mode(
             False
         ),
     ),
@@ -88,7 +88,7 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         name="Wallbox Schuko",
         on_icon="mdi:power-plug",
         off_icon="mdi:power-plug-off",
-        device_class=SwitchDeviceClass.SWITCH,
+        device_class=SwitchDeviceClass.OUTLET,
         async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_schuko(
             True
         ),
@@ -108,7 +108,7 @@ async def async_setup_entry(
     entities: list[E3DCSwitch] = [
         E3DCSwitch(coordinator, description, entry.unique_id)
         for description in SWITCHES
-        if coordinator._wallbox_installed or not description.key.startswith("wallbox-")
+        if coordinator.wallbox_installed or not description.key.startswith("wallbox-")
     ]
     async_add_entities(entities)
 

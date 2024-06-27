@@ -33,14 +33,14 @@ class E3DCButtonEntityDescription(ButtonEntityDescription):
 
 BUTTONS: Final[tuple[E3DCButtonEntityDescription, ...]] = (
     E3DCButtonEntityDescription(
-        key="wallbox-toggle_wallbox_phases",
-        translation_key="wallbox-toggle_wallbox_phases",
+        key="wallbox-toggle-wallbox-phases",
+        translation_key="wallbox-toggle-wallbox-phases",
         icon="mdi:sine-wave",
         async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_phases(),
     ),
     E3DCButtonEntityDescription(
-        key="wallbox-toggle_wallbox_charging",
-        translation_key="wallbox-toggle_wallbox_charging",
+        key="wallbox-toggle_wallbox-charging",
+        translation_key="wallbox-toggle-wallbox-charging",
         icon="mdi:car-electric",
         async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_charging(),
     ),
@@ -57,7 +57,7 @@ async def async_setup_entry(
     entities: list[E3DCButton] = [
         E3DCButton(coordinator, description, entry.unique_id)
         for description in BUTTONS
-        if coordinator._wallbox_installed or not description.key.startswith("wallbox-")
+        if coordinator.wallbox_installed or not description.key.startswith("wallbox-")
     ]
 
     async_add_entities(entities)
