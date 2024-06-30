@@ -1,4 +1,5 @@
 """E3DC Switch platform."""
+
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 import logging
@@ -65,7 +66,37 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
             False
         ),
     ),
-    # REGULAR SWITCHES (None Yet)
+    # REGULAR SWITCHES
+    E3DCSwitchEntityDescription(
+        # TODO: Figure out how the icons match the on/off state
+        key="wallbox-sun-mode",
+        translation_key="wallbox-sun-mode",
+        name="Wallbox Sun Mode",
+        on_icon="mdi:weather-sunny",
+        off_icon="mdi:weather-sunny-off",
+        device_class=SwitchDeviceClass.SWITCH,
+        async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_sun_mode(
+            True
+        ),
+        async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_sun_mode(
+            False
+        ),
+    ),
+    E3DCSwitchEntityDescription(
+        key="wallbox-schuko",
+        translation_key="wallbox-schuko",
+        name="Wallbox Schuko",
+        on_icon="mdi:power-plug",
+        off_icon="mdi:power-plug-off",
+        device_class=SwitchDeviceClass.OUTLET,
+        async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_schuko(
+            True
+        ),
+        async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_schuko(
+            False
+        ),
+        entity_registry_enabled_default=False, # Disabled per default as only Wallbox multi connect I provides this feature
+    ),
 )
 
 
@@ -78,6 +109,7 @@ async def async_setup_entry(
     entities: list[E3DCSwitch] = [
         E3DCSwitch(coordinator, description, entry.unique_id)
         for description in SWITCHES
+        if coordinator.wallbox_installed or not description.key.startswith("wallbox-")
     ]
     async_add_entities(entities)
 

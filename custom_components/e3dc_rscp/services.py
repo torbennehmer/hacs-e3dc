@@ -16,6 +16,7 @@ from .const import (
     SERVICE_SET_POWER_LIMITS,
     SERVICE_CLEAR_POWER_LIMITS,
     SERVICE_MANUAL_CHARGE,
+    SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT,
 )
 from .coordinator import E3DCCoordinator
 
@@ -26,6 +27,7 @@ ATTR_DEVICEID = "device_id"
 ATTR_MAX_CHARGE = "max_charge"
 ATTR_MAX_DISCHARGE = "max_discharge"
 ATTR_CHARGE_AMOUNT = "charge_amount"
+ATTR_MAX_CHARGE_CURRENT = "max_charge_current"
 
 SCHEMA_CLEAR_POWER_LIMITS = vol.Schema(
     {
@@ -38,6 +40,13 @@ SCHEMA_SET_POWER_LIMITS = vol.Schema(
         vol.Required(ATTR_DEVICEID): str,
         vol.Optional(ATTR_MAX_CHARGE): vol.All(int, vol.Range(min=0)),
         vol.Optional(ATTR_MAX_DISCHARGE): vol.All(int, vol.Range(min=0)),
+    }
+)
+
+SCHEMA_SET_WALLBOX_MAX_CHARGE_CURRENT = vol.Schema(
+    {
+        vol.Required(ATTR_DEVICEID): str,
+        vol.Optional(ATTR_MAX_CHARGE_CURRENT): vol.All(int, vol.Range(min=0)),
     }
 )
 
@@ -83,6 +92,16 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         schema=SCHEMA_MANUAL_CHARGE,
     )
 
+    async def async_call_set_wallbox_max_charge_current(call: ServiceCall) -> None:
+        await _async_set_wallbox_max_charge_current(hass, call)
+
+    hass.services.async_register(
+        domain=DOMAIN,
+        service=SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT,
+        service_func=async_call_set_wallbox_max_charge_current,
+        schema=SCHEMA_SET_WALLBOX_MAX_CHARGE_CURRENT,
+    )
+
 
 def _resolve_device_id(hass: HomeAssistant, devid: str) -> E3DCCoordinator:
     """Resolve a device ID to its coordinator with caching."""
@@ -112,6 +131,22 @@ def _resolve_device_id(hass: HomeAssistant, devid: str) -> E3DCCoordinator:
     coordinator: E3DCCoordinator = hass.data[DOMAIN][uid]
     _device_map[devid] = coordinator
     return coordinator
+
+
+async def _async_set_wallbox_max_charge_current(
+    hass: HomeAssistant, call: ServiceCall
+) -> None:
+    """Extract service information and relay to coordinator."""
+    # TODO: Add option to select Wallbox
+    coordinator: E3DCCoordinator = _resolve_device_id(
+        hass, call.data.get(ATTR_DEVICEID)
+    )
+    max_charge_current: int | None = call.data.get(ATTR_MAX_CHARGE_CURRENT)
+    if max_charge_current is None:
+        raise HomeAssistantError(
+            f"{SERVICE_SET_POWER_LIMITS}: Need to set {ATTR_MAX_CHARGE_CURRENT}"
+        )
+    await coordinator.async_set_wallbox_max_charge_current(current=max_charge_current)
 
 
 async def _async_set_power_limits(hass: HomeAssistant, call: ServiceCall) -> None:

@@ -372,6 +372,94 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    SensorEntityDescription(
+        key="wallbox-app-software",
+        translation_key="wallbox-app-software",
+        icon="mdi:information-outline",
+        device_class=None,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    SensorEntityDescription(
+        key="wallbox-consumption-net",
+        translation_key="wallbox-consumption-net",
+        icon="mdi:transmission-tower-import",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="wallbox-consumption-sun",
+        translation_key="wallbox-consumption-sun",
+        icon="mdi:solar-power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="wallbox-energy-all",
+        translation_key="wallbox-energy-all",
+        icon="mdi:counter",
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="wallbox-energy-net",
+        translation_key="wallbox-energy-net",
+        icon="mdi:counter",
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="wallbox-energy-sun",
+        translation_key="wallbox-energy-sun",
+        icon="mdi:counter",
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="wallbox-index",
+        translation_key="wallbox-index",
+        icon="mdi:numeric",
+        device_class=None,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC
+    ),
+    SensorEntityDescription(
+        key="wallbox-max-charge-current",
+        translation_key="wallbox-max-charge-current",
+        icon="mdi:current-ac",
+        native_unit_of_measurement="A",
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="wallbox-phases",
+        translation_key="wallbox-phases",
+        icon="mdi:sine-wave",
+        device_class=None,
+    ),
+    SensorEntityDescription(
+        key="wallbox-soc",
+        translation_key="wallbox-soc",
+        icon="mdi:battery-charging",
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+    ),
 )
 
 
@@ -384,6 +472,7 @@ async def async_setup_entry(
     entities: list[E3DCSensor] = [
         E3DCSensor(coordinator, description, entry.unique_id)
         for description in SENSOR_DESCRIPTIONS
+        if coordinator.wallbox_installed or not description.key.startswith("wallbox-")
     ]
 
     # Add Sensor descriptions for additional powermeters, skipp root PM

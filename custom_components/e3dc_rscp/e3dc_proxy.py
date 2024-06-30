@@ -14,7 +14,7 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 
-from .const import CONF_RSCPKEY
+from .const import CONF_RSCPKEY, MAX_CHARGE_CURRENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -156,6 +156,11 @@ class E3DCProxy:
         return self.e3dc.get_powermeters(keepAlive=True)
 
     @e3dc_call
+    def get_wallbox_data(self) -> dict[str, Any]:
+        """Poll current wallbox readings."""
+        return self.e3dc.get_wallbox_data(keepAlive=True)
+
+    @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:
         """Poll all powermeters for their current readings."""
         data = self.e3dc.get_powermeters_data(keepAlive=True)
@@ -225,6 +230,94 @@ class E3DCProxy:
 
         if not result:
             _LOGGER.warning("Manual charging could not be activated")
+
+    @e3dc_call
+    def set_wallbox_sun_mode(self, enabled: bool, wbIndex: int = 0):
+        """Set wallbox charging mode to sun mode on/off.
+
+        Args:
+            enabled(bool): the desired state True = sun mode enabled, False = sun mode disabled
+            wbIndex (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+
+        """
+        result: bool = self.e3dc.set_wallbox_sunmode(enabled, wbIndex, True)
+        if not result:
+            raise HomeAssistantError("Failed to set wallbox to sun mode %s", enabled)
+
+    @e3dc_call
+    def set_wallbox_schuko(self, enabled: bool, wbIndex: int = 0):
+        """Set wallbox power outlet (schuko) to on/off.
+
+        Args:
+            enabled(bool): the desired state True = on, False = off
+            wbIndex (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+
+        """
+        result: bool = self.e3dc.set_wallbox_schuko(enabled, wbIndex, True)
+        if not result:
+            raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
+
+    @e3dc_call
+    def toggle_wallbox_charging(self, wbIndex: int = 0):
+        """Toggle charging of the wallbox.
+
+        Args:
+            wbIndex (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+
+        """
+        result: bool = self.e3dc.toggle_wallbox_charging(wbIndex, True)
+        if not result:
+            raise HomeAssistantError("Failed to toggle wallbox charging")
+
+    @e3dc_call
+    def toggle_wallbox_phases(self, wbIndex: int = 0):
+        """Toggle the phases of wallbox charging between 1 and 3 phases.
+
+           Only works if "Phasen" in the portal/device is not set to Auto.
+
+        Args:
+            wbIndex (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+
+        """
+        result: bool = self.e3dc.toggle_wallbox_phases(wbIndex, True)
+        if not result:
+            raise HomeAssistantError("Failed to toggle wallbox phases")
+
+    @e3dc_call
+    def set_wallbox_max_charge_current(
+        self, max_charge_current: int, wbIndex: int = 0
+    ) -> bool:
+        """Set the maximum charge current of the wallbox via RSCP protocol locally.
+
+        Args:
+            max_charge_current (int): maximum allowed charge current in A
+            wbIndex (Optional[int]): index of the requested wallbox
+
+        Returns:
+            True if success (wallbox has understood the request, but might have clipped the value)
+            False if error
+
+        """
+
+        if max_charge_current > MAX_CHARGE_CURRENT:
+            _LOGGER.warning("Limiting max_charge_current to %s", MAX_CHARGE_CURRENT)
+            max_charge_current = MAX_CHARGE_CURRENT
+
+        return self.e3dc.set_wallbox_max_charge_current(
+            max_charge_current, wbIndex, keepAlive=True
+        )
 
     @e3dc_call
     def set_power_limits(

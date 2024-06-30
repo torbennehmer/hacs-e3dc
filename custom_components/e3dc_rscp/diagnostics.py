@@ -68,6 +68,7 @@ class _DiagnosticsDumper:
             "get_powermeters_data": self._query_data_for_dump(
                 self.e3dc.get_powermeters_data
             ),
+            "get_wallbox_data": self._query_data_for_dump(self.e3dc.get_wallbox_data),
             "get_batteries_data": self._query_data_for_dump(
                 self.e3dc.get_batteries_data
             ),
