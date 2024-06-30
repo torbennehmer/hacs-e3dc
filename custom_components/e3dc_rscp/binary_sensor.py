@@ -56,25 +56,42 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         off_icon="mdi:electric-switch",
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-sun-mode-on",
-        translation_key="wallbox-sun-mode-on",
+        key="wallbox-sun-mode",
+        translation_key="wallbox-sun-mode",
         on_icon="mdi:weather-sunny",
         off_icon="mdi:weather-sunny-off",
         device_class=None,
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-schuko-on",
-        translation_key="wallbox-schuko-on",
-        on_icon="mdi:power-plug",
-        off_icon="mdi:power-plug-off",
-        device_class=BinarySensorDeviceClass.POWER,
+        key="wallbox-plug-lock",
+        translation_key="wallbox-plug-lock",
+        on_icon="mdi:lock-open",
+        off_icon="mdi:lock",
+        device_class=BinarySensorDeviceClass.LOCK,
+        entity_registry_enabled_default=False,  # Disabled per default as only Wallbox easy connect provides this state
+
     ),
     E3DCBinarySensorEntityDescription(
-        key="wallbox-charging-active",
-        translation_key="wallbox-charging-active",
+        key="wallbox-plug",
+        translation_key="wallbox-plug",
+        on_icon="mdi:power-plug",
+        off_icon="mdi:power-plug-off",
+        device_class=BinarySensorDeviceClass.PLUG,
+    ),
+    E3DCBinarySensorEntityDescription(
+        key="wallbox-schuko",
+        translation_key="wallbox-schuko",
+        on_icon="mdi:power-plug-outline",
+        off_icon="mdi:power-plug-off-outline",
+        device_class=BinarySensorDeviceClass.POWER,
+        entity_registry_enabled_default=False,   # Disabled per default as only Wallbox multi connect I provides this feature
+    ),
+    E3DCBinarySensorEntityDescription(
+        key="wallbox-charging",
+        translation_key="wallbox-charging",
         on_icon="mdi:car-electric",
         off_icon="mdi:car-electric-outline",
-        device_class=BinarySensorDeviceClass.POWER,
+        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
     ),
     E3DCBinarySensorEntityDescription(
         key="wallbox-charging-canceled",

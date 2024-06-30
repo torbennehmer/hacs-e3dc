@@ -45,11 +45,23 @@
             "wallbox-charging-canceled": {
                 "name": "Wallbox charging canceled"
             },
-            "wallbox-sun-mode-on": {
-                "name": "Wallbox sun mode on"
+            "wallbox-sun-mode": {
+                "name": "Wallbox sun mode"
             },
             "wallbox-key-state": {
                 "name": "Wallbox key state"
+            },
+            "wallbox-plug-lock": {
+                "name": "Wallbox plug lock"
+            },
+            "wallbox-plug": {
+                "name": "Wallbox plug"
+            },
+            "wallbox-schuko": {
+                "name": "Wallbox schuko"
+            },
+            "wallbox-charging": {
+                "name": "Wallbox charging"
             }
         },
         "sensor": {
@@ -209,9 +221,6 @@
             "wallbox-app-software": {
                 "name": "Wallbox app software"
             },
-            "wallbox-charging-active": {
-                "name": "Wallbox charging active"
-            },
             "wallbox-consumption-net": {
                 "name": "Wallbox consumption net"
             },
@@ -235,9 +244,6 @@
             },
             "wallbox-phases": {
                 "name": "Wallbox phases"
-            },
-            "wallbox-schuko-on": {
-                "name": "Wallbox schuko on"
             },
             "wallbox-soc": {
                 "name": "Wallbox state of charge"

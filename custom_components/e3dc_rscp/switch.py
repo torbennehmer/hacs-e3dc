@@ -95,6 +95,7 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_schuko(
             False
         ),
+        entity_registry_enabled_default=False, # Disabled per default as only Wallbox multi connect I provides this feature
     ),
 )
 

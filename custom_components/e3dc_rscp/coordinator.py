@@ -37,6 +37,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata: dict[str, Any] = {}
         self._sw_version: str = ""
         self._update_guard_powersettings: bool = False
+        self._update_guard_wallboxsettings: bool = False
         self._wallbox_installed: bool = False
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
@@ -186,8 +187,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling manual charge information")
         await self._load_and_process_manual_charge()
 
-        _LOGGER.debug("Polling additional powermeters")
-        await self._load_and_process_powermeters_data()
+        if self._update_guard_wallboxsettings is False:
+            _LOGGER.debug("Polling additional powermeters")
+            await self._load_and_process_powermeters_data()
+        else:
+            _LOGGER.debug("Not polling wallbox, they are updating right now")
 
         if self.wallbox_installed is True:
             _LOGGER.debug("Polling wallbox")
@@ -304,6 +308,17 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         for key, value in request_data.items():
             formatted_key = "wallbox-" + re.sub(r'(?<!^)(?=[A-Z])', '-', key).lower()   #RegEx to convert from CamelCase to kebab-case
+            if formatted_key == "wallbox-plug-locked":
+                formatted_key = "wallbox-plug-lock"
+                value = not value  # Inverse to match HA's Lock On/Off interpretation
+            if formatted_key == "wallbox-plugged":
+                formatted_key = "wallbox-plug"
+            if formatted_key == "wallbox-schuko-on":
+                formatted_key = "wallbox-schuko"
+            if formatted_key == "wallbox-sun-mode-on":
+                formatted_key = "wallbox-sun-mode"
+            if formatted_key == "wallbox-charging-active":
+                formatted_key = "wallbox-charging"
             self._mydata[formatted_key] = value
 
     async def _load_timezone_settings(self):
@@ -400,13 +415,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Updating wallbox sun mode to %s", enabled)
 
         try:
-            self._update_guard_powersettings = True
+            self._update_guard_wallboxsettings = True
             await self.hass.async_add_executor_job(
                 self.proxy.set_wallbox_sun_mode, enabled
             )
-            self._mydata["wallbox-sun-mode-on"] = enabled
+            self._mydata["wallbox-sun-mode"] = enabled
+        except Exception as ex:
+            _LOGGER.error("Failed to set wallbox sun mode to %s: %s", enabled, ex)
+            return False
         finally:
-            self._update_guard_powersettings = False
+            self._update_guard_wallboxsettings = False
 
         _LOGGER.debug("Successfully updated wallbox sun mode to %s", enabled)
         return True
@@ -416,13 +434,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Updating wallbox schuko to %s", enabled)
 
         try:
+            self._update_guard_wallboxsettings = True
             await self.hass.async_add_executor_job(
                 self.proxy.set_wallbox_schuko, enabled
             )
-            self._mydata["wallbox-schuko-on"] = enabled
+            self._mydata["wallbox-schuko"] = enabled
         except Exception as ex:
             _LOGGER.error("Failed to set wallbox schuko to %s: %s", enabled, ex)
             return False
+        finally:
+            self._update_guard_wallboxsettings = False
 
         _LOGGER.debug("Successfully updated wallbox schuko to %s", enabled)
         return True

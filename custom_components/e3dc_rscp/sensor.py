@@ -378,6 +378,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         icon="mdi:information-outline",
         device_class=None,
         entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC
     ),
     SensorEntityDescription(
         key="wallbox-consumption-net",
@@ -433,6 +434,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         icon="mdi:numeric",
         device_class=None,
         entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC
     ),
     SensorEntityDescription(
         key="wallbox-max-charge-current",

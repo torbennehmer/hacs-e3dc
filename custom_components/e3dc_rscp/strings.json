@@ -42,17 +42,23 @@
       "wallbox-battery-to-car": {
         "name": "Wallbox battery to car"
       },
-      "wallbox-charging-active": {
-        "name": "Wallbox charging active"
+      "wallbox-charging": {
+        "name": "Wallbox charging"
       },
       "wallbox-charging-canceled": {
         "name": "Wallbox charging canceled"
       },
-      "wallbox-sun-mode-on": {
-        "name": "Wallbox sun mode on"
+      "wallbox-sun-mode": {
+        "name": "Wallbox sun mode"
       },
-      "wallbox-schuko-on": {
-        "name": "Wallbox schuko on"
+      "wallbox-plug-lock": {
+        "name": "Wallbox plug lock"
+      },
+      "wallbox-plug": {
+        "name": "Wallbox plug"
+      },
+      "wallbox-schuko": {
+        "name": "Wallbox schuko"
       },
       "wallbox-key-state": {
         "name": "Wallbox key state"
