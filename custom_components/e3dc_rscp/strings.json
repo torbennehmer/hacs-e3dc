@@ -309,6 +309,10 @@
           "name": "E3DC Device ID",
           "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
         },
+        "wallbox_index": {
+          "name": "Wallbox Index",
+          "description": "Index of the Wallbox, You find it in the diagnostic entity of the wallbox \"Wallbox Index\" (deactivated by default)."
+        },
         "max_charge_current": {
           "name": "Maximum Charging Current (A)",
           "description": "Maximum allowed Charging via Wallbox in Ampere."

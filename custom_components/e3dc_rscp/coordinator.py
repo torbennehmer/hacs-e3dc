@@ -89,25 +89,25 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("async_identify_wallboxes")
 
         # TODO: Find a more robust way to identify if a Wallbox is installed
-        for wbIndex in range(0, MAX_WALLBOXES_POSSIBLE-1):
+        for wallbox_index in range(0, MAX_WALLBOXES_POSSIBLE-1):
             try:
                 request_data: dict[str, Any] = await self.hass.async_add_executor_job(
-                    self.proxy.get_wallbox_data, wbIndex
+                    self.proxy.get_wallbox_data, wallbox_index
                 )
             except HomeAssistantError as ex:
-                _LOGGER.warning("Failed to load wallbox with index %s, not updating data: %s", wbIndex, ex)
+                _LOGGER.warning("Failed to load wallbox with index %s, not updating data: %s", wallbox_index, ex)
                 return
 
             if request_data["appSoftware"] is not None:
-                _LOGGER.debug("Wallbox with index %s has been found", wbIndex)
+                _LOGGER.debug("Wallbox with index %s has been found", wallbox_index)
                 wallbox = {
-                    "index": wbIndex,
-                    "key": f"wallbox-{wbIndex + 1}",
-                    "name": f"Wallbox {wbIndex + 1}"
+                    "index": wallbox_index,
+                    "key": f"wallbox-{wallbox_index + 1}",
+                    "name": f"Wallbox {wallbox_index + 1}"
                 }
                 self.wallboxes.append(wallbox)
             else:
-                _LOGGER.debug("No Wallbox with index %s has been found", wbIndex)
+                _LOGGER.debug("No Wallbox with index %s has been found", wallbox_index)
 
         # Fix Naming if there's only one wallbox
         if len(self.wallboxes) == 1:
@@ -503,7 +503,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Successfully cleared the power limits")
 
-    async def async_set_wallbox_max_charge_current(self, current: int | None) -> None:
+    async def async_set_wallbox_max_charge_current(self, current: int | None, wallbox_index: int | None) -> None:
         """Set the wallbox max charge current."""
 
         # TODO: Add more refined way to deal with maximum charge current, right now it's hard coded to 32A. The max current is dependant on the local installations, many WBs are throttled at 16A, not 32A due to power grid restrictions.
@@ -514,6 +514,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "async_set_wallbox_max_charge_current must be called with a positive current value."
             )
 
+        if wallbox_index < 0 or wallbox_index >= MAX_WALLBOXES_POSSIBLE:
+            raise ValueError(
+                "async_set_wallbox_max_charge_current must be called with a valid wallbox id."
+            )
+
         if current > MAX_CHARGE_CURRENT:
             _LOGGER.warning("Limiting current to %s", MAX_CHARGE_CURRENT)
             current = MAX_CHARGE_CURRENT
@@ -521,7 +526,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Setting wallbox max charge current to %s", current)
 
         await self.hass.async_add_executor_job(
-            self.proxy.set_wallbox_max_charge_current, current
+            self.proxy.set_wallbox_max_charge_current, current, wallbox_index
         )
 
         _LOGGER.debug("Successfully set the wallbox max charge current to %s", current)
