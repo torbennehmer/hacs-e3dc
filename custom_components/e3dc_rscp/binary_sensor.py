@@ -55,67 +55,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         on_icon="mdi:electric-switch-closed",
         off_icon="mdi:electric-switch",
     ),
-    E3DCBinarySensorEntityDescription(
-        key="wallbox-sun-mode",
-        translation_key="wallbox-sun-mode",
-        on_icon="mdi:weather-sunny",
-        off_icon="mdi:weather-sunny-off",
-        device_class=None,
-    ),
-    E3DCBinarySensorEntityDescription(
-        key="wallbox-plug-lock",
-        translation_key="wallbox-plug-lock",
-        on_icon="mdi:lock-open",
-        off_icon="mdi:lock",
-        device_class=BinarySensorDeviceClass.LOCK,
-        entity_registry_enabled_default=False,  # Disabled per default as only Wallbox easy connect provides this state
-
-    ),
-    E3DCBinarySensorEntityDescription(
-        key="wallbox-plug",
-        translation_key="wallbox-plug",
-        on_icon="mdi:power-plug",
-        off_icon="mdi:power-plug-off",
-        device_class=BinarySensorDeviceClass.PLUG,
-    ),
-    E3DCBinarySensorEntityDescription(
-        key="wallbox-schuko",
-        translation_key="wallbox-schuko",
-        on_icon="mdi:power-plug-outline",
-        off_icon="mdi:power-plug-off-outline",
-        device_class=BinarySensorDeviceClass.POWER,
-        entity_registry_enabled_default=False,   # Disabled per default as only Wallbox multi connect I provides this feature
-    ),
-    E3DCBinarySensorEntityDescription(
-        key="wallbox-charging",
-        translation_key="wallbox-charging",
-        on_icon="mdi:car-electric",
-        off_icon="mdi:car-electric-outline",
-        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
-    ),
-    E3DCBinarySensorEntityDescription(
-        key="wallbox-charging-canceled",
-        translation_key="wallbox-charging-canceled",
-        on_icon="mdi:cancel",
-        off_icon="mdi:check-circle-outline",
-        device_class=None,
-    ),
-    E3DCBinarySensorEntityDescription(
-        key="wallbox-battery-to-car",
-        translation_key="wallbox-battery-to-car",
-        on_icon="mdi:battery-charging",
-        off_icon="mdi:battery-off",
-        device_class=None,
-        entity_registry_enabled_default=False,
-    ),
-    E3DCBinarySensorEntityDescription(
-        key="wallbox-key-state",
-        translation_key="wallbox-key-state",
-        on_icon="mdi:key-variant",
-        off_icon="mdi:key-remove",
-        device_class=BinarySensorDeviceClass.LOCK,
-        entity_registry_enabled_default=False,
-    ),
 )
 
 
@@ -128,8 +67,94 @@ async def async_setup_entry(
     entities: list[E3DCBinarySensor] = [
         E3DCBinarySensor(coordinator, description, entry.unique_id)
         for description in SENSOR_DESCRIPTIONS
-        if coordinator.wallbox_installed or not description.key.startswith("wallbox-")
     ]
+
+    for wallbox in coordinator.wallboxes:
+
+        wallbox_sun_mode_description = E3DCBinarySensorEntityDescription(
+            key=wallbox["key"] + "-sun-mode",
+            translation_key="wallbox-sun-mode",
+            translation_placeholders = {"wallbox_name": wallbox["name"]},
+            on_icon="mdi:weather-sunny",
+            off_icon="mdi:weather-sunny-off",
+            device_class=None,
+        )
+        entities.append(E3DCBinarySensor(coordinator, wallbox_sun_mode_description, entry.unique_id))
+
+        wallbox_plug_lock_description = E3DCBinarySensorEntityDescription(
+            key=wallbox["key"] + "-plug-lock",
+            translation_key="wallbox-plug-lock",
+            translation_placeholders = {"wallbox_name": wallbox["name"]},
+            on_icon="mdi:lock-open",
+            off_icon="mdi:lock",
+            device_class=BinarySensorDeviceClass.LOCK,
+            entity_registry_enabled_default=False,  # Disabled per default as only Wallbox easy connect provides this state
+        )
+        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_lock_description, entry.unique_id))
+
+        wallbox_plug_description = E3DCBinarySensorEntityDescription(
+            key=wallbox["key"] + "-plug",
+            translation_key="wallbox-plug",
+            translation_placeholders = {"wallbox_name": wallbox["name"]},
+            on_icon="mdi:power-plug",
+            off_icon="mdi:power-plug-off",
+            device_class=BinarySensorDeviceClass.PLUG,
+        )
+        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_description, entry.unique_id))
+
+        wallbox_schuko_description = E3DCBinarySensorEntityDescription(
+            key=wallbox["key"] + "-schuko",
+            translation_key="wallbox-schuko",
+            translation_placeholders = {"wallbox_name": wallbox["name"]},
+            on_icon="mdi:power-plug-outline",
+            off_icon="mdi:power-plug-off-outline",
+            device_class=BinarySensorDeviceClass.POWER,
+            entity_registry_enabled_default=False,   # Disabled per default as only Wallbox multi connect I provides this feature
+        )
+        entities.append(E3DCBinarySensor(coordinator, wallbox_schuko_description, entry.unique_id))
+
+        wallbox_charging_description = E3DCBinarySensorEntityDescription(
+            key=wallbox["key"] + "-charging",
+            translation_key="wallbox-charging",
+            translation_placeholders = {"wallbox_name": wallbox["name"]},
+            on_icon="mdi:car-electric",
+            off_icon="mdi:car-electric-outline",
+            device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
+        )
+        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_description, entry.unique_id))
+
+        wallbox_charging_canceled_description = E3DCBinarySensorEntityDescription(
+            key=wallbox["key"] + "-charging-canceled",
+            translation_key="wallbox-charging-canceled",
+            translation_placeholders = {"wallbox_name": wallbox["name"]},
+            on_icon="mdi:cancel",
+            off_icon="mdi:check-circle-outline",
+            device_class=None,
+        )
+        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_canceled_description, entry.unique_id))
+
+        wallbox_battery_to_car_description = E3DCBinarySensorEntityDescription(
+            key=wallbox["key"] + "-battery-to-car",
+            translation_key="wallbox-battery-to-car",
+            translation_placeholders = {"wallbox_name": wallbox["name"]},
+            on_icon="mdi:battery-charging",
+            off_icon="mdi:battery-off",
+            device_class=None,
+            entity_registry_enabled_default=False,
+        )
+        entities.append(E3DCBinarySensor(coordinator, wallbox_battery_to_car_description, entry.unique_id))
+
+        wallbox_key_state_description = E3DCBinarySensorEntityDescription(
+            key=wallbox["key"] + "-key-state",
+            translation_key="wallbox-key-state",
+            translation_placeholders = {"wallbox_name": wallbox["name"]},
+            on_icon="mdi:key-variant",
+            off_icon="mdi:key-remove",
+            device_class=BinarySensorDeviceClass.LOCK,
+            entity_registry_enabled_default=False,
+        )
+        entities.append(E3DCBinarySensor(coordinator, wallbox_key_state_description, entry.unique_id))
+
     async_add_entities(entities)
 
 

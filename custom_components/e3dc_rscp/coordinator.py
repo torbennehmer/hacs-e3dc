@@ -18,7 +18,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
 
-from .const import DOMAIN, MAX_CHARGE_CURRENT
+from .const import DOMAIN, MAX_CHARGE_CURRENT, MAX_WALLBOXES_POSSIBLE
 
 from .e3dc_proxy import E3DCProxy
 
@@ -38,7 +38,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._sw_version: str = ""
         self._update_guard_powersettings: bool = False
         self._update_guard_wallboxsettings: bool = False
-        self._wallbox_installed: bool = False
+        self._wallboxes: list[dict[str, str | int]] = []
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
 
@@ -83,35 +83,48 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         await self._load_timezone_settings()
 
-    @property
-    def wallbox_installed(self) -> bool:
-        """Get the wallbox installed status."""
-        return self._wallbox_installed
-
-    @wallbox_installed.setter
-    def wallbox_installed(self, value: bool) -> None:
-        """Set the wallbox installed status."""
-        self._wallbox_installed = value
 
     async def async_identify_wallboxes(self):
         """Identify availability of Wallboxes if get_wallbox_data() returns meaningful data."""
         _LOGGER.debug("async_identify_wallboxes")
 
         # TODO: Find a more robust way to identify if a Wallbox is installed
-        try:
-            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
-                self.proxy.get_wallbox_data
-            )
-        except HomeAssistantError as ex:
-            _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
-            return
+        for wbIndex in range(0, MAX_WALLBOXES_POSSIBLE-1):
+            try:
+                request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                    self.proxy.get_wallbox_data, wbIndex
+                )
+            except HomeAssistantError as ex:
+                _LOGGER.warning("Failed to load wallbox with index %s, not updating data: %s", wbIndex, ex)
+                return
 
-        if request_data["appSoftware"] is not None:
-            _LOGGER.debug("Wallbox has been found")
-            self.wallbox_installed = True
-        else:
-            _LOGGER.debug("No Wallbox has been found")
-            self.wallbox_installed = False
+            if request_data["appSoftware"] is not None:
+                _LOGGER.debug("Wallbox with index %s has been found", wbIndex)
+                wallbox = {
+                    "index": wbIndex,
+                    "key": f"wallbox-{wbIndex + 1}",
+                    "name": f"Wallbox {wbIndex + 1}"
+                }
+                self.wallboxes.append(wallbox)
+            else:
+                _LOGGER.debug("No Wallbox with index %s has been found", wbIndex)
+
+        # Fix Naming if there's only one wallbox
+        if len(self.wallboxes) == 1:
+            self.wallboxes[0]["key"] = "wallbox"
+            self.wallboxes[0]["name"] = "Wallbox"
+
+    # Getter for _wallboxes
+    @property
+    def wallboxes(self) -> list[dict[str, str | int]]:
+        """Get the list of wallboxes."""
+        return self._wallboxes
+
+    # Setter for _wallboxes
+    @wallboxes.setter
+    def wallboxes(self, value: list[dict[str, str | int]]) -> None:
+        """Set the list of wallboxes."""
+        self._wallboxes = value
 
     async def _async_connect_additional_powermeters(self):
         """Identify the installed powermeters and reconnect to E3DC with this config."""
@@ -193,7 +206,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("Not polling wallbox, they are updating right now")
 
-        if self.wallbox_installed is True:
+        if len(self.wallboxes) > 0:
             _LOGGER.debug("Polling wallbox")
             await self._load_and_process_wallbox_data()
 
@@ -298,28 +311,31 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _load_and_process_wallbox_data(self) -> None:
         """Load and process wallbox data to existing data."""
-        try:
-            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
-                self.proxy.get_wallbox_data
-            )
-        except HomeAssistantError as ex:
-            _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
-            return
 
-        for key, value in request_data.items():
-            formatted_key = "wallbox-" + re.sub(r'(?<!^)(?=[A-Z])', '-', key).lower()   #RegEx to convert from CamelCase to kebab-case
-            if formatted_key == "wallbox-plug-locked":
-                formatted_key = "wallbox-plug-lock"
-                value = not value  # Inverse to match HA's Lock On/Off interpretation
-            if formatted_key == "wallbox-plugged":
-                formatted_key = "wallbox-plug"
-            if formatted_key == "wallbox-schuko-on":
-                formatted_key = "wallbox-schuko"
-            if formatted_key == "wallbox-sun-mode-on":
-                formatted_key = "wallbox-sun-mode"
-            if formatted_key == "wallbox-charging-active":
-                formatted_key = "wallbox-charging"
-            self._mydata[formatted_key] = value
+        for wallbox in self.wallboxes:
+            try:
+                request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                    self.proxy.get_wallbox_data, wallbox["index"]
+                )
+            except HomeAssistantError as ex:
+                _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
+                return
+
+            for key, value in request_data.items():
+                formatted_key = re.sub(r'(?<!^)(?=[A-Z])', '-', key).lower()   #RegEx to convert from CamelCase to kebab-case
+                if formatted_key == "plug-locked":
+                    formatted_key = "plug-lock"
+                    value = not value  # Inverse to match HA's Lock On/Off interpretation
+                if formatted_key == "plugged":
+                    formatted_key = "plug"
+                if formatted_key == "schuko-on":
+                    formatted_key = "schuko"
+                if formatted_key == "sun-mode-on":
+                    formatted_key = "sun-mode"
+                if formatted_key == "charging-active":
+                    formatted_key = "charging"
+                wallbox_key = wallbox["key"]
+                self._mydata[f"{wallbox_key}-{formatted_key}"] = value
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.

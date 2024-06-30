@@ -156,9 +156,9 @@ class E3DCProxy:
         return self.e3dc.get_powermeters(keepAlive=True)
 
     @e3dc_call
-    def get_wallbox_data(self) -> dict[str, Any]:
+    def get_wallbox_data(self, wbIndex: int = 0) -> dict[str, Any]:
         """Poll current wallbox readings."""
-        return self.e3dc.get_wallbox_data(keepAlive=True)
+        return self.e3dc.get_wallbox_data(wbIndex=wbIndex, keepAlive=True)
 
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:
