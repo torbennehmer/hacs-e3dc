@@ -45,6 +45,15 @@ set_wallbox_max_charge_current:
         device:
           filter:
             integration: e3dc_rscp
+    wallbox_index:
+      required: true
+      example: "0"
+      selector:
+        number:
+          min: 0
+          max: 7
+          mode: box
+          step: 1
     max_charge_current:
       required: false
       example: "16"

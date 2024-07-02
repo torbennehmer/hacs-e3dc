@@ -40,28 +40,28 @@
         "name": "Manual charge"
       },
       "wallbox-battery-to-car": {
-        "name": "Wallbox battery to car"
+        "name": "{wallbox_name} battery to car"
       },
       "wallbox-charging": {
-        "name": "Wallbox charging"
+        "name": "{wallbox_name} charging"
       },
       "wallbox-charging-canceled": {
-        "name": "Wallbox charging canceled"
+        "name": "{wallbox_name} charging canceled"
       },
       "wallbox-sun-mode": {
-        "name": "Wallbox sun mode"
+        "name": "{wallbox_name} sun mode"
       },
       "wallbox-plug-lock": {
-        "name": "Wallbox plug lock"
+        "name": "{wallbox_name} plug lock"
       },
       "wallbox-plug": {
-        "name": "Wallbox plug"
+        "name": "{wallbox_name} plug"
       },
       "wallbox-schuko": {
-        "name": "Wallbox schuko"
+        "name": "{wallbox_name} schuko"
       },
       "wallbox-key-state": {
-        "name": "Wallbox key state"
+        "name": "{wallbox_name} key state"
       }
     },
     "sensor": {
@@ -217,6 +217,36 @@
       },
       "farm-additional-total": {
         "name": "Farm additional powermeter - total"
+      },
+      "wallbox-app-software": {
+        "name": "{wallbox_name} app software"
+      },
+      "wallbox-consumption-net": {
+        "name": "{wallbox_name} consumption net"
+      },
+      "wallbox-consumption-sun": {
+        "name": "{wallbox_name} consumption sun"
+      },
+      "wallbox-energy-all": {
+        "name": "{wallbox_name} energy all"
+      },
+      "wallbox-energy-net": {
+        "name": "{wallbox_name} energy net"
+      },
+      "wallbox-energy-sun": {
+        "name": "{wallbox_name} energy sun"
+      },
+      "wallbox-index": {
+        "name": "{wallbox_name} index"
+      },
+      "wallbox-max-charge-current": {
+        "name": "{wallbox_name} max charge current"
+      },
+      "wallbox-phases": {
+        "name": "{wallbox_name} phases"
+      },
+      "wallbox-soc": {
+        "name": "{wallbox_name} state of charge"
       }
     },
     "switch": {
@@ -227,18 +257,18 @@
         "name": "SmartPower powersaving"
       },
       "wallbox-sun-mode": {
-        "name": "Wallbox sun mode"
+        "name": "{wallbox_name} sun mode"
       },
       "wallbox-schuko": {
-        "name": "Wallbox schuko"
+        "name": "{wallbox_name} schuko"
       }
     },
     "button": {
       "wallbox-toggle-wallbox-charging": {
-        "name": "Wallbox charging"
+        "name": "{wallbox_name} charging"
       },
       "wallbox-toggle-wallbox-phases": {
-        "name": "Wallbox phases"
+        "name": "{wallbox_name} phases"
       }
     }
   },
@@ -278,6 +308,10 @@
         "device_id": {
           "name": "E3DC Device ID",
           "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+        },
+        "wallbox_index": {
+          "name": "Wallbox Index",
+          "description": "Index of the Wallbox, You find it in the diagnostic entity of the wallbox \"Wallbox Index\" (deactivated by default)."
         },
         "max_charge_current": {
           "name": "Maximum Charging Current (A)",

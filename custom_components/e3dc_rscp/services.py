@@ -24,6 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 _device_map: dict[str, E3DCCoordinator] = {}
 
 ATTR_DEVICEID = "device_id"
+ATTR_WALLBOX_INDEX = "wallbox_index"
 ATTR_MAX_CHARGE = "max_charge"
 ATTR_MAX_DISCHARGE = "max_discharge"
 ATTR_CHARGE_AMOUNT = "charge_amount"
@@ -46,6 +47,7 @@ SCHEMA_SET_POWER_LIMITS = vol.Schema(
 SCHEMA_SET_WALLBOX_MAX_CHARGE_CURRENT = vol.Schema(
     {
         vol.Required(ATTR_DEVICEID): str,
+        vol.Required(ATTR_WALLBOX_INDEX): vol.All(int, vol.Range(min=0)),
         vol.Optional(ATTR_MAX_CHARGE_CURRENT): vol.All(int, vol.Range(min=0)),
     }
 )
@@ -137,16 +139,24 @@ async def _async_set_wallbox_max_charge_current(
     hass: HomeAssistant, call: ServiceCall
 ) -> None:
     """Extract service information and relay to coordinator."""
-    # TODO: Add option to select Wallbox
+
+    _LOGGER.debug("begin of _async_set_wallbox_max_charge_current")
+
     coordinator: E3DCCoordinator = _resolve_device_id(
         hass, call.data.get(ATTR_DEVICEID)
     )
+    wallbox_index: int | None = call.data.get(ATTR_WALLBOX_INDEX)
+    if wallbox_index is None:
+        raise HomeAssistantError(
+            f"{SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT}: Need to set {ATTR_WALLBOX_INDEX}"
+        )
     max_charge_current: int | None = call.data.get(ATTR_MAX_CHARGE_CURRENT)
     if max_charge_current is None:
         raise HomeAssistantError(
-            f"{SERVICE_SET_POWER_LIMITS}: Need to set {ATTR_MAX_CHARGE_CURRENT}"
+            f"{SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT}: Need to set {ATTR_MAX_CHARGE_CURRENT}"
         )
-    await coordinator.async_set_wallbox_max_charge_current(current=max_charge_current)
+    _LOGGER.debug("calling coordinator.async_set_wallbox_max_charge_current")
+    await coordinator.async_set_wallbox_max_charge_current(current=max_charge_current, wallbox_index=wallbox_index)
 
 
 async def _async_set_power_limits(hass: HomeAssistant, call: ServiceCall) -> None:
