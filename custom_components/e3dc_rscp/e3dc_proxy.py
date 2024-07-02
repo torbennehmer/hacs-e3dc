@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from e3dc import E3DC, SendError, NotAvailableError, RSCPKeyError, AuthenticationError
-from e3dc._rscpLib import rscpFindTag
+from e3dc._rscpLib import rscpFindTag, rscpFindTagIndex
 from e3dc._rscpTags import RscpTag, RscpType, PowermeterType
 
 from homeassistant.config_entries import ConfigEntry
@@ -159,6 +159,92 @@ class E3DCProxy:
     def get_wallbox_data(self, wallbox_index: int = 0) -> dict[str, Any]:
         """Poll current wallbox readings."""
         return self.e3dc.get_wallbox_data(wbIndex=wallbox_index, keepAlive=True)
+
+    @e3dc_call
+    def get_wallbox_identification_data(self, wallbox_index: int = 0) -> dict[str, Any]:
+        req = self.e3dc.sendRequest(
+            (
+                "WB_REQ_DATA",
+                "Container",
+                [
+                    ("WB_INDEX", "UChar8", wallbox_index),
+                    ("WB_REQ_MAC_ADDRESS", "None", None),
+                    ("WB_REQ_DEVICE_NAME", "None", None),
+                    ("WB_REQ_DEVICE_ID", "None", None),
+                    ("WB_REQ_SERIAL", "None", None),
+                    ("WB_REQ_BOOTLOADER_SOFTWARE", "None", None),
+                    ("WB_REQ_HW_VERSION", "None", None),
+                    ("WB_REQ_FLASH_VERSION", "None", None),
+                    ("WB_REQ_DIAG_DEVICE_ID", "None", None),
+                    ("WB_REQ_RFID_READER_ENABLED", "None", None),
+                    ("WB_REQ_IP_ADDR", "None", None),
+                    ("WB_REQ_WALLBOX_TYPE", "None", None),
+                    ("WB_REQ_NUMBER", "None", None),
+                ],
+            ),
+            keepAlive=True,
+        )
+
+        outObj = {
+            "index": rscpFindTagIndex(req, "WB_INDEX"),
+            "appSoftware": rscpFindTagIndex(req, "WB_APP_SOFTWARE"),
+        }
+
+        device_name = rscpFindTag(req, "WB_DEVICE_NAME")
+        if device_name is not None:
+            outObj["deviceName"] = rscpFindTagIndex(device_name, "WB_DEVICE_NAME")
+
+        wallbox_serial = rscpFindTag(req, "WB_SERIAL")
+        if wallbox_serial is not None:
+            outObj["wallboxSerial"] = rscpFindTagIndex(wallbox_serial, "WB_SERIAL")
+
+        bootloader_software = rscpFindTag(req, "WB_BOOTLOADER_SOFTWARE")
+        if bootloader_software is not None:
+            outObj["bootloaderSoftware"] = rscpFindTagIndex(bootloader_software, "WB_BOOTLOADER_SOFTWARE")
+
+        hw_version = rscpFindTag(req, "WB_HW_VERSION")
+        if hw_version is not None:
+            outObj["hwVersion"] = rscpFindTagIndex(hw_version, "WB_HW_VERSION")
+
+        flash_version = rscpFindTag(req, "WB_FLASH_VERSION")
+        if flash_version is not None:
+            outObj["flashVersion"] = rscpFindTagIndex(flash_version, "WB_FLASH_VERSION")
+
+        device_id = rscpFindTag(req, "WB_DEVICE_ID")
+        if device_id is not None:
+            outObj["deviceId"] = rscpFindTagIndex(device_id, "WB_DEVICE_ID")
+
+        diag_device_id = rscpFindTag(req, "WB_DIAG_DEVICE_ID")
+        if diag_device_id is not None:
+            outObj["diagDeviceId"] = rscpFindTagIndex(diag_device_id, "WB_DIAG_DEVICE_ID")
+
+        mac_address = rscpFindTag(req, "WB_MAC_ADDRESS")
+        if mac_address is not None:
+            outObj["macAddress"] = rscpFindTagIndex(mac_address, "WB_MAC_ADDRESS")
+
+        ip_addr = rscpFindTag(req, "WB_IP_ADDR")
+        if ip_addr is not None:
+            outObj["ipAddr"] = rscpFindTagIndex(ip_addr, "WB_IP_ADDR")
+
+        wallbox_type = rscpFindTag(req, "WB_WALLBOX_TYPE")
+        if wallbox_type is not None:
+            outObj["wallboxType"] = rscpFindTagIndex(wallbox_type, "WB_WALLBOX_TYPE")
+
+        number = rscpFindTag(req, "WB_NUMBER")
+        if number is not None:
+            outObj["number"] = rscpFindTagIndex(number, "WB_NUMBER")
+
+        schuko_available = rscpFindTag(req, "WB_SCHUKO_AVAILABLE")
+        if schuko_available is not None:
+            outObj["schukoAvailable"] = rscpFindTagIndex(schuko_available, "WB_SCHUKO_AVAILABLE")
+
+        outObj = {k: v for k, v in sorted(outObj.items())}
+
+        for key, value in outObj.items():
+            _LOGGER.debug("Wallbox %s: %s = %s", wallbox_index, key, value)
+
+        return outObj
+
 
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:

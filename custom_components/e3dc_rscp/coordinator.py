@@ -17,6 +17,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
+from homeassistant.helpers import device_registry as dr
 
 from .const import DOMAIN, MAX_CHARGE_CURRENT, MAX_WALLBOXES_POSSIBLE
 
@@ -84,26 +85,41 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._load_timezone_settings()
 
 
-    async def async_identify_wallboxes(self):
+    async def async_identify_wallboxes(self, hass: HomeAssistant):
         """Identify availability of Wallboxes if get_wallbox_data() returns meaningful data."""
         _LOGGER.debug("async_identify_wallboxes")
+        device_registry = dr.async_get(hass)
 
         # TODO: Find a more robust way to identify if a Wallbox is installed
         for wallbox_index in range(0, MAX_WALLBOXES_POSSIBLE-1):
             try:
                 request_data: dict[str, Any] = await self.hass.async_add_executor_job(
-                    self.proxy.get_wallbox_data, wallbox_index
+                    self.proxy.get_wallbox_identification_data, wallbox_index
                 )
             except HomeAssistantError as ex:
                 _LOGGER.warning("Failed to load wallbox with index %s, not updating data: %s", wallbox_index, ex)
                 return
 
-            if request_data["appSoftware"] is not None:
+            if "macAddress" in request_data:
                 _LOGGER.debug("Wallbox with index %s has been found", wallbox_index)
+
+                deviceInfo = DeviceInfo(
+                    identifiers={(DOMAIN, request_data["macAddress"])},
+                    via_device=(DOMAIN, self.uid),
+                    manufacturer="E3DC",
+                    name=request_data["deviceName"],
+                    model=request_data["wallboxType"],
+                    sw_version=request_data["appSoftware"],
+                    hw_version=request_data["hwVersion"],
+                    serial_number=request_data["wallboxSerial"],
+                    configuration_url="https://my.e3dc.com/",
+                )
+
                 wallbox = {
                     "index": wallbox_index,
                     "key": f"wallbox-{wallbox_index + 1}",
-                    "name": f"Wallbox {wallbox_index + 1}"
+                    "name": "",
+                    "deviceInfo": deviceInfo
                 }
                 self.wallboxes.append(wallbox)
             else:

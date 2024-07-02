@@ -79,7 +79,7 @@ async def async_setup_entry(
             off_icon="mdi:weather-sunny-off",
             device_class=None,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_sun_mode_description, entry.unique_id))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_sun_mode_description, entry.unique_id, wallbox["deviceInfo"]))
 
         wallbox_plug_lock_description = E3DCBinarySensorEntityDescription(
             key=wallbox["key"] + "-plug-lock",
@@ -90,7 +90,7 @@ async def async_setup_entry(
             device_class=BinarySensorDeviceClass.LOCK,
             entity_registry_enabled_default=False,  # Disabled per default as only Wallbox easy connect provides this state
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_lock_description, entry.unique_id))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_lock_description, entry.unique_id, wallbox["deviceInfo"]))
 
         wallbox_plug_description = E3DCBinarySensorEntityDescription(
             key=wallbox["key"] + "-plug",
@@ -100,7 +100,7 @@ async def async_setup_entry(
             off_icon="mdi:power-plug-off",
             device_class=BinarySensorDeviceClass.PLUG,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_description, entry.unique_id))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_description, entry.unique_id, wallbox["deviceInfo"]))
 
         wallbox_schuko_description = E3DCBinarySensorEntityDescription(
             key=wallbox["key"] + "-schuko",
@@ -111,7 +111,7 @@ async def async_setup_entry(
             device_class=BinarySensorDeviceClass.POWER,
             entity_registry_enabled_default=False,   # Disabled per default as only Wallbox multi connect I provides this feature
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_schuko_description, entry.unique_id))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_schuko_description, entry.unique_id, wallbox["deviceInfo"]))
 
         wallbox_charging_description = E3DCBinarySensorEntityDescription(
             key=wallbox["key"] + "-charging",
@@ -121,7 +121,7 @@ async def async_setup_entry(
             off_icon="mdi:car-electric-outline",
             device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_description, entry.unique_id))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_description, entry.unique_id, wallbox["deviceInfo"]))
 
         wallbox_charging_canceled_description = E3DCBinarySensorEntityDescription(
             key=wallbox["key"] + "-charging-canceled",
@@ -131,7 +131,7 @@ async def async_setup_entry(
             off_icon="mdi:check-circle-outline",
             device_class=None,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_canceled_description, entry.unique_id))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_canceled_description, entry.unique_id, wallbox["deviceInfo"]))
 
         wallbox_battery_to_car_description = E3DCBinarySensorEntityDescription(
             key=wallbox["key"] + "-battery-to-car",
@@ -142,7 +142,7 @@ async def async_setup_entry(
             device_class=None,
             entity_registry_enabled_default=False,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_battery_to_car_description, entry.unique_id))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_battery_to_car_description, entry.unique_id, wallbox["deviceInfo"]))
 
         wallbox_key_state_description = E3DCBinarySensorEntityDescription(
             key=wallbox["key"] + "-key-state",
@@ -153,7 +153,7 @@ async def async_setup_entry(
             device_class=BinarySensorDeviceClass.LOCK,
             entity_registry_enabled_default=False,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_key_state_description, entry.unique_id))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_key_state_description, entry.unique_id, wallbox["deviceInfo"]))
 
     async_add_entities(entities)
 
@@ -168,6 +168,7 @@ class E3DCBinarySensor(CoordinatorEntity, BinarySensorEntity):
         coordinator: E3DCCoordinator,
         description: E3DCBinarySensorEntityDescription,
         uid: str,
+        device_info: DeviceInfo | None = None
     ) -> None:
         """Initialize the Sensor."""
         super().__init__(coordinator)
@@ -178,6 +179,10 @@ class E3DCBinarySensor(CoordinatorEntity, BinarySensorEntity):
             self.entity_description.on_icon is not None
             and self.entity_description.off_icon is not None
         )
+        if device_info is not None:
+            self._deviceInfo = device_info
+        else:
+            self._deviceInfo = self.coordinator.device_info()
 
     @property
     def is_on(self) -> bool | None:
@@ -196,4 +201,4 @@ class E3DCBinarySensor(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device information."""
-        return self.coordinator.device_info()
+        return self._deviceInfo

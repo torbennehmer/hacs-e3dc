@@ -73,7 +73,7 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Initialize Binary Sensor Platform."""
+    """Initialize Switch Platform."""
     assert isinstance(entry.unique_id, str)
     coordinator: E3DCCoordinator = hass.data[DOMAIN][entry.unique_id]
     entities: list[E3DCSwitch] = [
@@ -99,7 +99,7 @@ async def async_setup_entry(
                 False
             ),
         )
-        entities.append(E3DCSwitch(coordinator, wallbox_sun_mode_description, entry.unique_id))
+        entities.append(E3DCSwitch(coordinator, wallbox_sun_mode_description, entry.unique_id, wallbox["deviceInfo"]))
 
         wallbox_schuko_description = E3DCSwitchEntityDescription(
             key=wallbox["key"] + "-schuko",
@@ -117,7 +117,7 @@ async def async_setup_entry(
             ),
             entity_registry_enabled_default=False, # Disabled per default as only Wallbox multi connect I provides this feature
         )
-        entities.append(E3DCSwitch(coordinator, wallbox_schuko_description, entry.unique_id))
+        entities.append(E3DCSwitch(coordinator, wallbox_schuko_description, entry.unique_id, wallbox["deviceInfo"]))
 
     async_add_entities(entities)
 
@@ -132,8 +132,9 @@ class E3DCSwitch(CoordinatorEntity, SwitchEntity):
         coordinator: E3DCCoordinator,
         description: E3DCSwitchEntityDescription,
         uid: str,
+        device_info: DeviceInfo | None = None
     ) -> None:
-        """Initialize the Sensor."""
+        """Initialize the Switch."""
         super().__init__(coordinator)
         self.coordinator: E3DCCoordinator = coordinator
         self.entity_description: E3DCSwitchEntityDescription = description
@@ -143,6 +144,10 @@ class E3DCSwitch(CoordinatorEntity, SwitchEntity):
             self.entity_description.on_icon is not None
             and self.entity_description.off_icon is not None
         )
+        if device_info is not None:
+            self._deviceInfo = device_info
+        else:
+            self._deviceInfo = self.coordinator.device_info()
 
     @property
     def icon(self) -> str | None:
@@ -179,4 +184,4 @@ class E3DCSwitch(CoordinatorEntity, SwitchEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device information."""
-        return self.coordinator.device_info()
+        return self._deviceInfo
