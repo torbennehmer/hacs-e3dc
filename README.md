@@ -41,6 +41,7 @@ code.
   - [Set power limits](#set-power-limits)
   - [Clear current power limits](#clear-current-power-limits)
   - [Initate manual battery charging](#initate-manual-battery-charging)
+  - [Set maximum wallbox charging current](#set-maximum-wallbox-charging-current)
 - [Upstream source](#upstream-source)
 
 ## Disclaimer
@@ -96,7 +97,7 @@ local connection to your E3DC.
 ### RSCP configuration
 
 Right now, the integration will use the default configuration provided by
-pye3dc. Additional PVIs, powermeters or batteries not covered yet by an option
+pye3dc. Additional PVIs, powermeters, wallboxes or batteries not covered yet by an option
 flow. You can find details about these options at the [pye3dc
 readme](https://github.com/fsantini/python-e3dc#configuration). I will plan to
 add options to configure this in the long run. Please file an issue if you need
@@ -207,6 +208,16 @@ example in windy winter nights/days.
 - Check the impact on any warranty from E3DC you may have.
 
 To stress this once more: Use this feature at your own risk.
+
+### Set maximum wallbox charging current
+
+The Service `set_wallbox_charging_current` will set the maximum charging current of the given Wallbox in Amps. 16A is typical for a 11kW Wallbox, 32A is typical for a 22kW Wallbox.
+
+**Read the following before using this functionality on your own risk:**
+
+- If values cannot be set, this may be due to the hard limits for your fuses configured during the installation of the Wallbox. Only a E3DC service technican can and should change these limits.
+- In case your fuse settings are wrong (too low) and you set the charging current too high, you may blow your fuse or even damage your Wallbox.
+- Check your local laws and regulations whether setting the Wallbox to a higher charging current requires approvals from your grid operator.
 
 ## Upstream source
 
