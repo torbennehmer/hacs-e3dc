@@ -156,30 +156,25 @@ class E3DCProxy:
         return self.e3dc.get_powermeters(keepAlive=True)
 
     @e3dc_call
-    def get_wallbox_data(self, wallbox_index: int = 0) -> dict[str, Any]:
+    def get_wallbox_data(self, wallbox_index: int) -> dict[str, Any]:
         """Poll current wallbox readings."""
         return self.e3dc.get_wallbox_data(wbIndex=wallbox_index, keepAlive=True)
 
     @e3dc_call
-    def get_wallbox_identification_data(self, wallbox_index: int = 0) -> dict[str, Any]:
+    def get_wallbox_identification_data(self, wallbox_index: int) -> dict[str, Any]:
+        """Get identification data for wallbox with given index."""
         req = self.e3dc.sendRequest(
             (
                 "WB_REQ_DATA",
                 "Container",
                 [
                     ("WB_INDEX", "UChar8", wallbox_index),
+                    ("WB_REQ_APP_SOFTWARE", "None", None),
                     ("WB_REQ_MAC_ADDRESS", "None", None),
                     ("WB_REQ_DEVICE_NAME", "None", None),
-                    ("WB_REQ_DEVICE_ID", "None", None),
                     ("WB_REQ_SERIAL", "None", None),
-                    ("WB_REQ_BOOTLOADER_SOFTWARE", "None", None),
                     ("WB_REQ_HW_VERSION", "None", None),
-                    ("WB_REQ_FLASH_VERSION", "None", None),
-                    ("WB_REQ_DIAG_DEVICE_ID", "None", None),
-                    ("WB_REQ_RFID_READER_ENABLED", "None", None),
-                    ("WB_REQ_IP_ADDR", "None", None),
                     ("WB_REQ_WALLBOX_TYPE", "None", None),
-                    ("WB_REQ_NUMBER", "None", None),
                 ],
             ),
             keepAlive=True,
@@ -187,8 +182,11 @@ class E3DCProxy:
 
         outObj = {
             "index": rscpFindTagIndex(req, "WB_INDEX"),
-            "appSoftware": rscpFindTagIndex(req, "WB_APP_SOFTWARE"),
         }
+
+        app_software = rscpFindTag(req, "WB_APP_SOFTWARE")
+        if app_software is not None:
+            outObj["appSoftware"] = rscpFindTagIndex(app_software, "WB_APP_SOFTWARE")
 
         device_name = rscpFindTag(req, "WB_DEVICE_NAME")
         if device_name is not None:
@@ -198,50 +196,17 @@ class E3DCProxy:
         if wallbox_serial is not None:
             outObj["wallboxSerial"] = rscpFindTagIndex(wallbox_serial, "WB_SERIAL")
 
-        bootloader_software = rscpFindTag(req, "WB_BOOTLOADER_SOFTWARE")
-        if bootloader_software is not None:
-            outObj["bootloaderSoftware"] = rscpFindTagIndex(bootloader_software, "WB_BOOTLOADER_SOFTWARE")
-
         hw_version = rscpFindTag(req, "WB_HW_VERSION")
         if hw_version is not None:
             outObj["hwVersion"] = rscpFindTagIndex(hw_version, "WB_HW_VERSION")
-
-        flash_version = rscpFindTag(req, "WB_FLASH_VERSION")
-        if flash_version is not None:
-            outObj["flashVersion"] = rscpFindTagIndex(flash_version, "WB_FLASH_VERSION")
-
-        device_id = rscpFindTag(req, "WB_DEVICE_ID")
-        if device_id is not None:
-            outObj["deviceId"] = rscpFindTagIndex(device_id, "WB_DEVICE_ID")
-
-        diag_device_id = rscpFindTag(req, "WB_DIAG_DEVICE_ID")
-        if diag_device_id is not None:
-            outObj["diagDeviceId"] = rscpFindTagIndex(diag_device_id, "WB_DIAG_DEVICE_ID")
 
         mac_address = rscpFindTag(req, "WB_MAC_ADDRESS")
         if mac_address is not None:
             outObj["macAddress"] = rscpFindTagIndex(mac_address, "WB_MAC_ADDRESS")
 
-        ip_addr = rscpFindTag(req, "WB_IP_ADDR")
-        if ip_addr is not None:
-            outObj["ipAddr"] = rscpFindTagIndex(ip_addr, "WB_IP_ADDR")
-
         wallbox_type = rscpFindTag(req, "WB_WALLBOX_TYPE")
         if wallbox_type is not None:
             outObj["wallboxType"] = rscpFindTagIndex(wallbox_type, "WB_WALLBOX_TYPE")
-
-        number = rscpFindTag(req, "WB_NUMBER")
-        if number is not None:
-            outObj["number"] = rscpFindTagIndex(number, "WB_NUMBER")
-
-        schuko_available = rscpFindTag(req, "WB_SCHUKO_AVAILABLE")
-        if schuko_available is not None:
-            outObj["schukoAvailable"] = rscpFindTagIndex(schuko_available, "WB_SCHUKO_AVAILABLE")
-
-        outObj = {k: v for k, v in sorted(outObj.items())}
-
-        for key, value in outObj.items():
-            _LOGGER.debug("Wallbox %s: %s = %s", wallbox_index, key, value)
 
         return outObj
 
@@ -318,7 +283,7 @@ class E3DCProxy:
             _LOGGER.warning("Manual charging could not be activated")
 
     @e3dc_call
-    def set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int = 0):
+    def set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int):
         """Set wallbox charging mode to sun mode on/off.
 
         Args:
@@ -334,7 +299,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to set wallbox to sun mode %s", enabled)
 
     @e3dc_call
-    def set_wallbox_schuko(self, enabled: bool, wallbox_index: int = 0):
+    def set_wallbox_schuko(self, enabled: bool, wallbox_index: int):
         """Set wallbox power outlet (schuko) to on/off.
 
         Args:
@@ -350,7 +315,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
 
     @e3dc_call
-    def toggle_wallbox_charging(self, wallbox_index: int = 0):
+    def toggle_wallbox_charging(self, wallbox_index: int):
         """Toggle charging of the wallbox.
 
         Args:
@@ -365,7 +330,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to toggle wallbox charging")
 
     @e3dc_call
-    def toggle_wallbox_phases(self, wallbox_index: int = 0):
+    def toggle_wallbox_phases(self, wallbox_index: int):
         """Toggle the phases of wallbox charging between 1 and 3 phases.
 
            Only works if "Phasen" in the portal/device is not set to Auto.
@@ -383,7 +348,7 @@ class E3DCProxy:
 
     @e3dc_call
     def set_wallbox_max_charge_current(
-        self, max_charge_current: int, wallbox_index: int = 0
+        self, max_charge_current: int, wallbox_index: int
     ) -> bool:
         """Set the maximum charge current of the wallbox via RSCP protocol locally.
 

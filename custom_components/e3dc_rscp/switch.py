@@ -82,42 +82,43 @@ async def async_setup_entry(
     ]
 
     for wallbox in coordinator.wallboxes:
+        # Get the UID & Key for the given wallbox
+        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        wallbox_key = wallbox["key"]
 
         wallbox_sun_mode_description = E3DCSwitchEntityDescription(
             # TODO: Figure out how the icons match the on/off state
-            key=wallbox["key"] + "-sun-mode",
+            key=f"{wallbox_key}-sun-mode",
             translation_key="wallbox-sun-mode",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             name="Wallbox Sun Mode",
             on_icon="mdi:weather-sunny",
             off_icon="mdi:weather-sunny-off",
             device_class=SwitchDeviceClass.SWITCH,
             async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_sun_mode(
-                True
+                True, wallbox["index"]
             ),
             async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_sun_mode(
-                False
+                False, wallbox["index"]
             ),
         )
-        entities.append(E3DCSwitch(coordinator, wallbox_sun_mode_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSwitch(coordinator, wallbox_sun_mode_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_schuko_description = E3DCSwitchEntityDescription(
-            key=wallbox["key"] + "-schuko",
+            key=f"{wallbox_key}-schuko",
             translation_key="wallbox-schuko",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             name="Wallbox Schuko",
             on_icon="mdi:power-plug",
             off_icon="mdi:power-plug-off",
             device_class=SwitchDeviceClass.OUTLET,
             async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_schuko(
-                True
+                True, wallbox["index"]
             ),
             async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_schuko(
-                False
+                False, wallbox["index"]
             ),
             entity_registry_enabled_default=False, # Disabled per default as only Wallbox multi connect I provides this feature
         )
-        entities.append(E3DCSwitch(coordinator, wallbox_schuko_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSwitch(coordinator, wallbox_schuko_description, unique_id, wallbox["deviceInfo"]))
 
     async_add_entities(entities)
 

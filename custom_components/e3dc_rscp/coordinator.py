@@ -17,7 +17,6 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
-from homeassistant.helpers import device_registry as dr
 
 from .const import DOMAIN, MAX_CHARGE_CURRENT, MAX_WALLBOXES_POSSIBLE
 
@@ -86,11 +85,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
 
     async def async_identify_wallboxes(self, hass: HomeAssistant):
-        """Identify availability of Wallboxes if get_wallbox_data() returns meaningful data."""
-        _LOGGER.debug("async_identify_wallboxes")
-        device_registry = dr.async_get(hass)
+        """Identify availability of Wallboxes if get_wallbox_identification_data() returns meaningful data."""
 
-        # TODO: Find a more robust way to identify if a Wallbox is installed
         for wallbox_index in range(0, MAX_WALLBOXES_POSSIBLE-1):
             try:
                 request_data: dict[str, Any] = await self.hass.async_add_executor_job(
@@ -103,8 +99,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if "macAddress" in request_data:
                 _LOGGER.debug("Wallbox with index %s has been found", wallbox_index)
 
+                unique_id = dr.format_mac(request_data["macAddress"])
+
                 deviceInfo = DeviceInfo(
-                    identifiers={(DOMAIN, request_data["macAddress"])},
+                    identifiers={(DOMAIN, unique_id)},
                     via_device=(DOMAIN, self.uid),
                     manufacturer="E3DC",
                     name=request_data["deviceName"],
@@ -117,18 +115,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
                 wallbox = {
                     "index": wallbox_index,
-                    "key": f"wallbox-{wallbox_index + 1}",
-                    "name": "",
+                    "key": unique_id,
                     "deviceInfo": deviceInfo
                 }
                 self.wallboxes.append(wallbox)
             else:
                 _LOGGER.debug("No Wallbox with index %s has been found", wallbox_index)
-
-        # Fix Naming if there's only one wallbox
-        if len(self.wallboxes) == 1:
-            self.wallboxes[0]["key"] = "wallbox"
-            self.wallboxes[0]["name"] = "Wallbox"
 
     # Getter for _wallboxes
     @property
@@ -442,14 +434,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Updated powersaving to %s", enabled)
         return True
 
-    async def async_set_wallbox_sun_mode(self, enabled: bool) -> bool:
+    async def async_set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int) -> bool:
         """Enable or disable wallbox sun mode."""
         _LOGGER.debug("Updating wallbox sun mode to %s", enabled)
 
         try:
             self._update_guard_wallboxsettings = True
             await self.hass.async_add_executor_job(
-                self.proxy.set_wallbox_sun_mode, enabled
+                self.proxy.set_wallbox_sun_mode, enabled, wallbox_index
             )
             self._mydata["wallbox-sun-mode"] = enabled
         except Exception as ex:
@@ -461,14 +453,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully updated wallbox sun mode to %s", enabled)
         return True
 
-    async def async_set_wallbox_schuko(self, enabled: bool) -> bool:
+    async def async_set_wallbox_schuko(self, enabled: bool, wallbox_index: int) -> bool:
         """Enable or disable wallbox schuko."""
         _LOGGER.debug("Updating wallbox schuko to %s", enabled)
 
         try:
             self._update_guard_wallboxsettings = True
             await self.hass.async_add_executor_job(
-                self.proxy.set_wallbox_schuko, enabled
+                self.proxy.set_wallbox_schuko, enabled, wallbox_index
             )
             self._mydata["wallbox-schuko"] = enabled
         except Exception as ex:
@@ -480,12 +472,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully updated wallbox schuko to %s", enabled)
         return True
 
-    async def async_toggle_wallbox_phases(self) -> bool:
+    async def async_toggle_wallbox_phases(self, wallbox_index: int) -> bool:
         """Toggle the Wallbox Phases between 1 and 3."""
         _LOGGER.debug("Toggling the Wallbox Phases")
 
         try:
-            await self.hass.async_add_executor_job(self.proxy.toggle_wallbox_phases)
+            await self.hass.async_add_executor_job(
+                self.proxy.toggle_wallbox_phases, wallbox_index
+            )
         except Exception as ex:
             _LOGGER.error("Failed to toggle wallbox phases: %s", ex)
             return False
@@ -493,12 +487,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully toggled wallbox phases")
         return True
 
-    async def async_toggle_wallbox_charging(self) -> bool:
+    async def async_toggle_wallbox_charging(self, wallbox_index: int) -> bool:
         """Toggle the Wallbox charging state."""
         _LOGGER.debug("Toggling the Wallbox charging state")
 
         try:
-            await self.hass.async_add_executor_job(self.proxy.toggle_wallbox_charging)
+            await self.hass.async_add_executor_job(
+                self.proxy.toggle_wallbox_charging, wallbox_index
+            )
         except Exception as ex:
             _LOGGER.error("Failed to toggle wallbox charging state: %s", ex)
             return False
@@ -519,7 +515,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Successfully cleared the power limits")
 
-    async def async_set_wallbox_max_charge_current(self, current: int | None, wallbox_index: int | None) -> None:
+    async def async_set_wallbox_max_charge_current(self, current: int | None, wallbox_index: int) -> None:
         """Set the wallbox max charge current."""
 
         # TODO: Add more refined way to deal with maximum charge current, right now it's hard coded to 32A. The max current is dependant on the local installations, many WBs are throttled at 16A, not 32A due to power grid restrictions.

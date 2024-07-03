@@ -47,24 +47,25 @@ async def async_setup_entry(
     ]
 
     for wallbox in coordinator.wallboxes:
+        # Get the UID & Key for the given wallbox
+        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        wallbox_key = wallbox["key"]
 
         wallbox_toggle_wallbox_phases_description = E3DCButtonEntityDescription(
-            key=wallbox["key"] + "-toggle-wallbox-phases",
+            key=f"{wallbox_key}-toggle-wallbox-phases",
             translation_key="wallbox-toggle-wallbox-phases",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:sine-wave",
-            async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_phases(),
+            async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_phases(wallbox["index"]),
         )
-        entities.append(E3DCButton(coordinator, wallbox_toggle_wallbox_phases_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCButton(coordinator, wallbox_toggle_wallbox_phases_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_toggle_wallbox_charging_description = E3DCButtonEntityDescription(
-            key=wallbox["key"] + "-toggle-wallbox-charging",
+            key=f"{wallbox_key}-toggle-wallbox-charging",
             translation_key="wallbox-toggle-wallbox-charging",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:car-electric",
-            async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_charging(),
+            async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_charging(wallbox["index"]),
         )
-        entities.append(E3DCButton(coordinator, wallbox_toggle_wallbox_charging_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCButton(coordinator, wallbox_toggle_wallbox_charging_description, unique_id, wallbox["deviceInfo"]))
 
 
     async_add_entities(entities)

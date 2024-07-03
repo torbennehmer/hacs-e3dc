@@ -70,90 +70,85 @@ async def async_setup_entry(
     ]
 
     for wallbox in coordinator.wallboxes:
+        # Get the UID & Key for the given wallbox
+        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        wallbox_key = wallbox["key"]
 
         wallbox_sun_mode_description = E3DCBinarySensorEntityDescription(
-            key=wallbox["key"] + "-sun-mode",
+            key=f"{wallbox_key}-sun-mode",
             translation_key="wallbox-sun-mode",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             on_icon="mdi:weather-sunny",
             off_icon="mdi:weather-sunny-off",
             device_class=None,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_sun_mode_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_sun_mode_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_plug_lock_description = E3DCBinarySensorEntityDescription(
-            key=wallbox["key"] + "-plug-lock",
+            key=f"{wallbox_key}-plug-lock",
             translation_key="wallbox-plug-lock",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             on_icon="mdi:lock-open",
             off_icon="mdi:lock",
             device_class=BinarySensorDeviceClass.LOCK,
             entity_registry_enabled_default=False,  # Disabled per default as only Wallbox easy connect provides this state
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_lock_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_lock_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_plug_description = E3DCBinarySensorEntityDescription(
-            key=wallbox["key"] + "-plug",
+            key=f"{wallbox_key}-plug",
             translation_key="wallbox-plug",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             on_icon="mdi:power-plug",
             off_icon="mdi:power-plug-off",
             device_class=BinarySensorDeviceClass.PLUG,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_plug_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_schuko_description = E3DCBinarySensorEntityDescription(
-            key=wallbox["key"] + "-schuko",
+            key=f"{wallbox_key}-schuko",
             translation_key="wallbox-schuko",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             on_icon="mdi:power-plug-outline",
             off_icon="mdi:power-plug-off-outline",
             device_class=BinarySensorDeviceClass.POWER,
             entity_registry_enabled_default=False,   # Disabled per default as only Wallbox multi connect I provides this feature
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_schuko_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_schuko_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_charging_description = E3DCBinarySensorEntityDescription(
-            key=wallbox["key"] + "-charging",
+            key=f"{wallbox_key}-charging",
             translation_key="wallbox-charging",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             on_icon="mdi:car-electric",
             off_icon="mdi:car-electric-outline",
             device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_charging_canceled_description = E3DCBinarySensorEntityDescription(
-            key=wallbox["key"] + "-charging-canceled",
+            key=f"{wallbox_key}-charging-canceled",
             translation_key="wallbox-charging-canceled",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             on_icon="mdi:cancel",
             off_icon="mdi:check-circle-outline",
             device_class=None,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_canceled_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_charging_canceled_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_battery_to_car_description = E3DCBinarySensorEntityDescription(
-            key=wallbox["key"] + "-battery-to-car",
+            key=f"{wallbox_key}-battery-to-car",
             translation_key="wallbox-battery-to-car",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             on_icon="mdi:battery-charging",
             off_icon="mdi:battery-off",
             device_class=None,
             entity_registry_enabled_default=False,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_battery_to_car_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_battery_to_car_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_key_state_description = E3DCBinarySensorEntityDescription(
-            key=wallbox["key"] + "-key-state",
+            key=f"{wallbox_key}-key-state",
             translation_key="wallbox-key-state",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             on_icon="mdi:key-variant",
             off_icon="mdi:key-remove",
             device_class=BinarySensorDeviceClass.LOCK,
             entity_registry_enabled_default=False,
         )
-        entities.append(E3DCBinarySensor(coordinator, wallbox_key_state_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCBinarySensor(coordinator, wallbox_key_state_description, unique_id, wallbox["deviceInfo"]))
 
     async_add_entities(entities)
 

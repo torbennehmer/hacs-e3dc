@@ -420,46 +420,45 @@ async def async_setup_entry(
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
 
     for wallbox in coordinator.wallboxes:
+        # Get the UID & Key for the given wallbox
+        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        wallbox_key = wallbox["key"]
 
         wallbox_app_software_description = SensorEntityDescription(
-            key=wallbox["key"] + "-app-software",
+            key=f"{wallbox_key}-app-software",
             translation_key="wallbox-app-software",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:information-outline",
             device_class=None,
             entity_registry_enabled_default=False,
             entity_category=EntityCategory.DIAGNOSTIC
         )
-        entities.append(E3DCSensor(coordinator, wallbox_app_software_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_app_software_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_consumption_net_description = SensorEntityDescription(
-            key=wallbox["key"] + "-consumption-net",
+            key=f"{wallbox_key}-consumption-net",
             translation_key="wallbox-consumption-net",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:transmission-tower-import",
             native_unit_of_measurement=UnitOfPower.WATT,
             suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
             device_class=SensorDeviceClass.POWER,
             state_class=SensorStateClass.MEASUREMENT,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_consumption_net_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_consumption_net_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_consumption_sun_description = SensorEntityDescription(
-            key=wallbox["key"] + "-consumption-sun",
+            key=f"{wallbox_key}-consumption-sun",
             translation_key="wallbox-consumption-sun",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:solar-power",
             native_unit_of_measurement=UnitOfPower.WATT,
             suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
             device_class=SensorDeviceClass.POWER,
             state_class=SensorStateClass.MEASUREMENT,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_consumption_sun_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_consumption_sun_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_energy_all_description = SensorEntityDescription(
-            key=wallbox["key"] + "-energy-all",
+            key=f"{wallbox_key}-energy-all",
             translation_key="wallbox-energy-all",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:counter",
             native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
             suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -467,12 +466,11 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL_INCREASING,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_energy_all_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_energy_all_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_energy_net_description = SensorEntityDescription(
-            key=wallbox["key"] + "-energy-net",
+            key=f"{wallbox_key}-energy-net",
             translation_key="wallbox-energy-net",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:counter",
             native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
             suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -480,12 +478,11 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL_INCREASING,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_energy_net_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_energy_net_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_energy_sun_description = SensorEntityDescription(
-            key=wallbox["key"] + "-energy-sun",
+            key=f"{wallbox_key}-energy-sun",
             translation_key="wallbox-energy-sun",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:counter",
             native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
             suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
@@ -493,43 +490,39 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL_INCREASING,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_energy_sun_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_energy_sun_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_index_description = SensorEntityDescription(
-            key=wallbox["key"] + "-index",
+            key=f"{wallbox_key}-index",
             translation_key="wallbox-index",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:numeric",
             device_class=None,
             entity_registry_enabled_default=False,
             entity_category=EntityCategory.DIAGNOSTIC
         )
-        entities.append(E3DCSensor(coordinator, wallbox_index_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_index_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_max_charge_current_description = SensorEntityDescription(
-            key=wallbox["key"] + "-max-charge-current",
+            key=f"{wallbox_key}-max-charge-current",
             translation_key="wallbox-max-charge-current",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:current-ac",
             native_unit_of_measurement="A",
             device_class=SensorDeviceClass.CURRENT,
             state_class=SensorStateClass.MEASUREMENT,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_max_charge_current_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_max_charge_current_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_phases_description = SensorEntityDescription(
-            key=wallbox["key"] + "-phases",
+            key=f"{wallbox_key}-phases",
             translation_key="wallbox-phases",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:sine-wave",
             device_class=None,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_phases_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_phases_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_soc_description = SensorEntityDescription(
-            key=wallbox["key"] + "-soc",
+            key=f"{wallbox_key}-soc",
             translation_key="wallbox-soc",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:battery-charging",
             native_unit_of_measurement=PERCENTAGE,
             suggested_display_precision=0,
@@ -537,7 +530,7 @@ async def async_setup_entry(
             state_class=SensorStateClass.MEASUREMENT,
             entity_registry_enabled_default=False,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_soc_description, entry.unique_id, wallbox["deviceInfo"]))
+        entities.append(E3DCSensor(coordinator, wallbox_soc_description, unique_id, wallbox["deviceInfo"]))
 
 
     async_add_entities(entities)
