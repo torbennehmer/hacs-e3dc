@@ -100,16 +100,18 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 _LOGGER.debug("Wallbox with index %s has been found", wallbox_index)
 
                 unique_id = dr.format_mac(request_data["macAddress"])
+                wallboxType = request_data["wallboxType"]
+                model = f"Wallbox Type {wallboxType}"
 
                 deviceInfo = DeviceInfo(
                     identifiers={(DOMAIN, unique_id)},
                     via_device=(DOMAIN, self.uid),
                     manufacturer="E3DC",
                     name=request_data["deviceName"],
-                    model=request_data["wallboxType"],
-                    sw_version=request_data["appSoftware"],
-                    hw_version=request_data["hwVersion"],
+                    model=model,
+                    sw_version=request_data["firmwareVersion"],
                     serial_number=request_data["wallboxSerial"],
+                    connections={(dr.CONNECTION_NETWORK_MAC, dr.format_mac(request_data["macAddress"]))},
                     configuration_url="https://my.e3dc.com/",
                 )
 
@@ -398,10 +400,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             manufacturer="E3DC",
             model=self.proxy.e3dc.model,
             name=self.proxy.e3dc.model,
+            serial_number=self.proxy.e3dc.serialNumber,
             connections={(dr.CONNECTION_NETWORK_MAC, self.proxy.e3dc.macAddress)},
             identifiers={(DOMAIN, self.uid)},
             sw_version=self._sw_version,
-            configuration_url="https://s10.e3dc.com/",
+            configuration_url="https://my.e3dc.com/",
         )
 
     async def async_set_weather_regulated_charge(self, enabled: bool) -> bool:

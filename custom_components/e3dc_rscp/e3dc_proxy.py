@@ -169,11 +169,10 @@ class E3DCProxy:
                 "Container",
                 [
                     ("WB_INDEX", "UChar8", wallbox_index),
-                    ("WB_REQ_APP_SOFTWARE", "None", None),
+                    ("WB_REQ_FIRMWARE_VERSION", "None", None),
                     ("WB_REQ_MAC_ADDRESS", "None", None),
                     ("WB_REQ_DEVICE_NAME", "None", None),
                     ("WB_REQ_SERIAL", "None", None),
-                    ("WB_REQ_HW_VERSION", "None", None),
                     ("WB_REQ_WALLBOX_TYPE", "None", None),
                 ],
             ),
@@ -184,9 +183,9 @@ class E3DCProxy:
             "index": rscpFindTagIndex(req, "WB_INDEX"),
         }
 
-        app_software = rscpFindTag(req, "WB_APP_SOFTWARE")
-        if app_software is not None:
-            outObj["appSoftware"] = rscpFindTagIndex(app_software, "WB_APP_SOFTWARE")
+        firmware_version = rscpFindTag(req, "WB_FIRMWARE_VERSION")
+        if firmware_version is not None:
+            outObj["firmwareVersion"] = rscpFindTagIndex(firmware_version, "WB_FIRMWARE_VERSION")
 
         device_name = rscpFindTag(req, "WB_DEVICE_NAME")
         if device_name is not None:
@@ -195,10 +194,6 @@ class E3DCProxy:
         wallbox_serial = rscpFindTag(req, "WB_SERIAL")
         if wallbox_serial is not None:
             outObj["wallboxSerial"] = rscpFindTagIndex(wallbox_serial, "WB_SERIAL")
-
-        hw_version = rscpFindTag(req, "WB_HW_VERSION")
-        if hw_version is not None:
-            outObj["hwVersion"] = rscpFindTagIndex(hw_version, "WB_HW_VERSION")
 
         mac_address = rscpFindTag(req, "WB_MAC_ADDRESS")
         if mac_address is not None:
