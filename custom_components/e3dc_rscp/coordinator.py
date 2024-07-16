@@ -356,7 +356,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         tz_offset: int | None = None
         try:
-            tz_info: pytz.timezone = pytz.timezone(tz_name)
+            tz_info: pytz.timezone = await self.hass.async_add_executor_job(pytz.timezone, tz_name)
             dt_tmp: datetime = datetime.now(tz_info)
             tz_offset = dt_tmp.utcoffset().seconds
         except pytz.UnknownTimeZoneError:
