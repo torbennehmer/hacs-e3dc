@@ -40,28 +40,28 @@
                 "name": "Manual charge"
             },
             "wallbox-battery-to-car": {
-                "name": "{wallbox_name} battery to car"
+                "name": "Battery to car"
             },
             "wallbox-charging-canceled": {
-                "name": "{wallbox_name} charging canceled"
+                "name": "Charging canceled"
             },
             "wallbox-sun-mode": {
-                "name": "{wallbox_name} sun mode"
+                "name": "Sun mode"
             },
             "wallbox-key-state": {
-                "name": "{wallbox_name} key state"
+                "name": "Key state"
             },
             "wallbox-plug-lock": {
-                "name": "{wallbox_name} plug lock"
+                "name": "Plug lock"
             },
             "wallbox-plug": {
-                "name": "{wallbox_name} plug"
+                "name": "Plug"
             },
             "wallbox-schuko": {
-                "name": "{wallbox_name} schuko"
+                "name": "Schuko"
             },
             "wallbox-charging": {
-                "name": "{wallbox_name} charging"
+                "name": "Charging"
             }
         },
         "sensor": {
@@ -219,34 +219,34 @@
                 "name": "Farm additional powermeter - total"
             },
             "wallbox-app-software": {
-                "name": "{wallbox_name} app software"
+                "name": "App software"
             },
             "wallbox-consumption-net": {
-                "name": "{wallbox_name} consumption net"
+                "name": "Consumption net"
             },
             "wallbox-consumption-sun": {
-                "name": "{wallbox_name} consumption sun"
+                "name": "Consumption sun"
             },
             "wallbox-energy-all": {
-                "name": "{wallbox_name} energy all"
+                "name": "Energy all"
             },
             "wallbox-energy-net": {
-                "name": "{wallbox_name} energy net"
+                "name": "Energy net"
             },
             "wallbox-energy-sun": {
-                "name": "{wallbox_name} energy sun"
+                "name": "Energy sun"
             },
             "wallbox-index": {
-                "name": "{wallbox_name} index"
+                "name": "Index"
             },
             "wallbox-max-charge-current": {
-                "name": "{wallbox_name} max charge current"
+                "name": "Max charge current"
             },
             "wallbox-phases": {
-                "name": "{wallbox_name} phases"
+                "name": "Phases"
             },
             "wallbox-soc": {
-                "name": "{wallbox_name} state of charge"
+                "name": "State of charge"
             }
         },
         "switch": {
@@ -257,18 +257,18 @@
                 "name": "SmartPower powersaving"
             },
             "wallbox-sun-mode": {
-                "name": "{wallbox_name} sun mode"
+                "name": "Sun mode"
             },
             "wallbox-schuko": {
-                "name": "{wallbox_name} schuko"
+                "name": "Schuko"
             }
         },
         "button": {
             "wallbox-toggle-wallbox-charging": {
-                "name": "{wallbox_name} charging"
+                "name": "Charging"
             },
             "wallbox-toggle-wallbox-phases": {
-                "name": "{wallbox_name} phases"
+                "name": "Phases"
             }
         }
     },
@@ -308,10 +308,6 @@
                 "device_id": {
                     "name": "E3DC Device ID",
                     "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
-                },
-                "wallbox_index": {
-                    "name": "Wallbox Index",
-                    "description": "Index of the Wallbox, You find it in the diagnostic entity of the wallbox \"Wallbox Index\" (deactivated by default)."
                 },
                 "max_charge_current": {
                     "name": "Maximum Charging Current (A)",

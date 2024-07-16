@@ -47,24 +47,25 @@ async def async_setup_entry(
     ]
 
     for wallbox in coordinator.wallboxes:
+        # Get the UID & Key for the given wallbox
+        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        wallbox_key = wallbox["key"]
 
         wallbox_toggle_wallbox_phases_description = E3DCButtonEntityDescription(
-            key=wallbox["key"] + "-toggle-wallbox-phases",
+            key=f"{wallbox_key}-toggle-wallbox-phases",
             translation_key="wallbox-toggle-wallbox-phases",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:sine-wave",
-            async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_phases(),
+            async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_phases(wallbox["index"]),
         )
-        entities.append(E3DCButton(coordinator, wallbox_toggle_wallbox_phases_description, entry.unique_id))
+        entities.append(E3DCButton(coordinator, wallbox_toggle_wallbox_phases_description, unique_id, wallbox["deviceInfo"]))
 
         wallbox_toggle_wallbox_charging_description = E3DCButtonEntityDescription(
-            key=wallbox["key"] + "-toggle-wallbox-charging",
+            key=f"{wallbox_key}-toggle-wallbox-charging",
             translation_key="wallbox-toggle-wallbox-charging",
-            translation_placeholders = {"wallbox_name": wallbox["name"]},
             icon="mdi:car-electric",
-            async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_charging(),
+            async_press_action=lambda coordinator: coordinator.async_toggle_wallbox_charging(wallbox["index"]),
         )
-        entities.append(E3DCButton(coordinator, wallbox_toggle_wallbox_charging_description, entry.unique_id))
+        entities.append(E3DCButton(coordinator, wallbox_toggle_wallbox_charging_description, unique_id, wallbox["deviceInfo"]))
 
 
     async_add_entities(entities)
@@ -80,6 +81,7 @@ class E3DCButton(CoordinatorEntity, ButtonEntity):
         coordinator: E3DCCoordinator,
         description: E3DCButtonEntityDescription,
         uid: str,
+        device_info: DeviceInfo | None = None
     ) -> None:
         """Initialize the Button."""
         super().__init__(coordinator)
@@ -87,6 +89,10 @@ class E3DCButton(CoordinatorEntity, ButtonEntity):
         self.entity_description: E3DCButtonEntityDescription = description
         self._attr_unique_id = f"{uid}_{description.key}"
         self._has_custom_icons: bool = self.entity_description.icon is not None
+        if device_info is not None:
+            self._deviceInfo = device_info
+        else:
+            self._deviceInfo = self.coordinator.device_info()
 
     @property
     def icon(self) -> str | None:
@@ -104,4 +110,4 @@ class E3DCButton(CoordinatorEntity, ButtonEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device information."""
-        return self.coordinator.device_info()
+        return self._deviceInfo
