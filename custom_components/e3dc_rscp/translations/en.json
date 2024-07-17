@@ -270,6 +270,11 @@
             "wallbox-toggle-wallbox-phases": {
                 "name": "Phases"
             }
+        },
+        "number": {
+            "wallbox-max-charge-current": {
+                "name": "Max charge current"
+            }
         }
     },
     "services": {

@@ -14,7 +14,7 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 
-from .const import CONF_RSCPKEY, MAX_CHARGE_CURRENT
+from .const import CONF_RSCPKEY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -174,6 +174,8 @@ class E3DCProxy:
                     ("WB_REQ_DEVICE_NAME", "None", None),
                     ("WB_REQ_SERIAL", "None", None),
                     ("WB_REQ_WALLBOX_TYPE", "None", None),
+                    ("WB_REQ_LOWER_CURRENT_LIMIT", "None", None),
+                    ("WB_REQ_UPPER_CURRENT_LIMIT", "None", None)
                 ],
             ),
             keepAlive=True,
@@ -202,6 +204,14 @@ class E3DCProxy:
         wallbox_type = rscpFindTag(req, "WB_WALLBOX_TYPE")
         if wallbox_type is not None:
             outObj["wallboxType"] = rscpFindTagIndex(wallbox_type, "WB_WALLBOX_TYPE")
+
+        lower_current_limit = rscpFindTag(req, "WB_LOWER_CURRENT_LIMIT")
+        if lower_current_limit is not None:
+            outObj["lowerCurrentLimit"] = rscpFindTagIndex(lower_current_limit, "WB_LOWER_CURRENT_LIMIT")
+
+        upper_current_limit = rscpFindTag(req, "WB_UPPER_CURRENT_LIMIT")
+        if upper_current_limit is not None:
+            outObj["upperCurrentLimit"] = rscpFindTagIndex(upper_current_limit, "WB_UPPER_CURRENT_LIMIT")
 
         return outObj
 
@@ -356,10 +366,7 @@ class E3DCProxy:
             False if error
 
         """
-
-        if max_charge_current > MAX_CHARGE_CURRENT:
-            _LOGGER.warning("Limiting max_charge_current to %s", MAX_CHARGE_CURRENT)
-            max_charge_current = MAX_CHARGE_CURRENT
+        _LOGGER.debug("Wallbox %s: Setting max_charge_current to %s", wallbox_index, max_charge_current)
 
         return self.e3dc.set_wallbox_max_charge_current(
             max_charge_current=max_charge_current, wbIndex=wallbox_index, keepAlive=True

@@ -18,7 +18,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
 
-from .const import DOMAIN, MAX_CHARGE_CURRENT, MAX_WALLBOXES_POSSIBLE
+from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE
 
 from .e3dc_proxy import E3DCProxy
 
@@ -118,7 +118,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wallbox = {
                     "index": wallbox_index,
                     "key": unique_id,
-                    "deviceInfo": deviceInfo
+                    "deviceInfo": deviceInfo,
+                    "lowerCurrentLimit": request_data["lowerCurrentLimit"],
+                    "upperCurrentLimit": request_data["upperCurrentLimit"]
                 }
                 self.wallboxes.append(wallbox)
             else:
@@ -135,6 +137,29 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def wallboxes(self, value: list[dict[str, str | int]]) -> None:
         """Set the list of wallboxes."""
         self._wallboxes = value
+
+    # Setter for individual wallbox values
+    def setWallboxValue(self, index: int, key: str, value: Any) -> None:
+        """Set the value for a specific key in a wallbox identified by its index."""
+        for wallbox in self._wallboxes:
+            if wallbox['index'] == index:
+                wallbox[key] = value
+                _LOGGER.debug(f"Set {key} to {value} for wallbox with index {index}")
+                return
+        raise ValueError(f"Wallbox with index {index} not found")
+
+    # Getter for individual wallbox values
+    def getWallboxValue(self, index: int, key: str) -> Any:
+        """Get the value for a specific key in a wallbox identified by its index."""
+        for wallbox in self._wallboxes:
+            if wallbox['index'] == index:
+                value = wallbox.get(key)
+                if value is not None:
+                    _LOGGER.debug(f"Got {key} value {value} for wallbox with index {index}")
+                    return value
+                else:
+                    raise KeyError(f"Key {key} not found in wallbox with index {index}")
+        raise ValueError(f"Wallbox with index {index} not found")
 
     async def _async_connect_additional_powermeters(self):
         """Identify the installed powermeters and reconnect to E3DC with this config."""
@@ -534,9 +559,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "async_set_wallbox_max_charge_current must be called with a valid wallbox id."
             )
 
-        if current > MAX_CHARGE_CURRENT:
-            _LOGGER.warning("Limiting current to %s", MAX_CHARGE_CURRENT)
-            current = MAX_CHARGE_CURRENT
+        upperCurrentLimit = self.getWallboxValue(wallbox_index, "upperCurrentLimit")
+        if current > upperCurrentLimit:
+            _LOGGER.warning("Requested Wallbox current of %s is too high. Limiting current to %s", current, upperCurrentLimit)
+            current = upperCurrentLimit
+
+        lowerCurrentLimit = self.getWallboxValue(wallbox_index, "lowerCurrentLimit")
+        if current < lowerCurrentLimit:
+            _LOGGER.warning("Requested Wallbox current of %s is too low. Limiting current to %s", current, lowerCurrentLimit)
+            current = lowerCurrentLimit
+
 
         _LOGGER.debug("Setting wallbox max charge current to %s", current)
 
