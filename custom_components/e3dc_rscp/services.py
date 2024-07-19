@@ -114,15 +114,20 @@ def _resolve_device_id(hass: HomeAssistant, devid: str) -> E3DCCoordinator:
             f"{SERVICE_SET_POWER_LIMITS}: Unkown device ID {devid}."
         )
 
-    if dev.via_device_id is not None:
-        dev = dev_reg.async_get(dev.via_device_id)
-        if dev is None:
-            raise HomeAssistantError(
-                f"{SERVICE_SET_POWER_LIMITS}: Unkown device ID {devid}."
-            )
-
-    identifier: tuple(str, str)  # = next(iter(dev.identifiers))
+    identifier: tuple(str, str)
     uid: str | None = None
+
+    # Follow the via device and make it the new device if it is an E3DC
+    if dev.via_device_id is not None:
+        via_dev = dev_reg.async_get(dev.via_device_id)
+        if via_dev is None:
+            raise HomeAssistantError(
+                f"{SERVICE_SET_POWER_LIMITS}: Invalid via Device ID {devid}."
+            )
+        for identifier in via_dev.identifiers:
+            domain: str = identifier[0]
+        if domain == DOMAIN:
+            dev = via_dev
 
     for identifier in dev.identifiers:
         domain: str = identifier[0]
