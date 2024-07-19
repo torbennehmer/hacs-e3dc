@@ -12,6 +12,8 @@ from homeassistant.components.number import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.const import EntityCategory
+
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -52,6 +54,7 @@ async def async_setup_entry(
             native_max_value=wallbox["upperCurrentLimit"],
             native_step=1,
             device_class=NumberDeviceClass.CURRENT,
+            entity_category=EntityCategory.CONFIG,
             native_unit_of_measurement="A",
             async_set_native_value_action=lambda coordinator, value, index=wallbox["index"]: coordinator.async_set_wallbox_max_charge_current(int(value), index),
         )
