@@ -3,7 +3,7 @@
 from datetime import timedelta, datetime
 import logging
 from time import time
-from typing import Any
+from typing import Any, TypedDict
 import pytz
 import re
 
@@ -18,13 +18,23 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
 
-from .const import DOMAIN, MAX_CHARGE_CURRENT, MAX_WALLBOXES_POSSIBLE
+from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE
 
 from .e3dc_proxy import E3DCProxy
 
 _LOGGER = logging.getLogger(__name__)
 _STAT_REFRESH_INTERVAL = 60
 
+
+
+class E3DCWallbox(TypedDict):
+    """E3DC Wallbox, keeps general information, attributes and identity data for an individual wallbox."""
+
+    index: int
+    key: str
+    deviceInfo: DeviceInfo
+    lowerCurrentLimit: int
+    upperCurrentLimit: int
 
 class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
@@ -38,7 +48,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._sw_version: str = ""
         self._update_guard_powersettings: bool = False
         self._update_guard_wallboxsettings: bool = False
-        self._wallboxes: list[dict[str, str | int]] = []
+        self._wallboxes: list[E3DCWallbox] = []
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
 
@@ -115,10 +125,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     configuration_url="https://my.e3dc.com/",
                 )
 
-                wallbox = {
+                wallbox: E3DCWallbox = {
                     "index": wallbox_index,
                     "key": unique_id,
-                    "deviceInfo": deviceInfo
+                    "deviceInfo": deviceInfo,
+                    "lowerCurrentLimit": request_data["lowerCurrentLimit"],
+                    "upperCurrentLimit": request_data["upperCurrentLimit"]
                 }
                 self.wallboxes.append(wallbox)
             else:
@@ -126,15 +138,32 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     # Getter for _wallboxes
     @property
-    def wallboxes(self) -> list[dict[str, str | int]]:
+    def wallboxes(self) -> list[E3DCWallbox]:
         """Get the list of wallboxes."""
         return self._wallboxes
 
-    # Setter for _wallboxes
-    @wallboxes.setter
-    def wallboxes(self, value: list[dict[str, str | int]]) -> None:
-        """Set the list of wallboxes."""
-        self._wallboxes = value
+    # Setter for individual wallbox values
+    def setWallboxValue(self, index: int, key: str, value: Any) -> None:
+        """Set the value for a specific key in a wallbox identified by its index."""
+        for wallbox in self._wallboxes:
+            if wallbox['index'] == index:
+                wallbox[key] = value
+                _LOGGER.debug(f"Set {key} to {value} for wallbox with index {index}")
+                return
+        raise ValueError(f"Wallbox with index {index} not found")
+
+    # Getter for individual wallbox values
+    def getWallboxValue(self, index: int, key: str) -> Any:
+        """Get the value for a specific key in a wallbox identified by its index."""
+        for wallbox in self._wallboxes:
+            if wallbox['index'] == index:
+                value = wallbox.get(key)
+                if value is not None:
+                    _LOGGER.debug(f"Got {key} value {value} for wallbox with index {index}")
+                    return value
+                else:
+                    raise KeyError(f"Key {key} not found in wallbox with index {index}")
+        raise ValueError(f"Wallbox with index {index} not found")
 
     async def _async_connect_additional_powermeters(self):
         """Identify the installed powermeters and reconnect to E3DC with this config."""
@@ -534,9 +563,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "async_set_wallbox_max_charge_current must be called with a valid wallbox id."
             )
 
-        if current > MAX_CHARGE_CURRENT:
-            _LOGGER.warning("Limiting current to %s", MAX_CHARGE_CURRENT)
-            current = MAX_CHARGE_CURRENT
+        upperCurrentLimit = self.getWallboxValue(wallbox_index, "upperCurrentLimit")
+        if current > upperCurrentLimit:
+            _LOGGER.warning("Requested Wallbox current of %s is too high. Limiting current to %s", current, upperCurrentLimit)
+            current = upperCurrentLimit
+
+        lowerCurrentLimit = self.getWallboxValue(wallbox_index, "lowerCurrentLimit")
+        if current < lowerCurrentLimit:
+            _LOGGER.warning("Requested Wallbox current of %s is too low. Limiting current to %s", current, lowerCurrentLimit)
+            current = lowerCurrentLimit
+
 
         _LOGGER.debug("Setting wallbox max charge current to %s", current)
 
