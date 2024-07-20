@@ -28,6 +28,8 @@ _STAT_REFRESH_INTERVAL = 60
 
 
 class E3DCWallbox(TypedDict):
+    """E3DC Wallbox, keeps general information, attributes and identity data for an individual wallbox"""
+
     index: int
     key: str
     deviceInfo: DeviceInfo
