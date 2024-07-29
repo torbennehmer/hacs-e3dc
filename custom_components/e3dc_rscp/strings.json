@@ -265,10 +265,10 @@
     },
     "button": {
       "wallbox-toggle-wallbox-charging": {
-        "name": "Charging"
+        "name": "Toggle charging"
       },
       "wallbox-toggle-wallbox-phases": {
-        "name": "Phases"
+        "name": "Toggle phases"
       }
     },
     "number": {
