@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from e3dc import E3DC, SendError, NotAvailableError, RSCPKeyError, AuthenticationError
-from e3dc._rscpLib import rscpFindTag
+from e3dc._rscpLib import rscpFindTag, rscpFindTagIndex
 from e3dc._rscpTags import RscpTag, RscpType, PowermeterType
 
 from homeassistant.config_entries import ConfigEntry
@@ -156,6 +156,67 @@ class E3DCProxy:
         return self.e3dc.get_powermeters(keepAlive=True)
 
     @e3dc_call
+    def get_wallbox_data(self, wallbox_index: int) -> dict[str, Any]:
+        """Poll current wallbox readings."""
+        return self.e3dc.get_wallbox_data(wbIndex=wallbox_index, keepAlive=True)
+
+    @e3dc_call
+    def get_wallbox_identification_data(self, wallbox_index: int) -> dict[str, Any]:
+        """Get identification data for wallbox with given index."""
+        req = self.e3dc.sendRequest(
+            (
+                "WB_REQ_DATA",
+                "Container",
+                [
+                    ("WB_INDEX", "UChar8", wallbox_index),
+                    ("WB_REQ_FIRMWARE_VERSION", "None", None),
+                    ("WB_REQ_MAC_ADDRESS", "None", None),
+                    ("WB_REQ_DEVICE_NAME", "None", None),
+                    ("WB_REQ_SERIAL", "None", None),
+                    ("WB_REQ_WALLBOX_TYPE", "None", None),
+                    ("WB_REQ_LOWER_CURRENT_LIMIT", "None", None),
+                    ("WB_REQ_UPPER_CURRENT_LIMIT", "None", None)
+                ],
+            ),
+            keepAlive=True,
+        )
+
+        outObj = {
+            "index": rscpFindTagIndex(req, "WB_INDEX"),
+        }
+
+        firmware_version = rscpFindTag(req, "WB_FIRMWARE_VERSION")
+        if firmware_version is not None:
+            outObj["firmwareVersion"] = rscpFindTagIndex(firmware_version, "WB_FIRMWARE_VERSION")
+
+        device_name = rscpFindTag(req, "WB_DEVICE_NAME")
+        if device_name is not None:
+            outObj["deviceName"] = rscpFindTagIndex(device_name, "WB_DEVICE_NAME")
+
+        wallbox_serial = rscpFindTag(req, "WB_SERIAL")
+        if wallbox_serial is not None:
+            outObj["wallboxSerial"] = rscpFindTagIndex(wallbox_serial, "WB_SERIAL")
+
+        mac_address = rscpFindTag(req, "WB_MAC_ADDRESS")
+        if mac_address is not None:
+            outObj["macAddress"] = rscpFindTagIndex(mac_address, "WB_MAC_ADDRESS")
+
+        wallbox_type = rscpFindTag(req, "WB_WALLBOX_TYPE")
+        if wallbox_type is not None:
+            outObj["wallboxType"] = rscpFindTagIndex(wallbox_type, "WB_WALLBOX_TYPE")
+
+        lower_current_limit = rscpFindTag(req, "WB_LOWER_CURRENT_LIMIT")
+        if lower_current_limit is not None:
+            outObj["lowerCurrentLimit"] = rscpFindTagIndex(lower_current_limit, "WB_LOWER_CURRENT_LIMIT")
+
+        upper_current_limit = rscpFindTag(req, "WB_UPPER_CURRENT_LIMIT")
+        if upper_current_limit is not None:
+            outObj["upperCurrentLimit"] = rscpFindTagIndex(upper_current_limit, "WB_UPPER_CURRENT_LIMIT")
+
+        return outObj
+
+
+    @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:
         """Poll all powermeters for their current readings."""
         data = self.e3dc.get_powermeters_data(keepAlive=True)
@@ -230,6 +291,91 @@ class E3DCProxy:
 
         if not result:
             _LOGGER.warning("Manual charging could not be activated")
+
+    @e3dc_call
+    def set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int):
+        """Set wallbox charging mode to sun mode on/off.
+
+        Args:
+            enabled(bool): the desired state True = sun mode enabled, False = sun mode disabled
+            wallbox_index (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+
+        """
+        result: bool = self.e3dc.set_wallbox_sunmode(enable=enabled, wbIndex=wallbox_index, keepAlive=True)
+        if not result:
+            raise HomeAssistantError("Failed to set wallbox to sun mode %s", enabled)
+
+    @e3dc_call
+    def set_wallbox_schuko(self, enabled: bool, wallbox_index: int):
+        """Set wallbox power outlet (schuko) to on/off.
+
+        Args:
+            enabled(bool): the desired state True = on, False = off
+            wallbox_index (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+
+        """
+        result: bool = self.e3dc.set_wallbox_schuko(enable=enabled, wbIndex=wallbox_index, keepAlive=True)
+        if not result:
+            raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
+
+    @e3dc_call
+    def toggle_wallbox_charging(self, wallbox_index: int):
+        """Toggle charging of the wallbox.
+
+        Args:
+            wallbox_index (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+
+        """
+        result: bool = self.e3dc.toggle_wallbox_charging(wbIndex=wallbox_index, keepAlive=True)
+        if not result:
+            raise HomeAssistantError("Failed to toggle wallbox charging")
+
+    @e3dc_call
+    def toggle_wallbox_phases(self, wallbox_index: int):
+        """Toggle the phases of wallbox charging between 1 and 3 phases.
+
+           Only works if "Phasen" in the portal/device is not set to Auto.
+
+        Args:
+            wallbox_index (Optional[int]): index of the requested wallbox,
+
+        Returns:
+            nothing
+
+        """
+        result: bool = self.e3dc.toggle_wallbox_phases(wbIndex=wallbox_index, keepAlive=True)
+        if not result:
+            raise HomeAssistantError("Failed to toggle wallbox phases")
+
+    @e3dc_call
+    def set_wallbox_max_charge_current(
+        self, max_charge_current: int, wallbox_index: int
+    ) -> bool:
+        """Set the maximum charge current of the wallbox via RSCP protocol locally.
+
+        Args:
+            max_charge_current (int): maximum allowed charge current in A
+            wallbox_index (Optional[int]): index of the requested wallbox
+
+        Returns:
+            True if success (wallbox has understood the request, but might have clipped the value)
+            False if error
+
+        """
+        _LOGGER.debug("Wallbox %s: Setting max_charge_current to %s", wallbox_index, max_charge_current)
+
+        return self.e3dc.set_wallbox_max_charge_current(
+            max_charge_current=max_charge_current, wbIndex=wallbox_index, keepAlive=True
+        )
 
     @e3dc_call
     def set_power_limits(

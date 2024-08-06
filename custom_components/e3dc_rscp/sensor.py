@@ -185,17 +185,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
-        key="wallbox-consumption",
-        translation_key="wallbox-consumption",
-        icon="mdi:ev-station",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
-        suggested_display_precision=2,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
-    ),
-    SensorEntityDescription(
         key="grid-netchange",
         translation_key="grid-netchange",
         icon="mdi:battery-charging",
@@ -426,6 +415,132 @@ async def async_setup_entry(
         )
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
 
+    for wallbox in coordinator.wallboxes:
+        # Get the UID & Key for the given wallbox
+        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        wallbox_key = wallbox["key"]
+
+        wallbox_app_software_description = SensorEntityDescription(
+            key=f"{wallbox_key}-app-software",
+            translation_key="wallbox-app-software",
+            icon="mdi:information-outline",
+            device_class=None,
+            entity_registry_enabled_default=False,
+            entity_category=EntityCategory.DIAGNOSTIC
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_app_software_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_consumption_net_description = SensorEntityDescription(
+            key=f"{wallbox_key}-consumption-net",
+            translation_key="wallbox-consumption-net",
+            icon="mdi:transmission-tower-import",
+            native_unit_of_measurement=UnitOfPower.WATT,
+            suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_consumption_net_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_consumption_sun_description = SensorEntityDescription(
+            key=f"{wallbox_key}-consumption-sun",
+            translation_key="wallbox-consumption-sun",
+            icon="mdi:solar-power",
+            native_unit_of_measurement=UnitOfPower.WATT,
+            suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_consumption_sun_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_energy_all_description = SensorEntityDescription(
+            key=f"{wallbox_key}-energy-all",
+            translation_key="wallbox-energy-all",
+            icon="mdi:counter",
+            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+            suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+            suggested_display_precision=2,
+            device_class=SensorDeviceClass.ENERGY,
+            state_class=SensorStateClass.TOTAL_INCREASING,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_energy_all_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_energy_net_description = SensorEntityDescription(
+            key=f"{wallbox_key}-energy-net",
+            translation_key="wallbox-energy-net",
+            icon="mdi:counter",
+            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+            suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+            suggested_display_precision=2,
+            device_class=SensorDeviceClass.ENERGY,
+            state_class=SensorStateClass.TOTAL_INCREASING,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_energy_net_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_energy_sun_description = SensorEntityDescription(
+            key=f"{wallbox_key}-energy-sun",
+            translation_key="wallbox-energy-sun",
+            icon="mdi:counter",
+            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+            suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+            suggested_display_precision=2,
+            device_class=SensorDeviceClass.ENERGY,
+            state_class=SensorStateClass.TOTAL_INCREASING,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_energy_sun_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_index_description = SensorEntityDescription(
+            key=f"{wallbox_key}-index",
+            translation_key="wallbox-index",
+            icon="mdi:numeric",
+            device_class=None,
+            entity_registry_enabled_default=False,
+            entity_category=EntityCategory.DIAGNOSTIC
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_index_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_max_charge_current_description = SensorEntityDescription(
+            key=f"{wallbox_key}-max-charge-current",
+            translation_key="wallbox-max-charge-current",
+            icon="mdi:current-ac",
+            native_unit_of_measurement="A",
+            device_class=SensorDeviceClass.CURRENT,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_max_charge_current_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_phases_description = SensorEntityDescription(
+            key=f"{wallbox_key}-phases",
+            translation_key="wallbox-phases",
+            icon="mdi:sine-wave",
+            device_class=None,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_phases_description, unique_id, wallbox["deviceInfo"]))
+
+        wallbox_soc_description = SensorEntityDescription(
+            key=f"{wallbox_key}-soc",
+            translation_key="wallbox-soc",
+            icon="mdi:battery-charging",
+            native_unit_of_measurement=PERCENTAGE,
+            suggested_display_precision=0,
+            device_class=SensorDeviceClass.BATTERY,
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_registry_enabled_default=False,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_soc_description, unique_id, wallbox["deviceInfo"]))
+
+    if len(coordinator.wallboxes) > 0:
+        wallbox_consumption_description = SensorEntityDescription(
+            key="wallbox-consumption",
+            translation_key="wallbox-consumption",
+            icon="mdi:ev-station",
+            native_unit_of_measurement=UnitOfPower.WATT,
+            suggested_unit_of_measurement=UnitOfPower.KILO_WATT,
+            suggested_display_precision=2,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        entities.append(E3DCSensor(coordinator, wallbox_consumption_description, entry.unique_id))
+
     async_add_entities(entities)
 
 
@@ -439,12 +554,17 @@ class E3DCSensor(CoordinatorEntity, SensorEntity):
         coordinator: E3DCCoordinator,
         description: SensorEntityDescription,
         uid: str,
+        device_info: DeviceInfo | None = None
     ) -> None:
         """Initialize the Sensor."""
         super().__init__(coordinator)
         self.coordinator: E3DCCoordinator = coordinator
         self.entity_description: SensorEntityDescription = description
         self._attr_unique_id = f"{uid}_{description.key}"
+        if device_info is not None:
+            self._deviceInfo = device_info
+        else:
+            self._deviceInfo = self.coordinator.device_info()
 
     @property
     def native_value(self) -> StateType:
@@ -454,4 +574,4 @@ class E3DCSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device information."""
-        return self.coordinator.device_info()
+        return self._deviceInfo

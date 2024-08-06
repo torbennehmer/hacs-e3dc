@@ -3,8 +3,9 @@
 from datetime import timedelta, datetime
 import logging
 from time import time
-from typing import Any
+from typing import Any, TypedDict
 import pytz
+import re
 
 from e3dc._rscpTags import PowermeterType
 
@@ -17,12 +18,23 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
 
-from .const import DOMAIN
+from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE
+
 from .e3dc_proxy import E3DCProxy
 
 _LOGGER = logging.getLogger(__name__)
 _STAT_REFRESH_INTERVAL = 60
 
+
+
+class E3DCWallbox(TypedDict):
+    """E3DC Wallbox, keeps general information, attributes and identity data for an individual wallbox."""
+
+    index: int
+    key: str
+    deviceInfo: DeviceInfo
+    lowerCurrentLimit: int
+    upperCurrentLimit: int
 
 class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
@@ -35,6 +47,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata: dict[str, Any] = {}
         self._sw_version: str = ""
         self._update_guard_powersettings: bool = False
+        self._update_guard_wallboxsettings: bool = False
+        self._wallboxes: list[E3DCWallbox] = []
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
 
@@ -78,6 +92,78 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         await self._load_timezone_settings()
+
+
+    async def async_identify_wallboxes(self, hass: HomeAssistant):
+        """Identify availability of Wallboxes if get_wallbox_identification_data() returns meaningful data."""
+
+        for wallbox_index in range(0, MAX_WALLBOXES_POSSIBLE-1):
+            try:
+                request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                    self.proxy.get_wallbox_identification_data, wallbox_index
+                )
+            except HomeAssistantError as ex:
+                _LOGGER.warning("Failed to load wallbox with index %s, not updating data: %s", wallbox_index, ex)
+                return
+
+            if "macAddress" in request_data:
+                _LOGGER.debug("Wallbox with index %s has been found", wallbox_index)
+
+                unique_id = dr.format_mac(request_data["macAddress"])
+                wallboxType = request_data["wallboxType"]
+                model = f"Wallbox Type {wallboxType}"
+
+                deviceInfo = DeviceInfo(
+                    identifiers={(DOMAIN, unique_id)},
+                    via_device=(DOMAIN, self.uid),
+                    manufacturer="E3DC",
+                    name=request_data["deviceName"],
+                    model=model,
+                    sw_version=request_data["firmwareVersion"],
+                    serial_number=request_data["wallboxSerial"],
+                    connections={(dr.CONNECTION_NETWORK_MAC, dr.format_mac(request_data["macAddress"]))},
+                    configuration_url="https://my.e3dc.com/",
+                )
+
+                wallbox: E3DCWallbox = {
+                    "index": wallbox_index,
+                    "key": unique_id,
+                    "deviceInfo": deviceInfo,
+                    "lowerCurrentLimit": request_data["lowerCurrentLimit"],
+                    "upperCurrentLimit": request_data["upperCurrentLimit"]
+                }
+                self.wallboxes.append(wallbox)
+            else:
+                _LOGGER.debug("No Wallbox with index %s has been found", wallbox_index)
+
+    # Getter for _wallboxes
+    @property
+    def wallboxes(self) -> list[E3DCWallbox]:
+        """Get the list of wallboxes."""
+        return self._wallboxes
+
+    # Setter for individual wallbox values
+    def setWallboxValue(self, index: int, key: str, value: Any) -> None:
+        """Set the value for a specific key in a wallbox identified by its index."""
+        for wallbox in self._wallboxes:
+            if wallbox['index'] == index:
+                wallbox[key] = value
+                _LOGGER.debug(f"Set {key} to {value} for wallbox with index {index}")
+                return
+        raise ValueError(f"Wallbox with index {index} not found")
+
+    # Getter for individual wallbox values
+    def getWallboxValue(self, index: int, key: str) -> Any:
+        """Get the value for a specific key in a wallbox identified by its index."""
+        for wallbox in self._wallboxes:
+            if wallbox['index'] == index:
+                value = wallbox.get(key)
+                if value is not None:
+                    _LOGGER.debug(f"Got {key} value {value} for wallbox with index {index}")
+                    return value
+                else:
+                    raise KeyError(f"Key {key} not found in wallbox with index {index}")
+        raise ValueError(f"Wallbox with index {index} not found")
 
     async def _async_connect_additional_powermeters(self):
         """Identify the installed powermeters and reconnect to E3DC with this config."""
@@ -154,8 +240,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling manual charge information")
         await self._load_and_process_manual_charge()
 
-        _LOGGER.debug("Polling additional powermeters")
-        await self._load_and_process_powermeters_data()
+        if self._update_guard_wallboxsettings is False:
+            _LOGGER.debug("Polling additional powermeters")
+            await self._load_and_process_powermeters_data()
+        else:
+            _LOGGER.debug("Not polling wallbox, they are updating right now")
+
+        if len(self.wallboxes) > 0:
+            _LOGGER.debug("Polling wallbox")
+            await self._load_and_process_wallbox_data()
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
@@ -291,6 +384,34 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for key, value in request_data.items():
             self._mydata[key] = value
 
+    async def _load_and_process_wallbox_data(self) -> None:
+        """Load and process wallbox data to existing data."""
+
+        for wallbox in self.wallboxes:
+            try:
+                request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                    self.proxy.get_wallbox_data, wallbox["index"]
+                )
+            except HomeAssistantError as ex:
+                _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
+                return
+
+            for key, value in request_data.items():
+                formatted_key = re.sub(r'(?<!^)(?=[A-Z])', '-', key).lower()   #RegEx to convert from CamelCase to kebab-case
+                if formatted_key == "plug-locked":
+                    formatted_key = "plug-lock"
+                    value = not value  # Inverse to match HA's Lock On/Off interpretation
+                if formatted_key == "plugged":
+                    formatted_key = "plug"
+                if formatted_key == "schuko-on":
+                    formatted_key = "schuko"
+                if formatted_key == "sun-mode-on":
+                    formatted_key = "sun-mode"
+                if formatted_key == "charging-active":
+                    formatted_key = "charging"
+                wallbox_key = wallbox["key"]
+                self._mydata[f"{wallbox_key}-{formatted_key}"] = value
+
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
 
@@ -300,7 +421,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         tz_offset: int | None = None
         try:
-            tz_info: pytz.timezone = pytz.timezone(tz_name)
+            tz_info: pytz.timezone = await self.hass.async_add_executor_job(pytz.timezone, tz_name)
             dt_tmp: datetime = datetime.now(tz_info)
             tz_offset = dt_tmp.utcoffset().seconds
         except pytz.UnknownTimeZoneError:
@@ -344,10 +465,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             manufacturer="E3DC",
             model=self.proxy.e3dc.model,
             name=self.proxy.e3dc.model,
+            serial_number=self.proxy.e3dc.serialNumber,
             connections={(dr.CONNECTION_NETWORK_MAC, self.proxy.e3dc.macAddress)},
             identifiers={(DOMAIN, self.uid)},
             sw_version=self._sw_version,
-            configuration_url="https://s10.e3dc.com/",
+            configuration_url="https://my.e3dc.com/",
         )
 
     async def async_set_weather_regulated_charge(self, enabled: bool) -> bool:
@@ -380,6 +502,74 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Updated powersaving to %s", enabled)
         return True
 
+    async def async_set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int) -> bool:
+        """Enable or disable wallbox sun mode."""
+        _LOGGER.debug("Updating wallbox sun mode to %s", enabled)
+
+        try:
+            self._update_guard_wallboxsettings = True
+            await self.hass.async_add_executor_job(
+                self.proxy.set_wallbox_sun_mode, enabled, wallbox_index
+            )
+            self._mydata["wallbox-sun-mode"] = enabled
+        except Exception as ex:
+            _LOGGER.error("Failed to set wallbox sun mode to %s: %s", enabled, ex)
+            return False
+        finally:
+            self._update_guard_wallboxsettings = False
+
+        _LOGGER.debug("Successfully updated wallbox sun mode to %s", enabled)
+        return True
+
+    async def async_set_wallbox_schuko(self, enabled: bool, wallbox_index: int) -> bool:
+        """Enable or disable wallbox schuko."""
+        _LOGGER.debug("Updating wallbox schuko to %s", enabled)
+
+        try:
+            self._update_guard_wallboxsettings = True
+            await self.hass.async_add_executor_job(
+                self.proxy.set_wallbox_schuko, enabled, wallbox_index
+            )
+            self._mydata["wallbox-schuko"] = enabled
+        except Exception as ex:
+            _LOGGER.error("Failed to set wallbox schuko to %s: %s", enabled, ex)
+            return False
+        finally:
+            self._update_guard_wallboxsettings = False
+
+        _LOGGER.debug("Successfully updated wallbox schuko to %s", enabled)
+        return True
+
+    async def async_toggle_wallbox_phases(self, wallbox_index: int) -> bool:
+        """Toggle the Wallbox Phases between 1 and 3."""
+        _LOGGER.debug("Toggling the Wallbox Phases")
+
+        try:
+            await self.hass.async_add_executor_job(
+                self.proxy.toggle_wallbox_phases, wallbox_index
+            )
+        except Exception as ex:
+            _LOGGER.error("Failed to toggle wallbox phases: %s", ex)
+            return False
+
+        _LOGGER.debug("Successfully toggled wallbox phases")
+        return True
+
+    async def async_toggle_wallbox_charging(self, wallbox_index: int) -> bool:
+        """Toggle the Wallbox charging state."""
+        _LOGGER.debug("Toggling the Wallbox charging state")
+
+        try:
+            await self.hass.async_add_executor_job(
+                self.proxy.toggle_wallbox_charging, wallbox_index
+            )
+        except Exception as ex:
+            _LOGGER.error("Failed to toggle wallbox charging state: %s", ex)
+            return False
+
+        _LOGGER.debug("Successfully toggled wallbox charging state")
+        return True
+
     async def async_clear_power_limits(self) -> None:
         """Clear any active power limit."""
 
@@ -392,6 +582,41 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         _LOGGER.debug("Successfully cleared the power limits")
+
+    async def async_set_wallbox_max_charge_current(self, current: int | None, wallbox_index: int) -> None:
+        """Set the wallbox max charge current."""
+
+        # TODO: Add more refined way to deal with maximum charge current, right now it's hard coded to 32A. The max current is dependant on the local installations, many WBs are throttled at 16A, not 32A due to power grid restrictions.
+
+        # Validate the argument
+        if current is None or current <= 0:
+            raise ValueError(
+                "async_set_wallbox_max_charge_current must be called with a positive current value."
+            )
+
+        if wallbox_index < 0 or wallbox_index >= MAX_WALLBOXES_POSSIBLE:
+            raise ValueError(
+                "async_set_wallbox_max_charge_current must be called with a valid wallbox id."
+            )
+
+        upperCurrentLimit = self.getWallboxValue(wallbox_index, "upperCurrentLimit")
+        if current > upperCurrentLimit:
+            _LOGGER.warning("Requested Wallbox current of %s is too high. Limiting current to %s", current, upperCurrentLimit)
+            current = upperCurrentLimit
+
+        lowerCurrentLimit = self.getWallboxValue(wallbox_index, "lowerCurrentLimit")
+        if current < lowerCurrentLimit:
+            _LOGGER.warning("Requested Wallbox current of %s is too low. Limiting current to %s", current, lowerCurrentLimit)
+            current = lowerCurrentLimit
+
+
+        _LOGGER.debug("Setting wallbox max charge current to %s", current)
+
+        await self.hass.async_add_executor_job(
+            self.proxy.set_wallbox_max_charge_current, current, wallbox_index
+        )
+
+        _LOGGER.debug("Successfully set the wallbox max charge current to %s", current)
 
     async def async_set_power_limits(
         self, max_charge: int | None, max_discharge: int | None

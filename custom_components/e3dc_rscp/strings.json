@@ -38,6 +38,30 @@
       },
       "manual-charge-active": {
         "name": "Manual charge"
+      },
+      "wallbox-battery-to-car": {
+        "name": "Battery to car"
+      },
+      "wallbox-charging": {
+        "name": "Charging"
+      },
+      "wallbox-charging-canceled": {
+        "name": "Charging canceled"
+      },
+      "wallbox-sun-mode": {
+        "name": "Sun mode"
+      },
+      "wallbox-plug-lock": {
+        "name": "Plug lock"
+      },
+      "wallbox-plug": {
+        "name": "Plug"
+      },
+      "wallbox-schuko": {
+        "name": "Schuko"
+      },
+      "wallbox-key-state": {
+        "name": "Key state"
       }
     },
     "sensor": {
@@ -200,6 +224,36 @@
         "normal": "normal operation",
         "recommendation_on": "PV surplus operation",
         "startup": "Operation for derating"
+      },
+      "wallbox-app-software": {
+        "name": "App software"
+      },
+      "wallbox-consumption-net": {
+        "name": "Consumption net"
+      },
+      "wallbox-consumption-sun": {
+        "name": "Consumption sun"
+      },
+      "wallbox-energy-all": {
+        "name": "Energy all"
+      },
+      "wallbox-energy-net": {
+        "name": "Energy net"
+      },
+      "wallbox-energy-sun": {
+        "name": "Energy sun"
+      },
+      "wallbox-index": {
+        "name": "Index"
+      },
+      "wallbox-max-charge-current": {
+        "name": "Max charge current"
+      },
+      "wallbox-phases": {
+        "name": "Phases"
+      },
+      "wallbox-soc": {
+        "name": "State of charge"
       }
     },
     "switch": {
@@ -208,6 +262,25 @@
       },
       "pset-powersaving-enabled": {
         "name": "SmartPower powersaving"
+      },
+      "wallbox-sun-mode": {
+        "name": "Sun mode"
+      },
+      "wallbox-schuko": {
+        "name": "Schuko"
+      }
+    },
+    "button": {
+      "wallbox-toggle-wallbox-charging": {
+        "name": "Toggle charging"
+      },
+      "wallbox-toggle-wallbox-phases": {
+        "name": "Toggle phases"
+      }
+    },
+    "number": {
+      "wallbox-max-charge-current": {
+        "name": "Max charge current"
       }
     }
   },
@@ -237,6 +310,20 @@
         "max_discharge": {
           "name": "Maximum Discharge (W)",
           "description": "Maximum allowed battery discharge in Watts."
+        }
+      }
+    },
+    "set_wallbox_max_charge_current": {
+      "name": "Set Wallbox Charge Maximum",
+      "description": "Sets the maximum charge limits of the Wallbox",
+      "fields": {
+        "device_id": {
+          "name": "E3DC Device ID",
+          "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+        },
+        "max_charge_current": {
+          "name": "Maximum Charging Current (A)",
+          "description": "Maximum allowed Charging via Wallbox in Ampere."
         }
       }
     },
