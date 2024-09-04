@@ -26,6 +26,7 @@ _device_map: dict[str, E3DCCoordinator] = {}
 ATTR_DEVICEID = "device_id"
 ATTR_MAX_CHARGE = "max_charge"
 ATTR_MAX_DISCHARGE = "max_discharge"
+ATTR_MIN_DISCHARGE = "min_discharge"
 ATTR_CHARGE_AMOUNT = "charge_amount"
 ATTR_MAX_CHARGE_CURRENT = "max_charge_current"
 
@@ -40,6 +41,7 @@ SCHEMA_SET_POWER_LIMITS = vol.Schema(
         vol.Required(ATTR_DEVICEID): str,
         vol.Optional(ATTR_MAX_CHARGE): vol.All(int, vol.Range(min=0)),
         vol.Optional(ATTR_MAX_DISCHARGE): vol.All(int, vol.Range(min=0)),
+        vol.Optional(ATTR_MIN_DISCHARGE): vol.All(int, vol.Range(min=0))
     }
 )
 
@@ -196,12 +198,13 @@ async def _async_set_power_limits(hass: HomeAssistant, call: ServiceCall) -> Non
     )
     max_charge: int | None = call.data.get(ATTR_MAX_CHARGE)
     max_discharge: int | None = call.data.get(ATTR_MAX_DISCHARGE)
-    if max_charge is None and max_discharge is None:
+    min_discharge: int | None = call.data.get(ATTR_MIN_DISCHARGE)
+    if max_charge is None and max_discharge is None and min_discharge is None:
         raise HomeAssistantError(
-            f"{SERVICE_SET_POWER_LIMITS}: Need to set at least one of {ATTR_MAX_CHARGE} or {ATTR_MAX_DISCHARGE}"
+            f"{SERVICE_SET_POWER_LIMITS}: Need to set at least one of {ATTR_MAX_CHARGE}, {ATTR_MAX_DISCHARGE} or {ATTR_MIN_DISCHARGE}"
         )
     await coordinator.async_set_power_limits(
-        max_charge=max_charge, max_discharge=max_discharge
+        max_charge=max_charge, max_discharge=max_discharge, min_discharge=min_discharge
     )
 
 

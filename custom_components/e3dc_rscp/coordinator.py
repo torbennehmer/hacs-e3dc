@@ -583,15 +583,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully set the wallbox max charge current to %s", current)
 
     async def async_set_power_limits(
-        self, max_charge: int | None, max_discharge: int | None
+        self, max_charge: int | None, max_discharge: int | None, min_discharge: int | None
     ) -> None:
         """Set the given power limits and enable them."""
 
         # Validate the arguments, at least one has to be set.
-        if max_charge is None and max_discharge is None:
+        if max_charge is None and max_discharge is None and min_discharge is None:
             raise ValueError(
                 "async_set_power_limits must be called with at least one of "
-                "max_charge or max_discharge."
+                "max_charge, max_discharge or min_discharge."
             )
 
         if max_charge is not None and max_charge > self.proxy.e3dc.maxBatChargePower:
@@ -599,23 +599,43 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "Limiting max_charge to %s", self.proxy.e3dc.maxBatChargePower
             )
             max_charge = self.proxy.e3dc.maxBatChargePower
-        if (
-            max_discharge is not None
-            and max_discharge > self.proxy.e3dc.maxBatDischargePower
-        ):
+        elif max_charge is None:
+            _LOGGER.debug(
+                "Preserving max_charge at %s", self._mydata["pset-limit-charge"]
+            )
+            max_charge = self._mydata["pset-limit-charge"]
+
+        if max_discharge is not None and max_discharge > self.proxy.e3dc.maxBatDischargePower:
             _LOGGER.warning(
                 "Limiting max_discharge to %s", self.proxy.e3dc.maxBatDischargePower
             )
             max_discharge = self.proxy.e3dc.maxBatDischargePower
+        elif max_discharge is None:
+            _LOGGER.debug(
+                "Preserving max_discharge at %s", self._mydata["pset-limit-discharge"]
+            )
+            max_discharge = self._mydata["pset-limit-discharge"]
+
+        if min_discharge is not None and min_discharge > self.proxy.e3dc.maxBatDischargePower:
+            _LOGGER.warning(
+                "Limiting min_discharge to %s", self.proxy.e3dc.maxBatDischargePower
+            )
+            min_discharge = self.proxy.e3dc.maxBatDischargePower
+        elif min_discharge is None:
+            _LOGGER.debug(
+                "Preserving min_discharge at %s", self._mydata["pset-limit-discharge-minimum"]
+            )
+            min_discharge = self._mydata["pset-limit-discharge-minimum"]
 
         _LOGGER.debug(
-            "Enabling power limits, max_charge: %s, max_discharge: %s",
+            "Enabling power limits, max_charge: %s, max_discharge: %s, min_discharge: %s",
             max_charge,
             max_discharge,
+            min_discharge
         )
 
         await self.hass.async_add_executor_job(
-            self.proxy.set_power_limits, True, max_charge, max_discharge, None
+            self.proxy.set_power_limits, True, max_charge, max_discharge, min_discharge
         )
 
         _LOGGER.debug("Successfully set the power limits")
