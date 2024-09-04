@@ -303,6 +303,10 @@
                 "max_discharge": {
                     "name": "Maximum Discharge (W)",
                     "description": "Maximum allowed battery discharge in Watts."
+                },
+                "min_discharge": {
+                    "name": "Minimum Discharge (W)",
+                    "description": "Minimum allowed battery discharge in Watts."
                 }
             }
         },

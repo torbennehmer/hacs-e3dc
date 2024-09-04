@@ -35,7 +35,15 @@ set_power_limits:
           unit_of_measurement: W
           mode: box
           step: 100
-
+    min_discharge:
+      required: false
+      example: "100"
+      selector:
+        number:
+          min: 0
+          unit_of_measurement: W
+          mode: box
+          step: 10
 set_wallbox_max_charge_current:
   fields:
     device_id:
