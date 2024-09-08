@@ -314,22 +314,22 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to poll switches, not updating data: %s", ex)
             return
-        
+
         sg0_status=False
         sg1_status=False
         for switch in poll_data:         
             if switch["name"] == "SG0":
                 #48 seems to be the value for switch off
                 if switch["status"] == 48:
-                 sg0_status = False
+                    sg0_status = False
                 else:
-                  sg0_status = True
+                    sg0_status = True
             if switch["name"] == "SG1":
                 #48 seems to be the value for switch off
                 if switch["status"] == 48:
-                 sg1_status = False
+                    sg1_status = False
                 else:
-                  sg1_status = True
+                    sg1_status = True
 
         if sg0_status is True and sg1_status is False:
             self._mydata["smartgrid"] = "blocked"
