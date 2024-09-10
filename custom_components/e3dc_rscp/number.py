@@ -23,13 +23,14 @@ from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-@dataclass
+
+@dataclass(slots=True, frozen=True)
 class E3DCNumberEntityDescription(NumberEntityDescription):
     """Derived helper for advanced configs."""
 
-    async_set_native_value_action: Callable[
-        [E3DCCoordinator, float, int], Coroutine[Any, Any, bool]
-    ] | None = None
+    async_set_native_value_action: (
+        Callable[[E3DCCoordinator, float, int], Coroutine[Any, Any, bool]] | None
+    ) = None
 
 
 async def async_setup_entry(
@@ -56,9 +57,18 @@ async def async_setup_entry(
             device_class=NumberDeviceClass.CURRENT,
             entity_category=EntityCategory.CONFIG,
             native_unit_of_measurement="A",
-            async_set_native_value_action=lambda coordinator, value, index=wallbox["index"]: coordinator.async_set_wallbox_max_charge_current(int(value), index),
+            async_set_native_value_action=lambda coordinator, value, index=wallbox[
+                "index"
+            ]: coordinator.async_set_wallbox_max_charge_current(int(value), index),
         )
-        entities.append(E3DCNumber(coordinator, wallbox_charge_current_limit_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCNumber(
+                coordinator,
+                wallbox_charge_current_limit_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
     async_add_entities(entities)
 
@@ -73,7 +83,7 @@ class E3DCNumber(CoordinatorEntity, NumberEntity):
         coordinator: E3DCCoordinator,
         description: E3DCNumberEntityDescription,
         uid: str,
-        device_info: DeviceInfo | None = None
+        device_info: DeviceInfo | None = None,
     ) -> None:
         """Initialize the Number."""
         super().__init__(coordinator)
@@ -102,7 +112,9 @@ class E3DCNumber(CoordinatorEntity, NumberEntity):
         if self.entity_description.async_set_native_value_action is not None:
             self._attr_value = value
             self.async_write_ha_state()
-            await self.entity_description.async_set_native_value_action(self.coordinator, value)
+            await self.entity_description.async_set_native_value_action(
+                self.coordinator, value
+            )
 
     @property
     def device_info(self) -> DeviceInfo:
