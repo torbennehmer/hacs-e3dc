@@ -5,7 +5,7 @@ import logging
 import voluptuous as vol
 
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.device_registry import (
     DeviceEntry,
     DeviceRegistry,
@@ -108,13 +108,13 @@ def _resolve_device_id(hass: HomeAssistant, devid: str) -> E3DCCoordinator:
     if devid in _device_map:
         return _device_map[devid]
     dev_reg: DeviceRegistry = async_get(hass)
-    dev: DeviceEntry = dev_reg.async_get(devid)
+    dev: DeviceEntry | None = dev_reg.async_get(devid)
     if dev is None:
         raise HomeAssistantError(
             f"{SERVICE_SET_POWER_LIMITS}: Unkown device ID {devid}."
         )
 
-    identifier: tuple(str, str)
+    identifier: tuple[str, str]
     uid: str | None = None
 
     # Follow the via device and make it the new device if it is an E3DC
@@ -151,20 +151,24 @@ def _resolve_wallbox_id(hass: HomeAssistant, devid: str) -> int | None:
     # Get the coordinator
     coordinator: E3DCCoordinator = _resolve_device_id(hass, devid)
 
-    #Get the wallbox Index
+    # Get the wallbox Index
     dev_reg: DeviceRegistry = async_get(hass)
-    dev: DeviceEntry = dev_reg.async_get(devid)
+    dev: DeviceEntry | None = dev_reg.async_get(devid)
     if dev is None:
         raise HomeAssistantError(
             f"{SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT}: Unkown device ID {devid}."
         )
     for wallbox in coordinator.wallboxes:
-        if list(wallbox["deviceInfo"]["identifiers"])[0][1] == list(dev.identifiers)[0][1]:
+        if (
+            list(wallbox["deviceInfo"]["identifiers"])[0][1]
+            == list(dev.identifiers)[0][1]
+        ):
             return wallbox["index"]
 
     raise HomeAssistantError(
         f"{SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT}: Could not find a Wallbox Index for device ID {devid}."
     )
+
 
 async def _async_set_wallbox_max_charge_current(
     hass: HomeAssistant, call: ServiceCall
@@ -178,15 +182,17 @@ async def _async_set_wallbox_max_charge_current(
     wallbox_index: int | None = _resolve_wallbox_id(hass, call.data.get(ATTR_DEVICEID))
 
     if wallbox_index is None:
-        raise HomeAssistantError(
+        raise ServiceValidationError(
             f"{SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT}: Service needs to be executed for a E3DC Wallbox!"
         )
     max_charge_current: int | None = call.data.get(ATTR_MAX_CHARGE_CURRENT)
     if max_charge_current is None:
-        raise HomeAssistantError(
+        raise ServiceValidationError(
             f"{SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT}: Need to set {ATTR_MAX_CHARGE_CURRENT}"
         )
-    await coordinator.async_set_wallbox_max_charge_current(current=max_charge_current, wallbox_index=wallbox_index)
+    await coordinator.async_set_wallbox_max_charge_current(
+        current=max_charge_current, wallbox_index=wallbox_index
+    )
 
 
 async def _async_set_power_limits(hass: HomeAssistant, call: ServiceCall) -> None:
@@ -197,7 +203,7 @@ async def _async_set_power_limits(hass: HomeAssistant, call: ServiceCall) -> Non
     max_charge: int | None = call.data.get(ATTR_MAX_CHARGE)
     max_discharge: int | None = call.data.get(ATTR_MAX_DISCHARGE)
     if max_charge is None and max_discharge is None:
-        raise HomeAssistantError(
+        raise ServiceValidationError(
             f"{SERVICE_SET_POWER_LIMITS}: Need to set at least one of {ATTR_MAX_CHARGE} or {ATTR_MAX_DISCHARGE}"
         )
     await coordinator.async_set_power_limits(
