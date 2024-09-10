@@ -37,7 +37,7 @@ code.
     - [Password limitations](#password-limitations)
     - [Network restriction](#network-restriction)
   - [Unsupported features configuration schemes](#unsupported-features-configuration-schemes)
-- [Services](#services)
+- [Actions](#actions)
   - [Set power limits](#set-power-limits)
   - [Clear current power limits](#clear-current-power-limits)
   - [Initate manual battery charging](#initate-manual-battery-charging)
@@ -163,14 +163,14 @@ Currently, the following features of pye3dc are not supported:
 - Web Connections
 - Local connections when offline, using the backup user.
 
-## Services
+## Actions
 
-The integration currently provides these services to initiate more complex
+The integration currently provides these actions to initiate more complex
 commands to the E3DC unit:
 
 ### Set power limits
 
-Use the service `set_power_limits` to limit the maximum charging or discharging
+Use the action `set_power_limits` to limit the maximum charging or discharging
 rates of the battery system. Both values can be controlled individually, each
 call replaces the settings made by the last. It will not allow you to change the
 system defined minimum discharge rate at the moment, as I am not sure if this is
@@ -184,7 +184,7 @@ values to the system defined maximum.
 
 ### Initate manual battery charging
 
-The service `manual_charge` will start charging the specified amount of energy
+The action `manual_charge` will start charging the specified amount of energy
 into the battery, taking it from the grid if neccessary. The idea behind this is
 to take advantage of dynamic electricity providers like Tibber. Charge your
 battery when electricity is cheap even if you have no solar power available, for
@@ -193,36 +193,43 @@ example in windy winter nights/days.
 **Read the following before using this functionality on your own risk:**
 
 - Calls to this operation are rate-limited, your E3DC probaby will not accept
-  more than one call every few hours. One unit reported to me had a wait time
-  of two hours, apparently. The website mentions that this operation can only
-  be called once a day and limits the charge amount to 3 kWh. This, again,
-  is unconfirmed, so your milage may vary.
+  more than one call every few hours. One unit reported to me had a wait time of
+  two hours, apparently. The website mentions that this operation can only be
+  called once a day and limits the charge amount to 3 kWh. This, again, is
+  unconfirmed, so your milage may vary.
 - Important from a monetary point of view: You will have losses from two AC/DC
-  conversions (load and unload), as opposed to one when charging from the PV.
-  A single conversion will probably cost you 10-15% in stored power. So,
-  charging 10 kWh from the Grid will approximate only 7-8 kWh when using it.
-  Also, the wear on the battery should be considered. Following that, you'll
-  want significant savings, not just a few cents.
-- Check if your local laws and regulations do allow you to charge your
-  battery from the grid for consuming power later in the first place.
+  conversions (load and unload), as opposed to one when charging from the PV. A
+  single conversion will probably cost you 10-15% in stored power. So, charging
+  10 kWh from the Grid will approximate only 7-8 kWh when using it. Also, the
+  wear on the battery should be considered. Following that, you'll want
+  significant savings, not just a few cents.
+- Check if your local laws and regulations do allow you to charge your battery
+  from the grid for consuming power later in the first place.
 - Check the impact on any warranty from E3DC you may have.
 
 To stress this once more: Use this feature at your own risk.
 
 ### Set maximum wallbox charging current
 
-The Service `set_wallbox_charging_current` will set the maximum charging current of the given Wallbox in Amps. 16A is typical for a 11kW Wallbox, 32A is typical for a 22kW Wallbox.
+The action `set_wallbox_charging_current` will set the maximum charging current
+of the given Wallbox in Amps. 16A is typical for a 11kW Wallbox, 32A is typical
+for a 22kW Wallbox.
 
 **Read the following before using this functionality on your own risk:**
 
-- If values cannot be set, this may be due to the hard limits for your fuses configured during the installation of the Wallbox. Only a E3DC service technican can and should change these limits.
-- In case your fuse settings are wrong (too low) and you set the charging current too high, you may blow your fuse or even damage your Wallbox.
-- Check your local laws and regulations whether setting the Wallbox to a higher charging current requires approvals from your grid operator.
+- If values cannot be set, this may be due to the hard limits for your fuses
+  configured during the installation of the Wallbox. Only a E3DC service
+  technican can and should change these limits.
+- In case your fuse settings are wrong (too low) and you set the charging
+  current too high, you may blow your fuse or even damage your Wallbox.
+- Check your local laws and regulations whether setting the Wallbox to a higher
+  charging current requires approvals from your grid operator.
 
 ## Upstream source
 
 The extension is based on [Python E3DC
-library](https://github.com/fsantini/python-e3dc) from @fsantini. The general considerations mentioned in his project do apply to this integration.
+library](https://github.com/fsantini/python-e3dc) from @fsantini. The general
+considerations mentioned in his project do apply to this integration.
 
 ***
 

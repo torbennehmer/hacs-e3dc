@@ -322,7 +322,7 @@
         },
         "manual_charge": {
             "name": "Control manual charging",
-            "description": "Starts or stops manual charging, set charge amount to zero to stop charging if it is running. Use this feature at your own risk. Take conversion losses, battery wear local laws/regulations and the E3DC warranty in mind when using this service. There is a rate limit on this call (once every few hours).",
+            "description": "Starts or stops manual charging, set charge amount to zero to stop charging if it is running. Use this feature at your own risk. Take conversion losses, battery wear local laws/regulations and the E3DC warranty in mind when using this action. There is a rate limit on this call (once every few hours).",
             "fields": {
                 "device_id": {
                     "name": "E3DC Device ID",
