@@ -218,6 +218,13 @@
             "farm-additional-total": {
                 "name": "Farm additional powermeter - total"
             },
+            "smartgrid": {
+                "name": "SmartGrid Status",
+                "blocked": "blocked mode",
+                "normal": "normal operation",
+                "recommendation_on": "PV surplus operation",
+                "startup": "Operation for derating"
+            },
             "wallbox-app-software": {
                 "name": "App software"
             },
