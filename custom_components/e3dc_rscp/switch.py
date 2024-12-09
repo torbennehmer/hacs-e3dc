@@ -23,18 +23,18 @@ from .coordinator import E3DCCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(slots=True, frozen=True)
 class E3DCSwitchEntityDescription(SwitchEntityDescription):
     """Derived helper for advanced configs."""
 
     on_icon: str | None = None
     off_icon: str | None = None
-    async_turn_on_action: Callable[
-        [E3DCCoordinator], Coroutine[Any, Any, bool]
-    ] | None = None
-    async_turn_off_action: Callable[
-        [E3DCCoordinator], Coroutine[Any, Any, bool]
-    ] | None = None
+    async_turn_on_action: (
+        Callable[[E3DCCoordinator], Coroutine[Any, Any, bool]] | None
+    ) = None
+    async_turn_off_action: (
+        Callable[[E3DCCoordinator], Coroutine[Any, Any, bool]] | None
+    ) = None
 
 
 SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
@@ -94,10 +94,21 @@ async def async_setup_entry(
             on_icon="mdi:weather-sunny",
             off_icon="mdi:weather-sunny-off",
             device_class=SwitchDeviceClass.SWITCH,
-            async_turn_on_action=lambda coordinator, index=wallbox["index"]: coordinator.async_set_wallbox_sun_mode(True, index),
-            async_turn_off_action=lambda coordinator, index=wallbox["index"]: coordinator.async_set_wallbox_sun_mode(False, index),
+            async_turn_on_action=lambda coordinator, index=wallbox[
+                "index"
+            ]: coordinator.async_set_wallbox_sun_mode(True, index),
+            async_turn_off_action=lambda coordinator, index=wallbox[
+                "index"
+            ]: coordinator.async_set_wallbox_sun_mode(False, index),
         )
-        entities.append(E3DCSwitch(coordinator, wallbox_sun_mode_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSwitch(
+                coordinator,
+                wallbox_sun_mode_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_schuko_description = E3DCSwitchEntityDescription(
             key=f"{wallbox_key}-schuko",
@@ -106,11 +117,22 @@ async def async_setup_entry(
             on_icon="mdi:power-plug",
             off_icon="mdi:power-plug-off",
             device_class=SwitchDeviceClass.OUTLET,
-            async_turn_on_action=lambda coordinator, index=wallbox["index"]: coordinator.async_set_wallbox_schuko(True, index),
-            async_turn_off_action=lambda coordinator, index=wallbox["index"]: coordinator.async_set_wallbox_schuko(False, index),
-            entity_registry_enabled_default=False, # Disabled per default as only Wallbox multi connect I provides this feature
+            async_turn_on_action=lambda coordinator, index=wallbox[
+                "index"
+            ]: coordinator.async_set_wallbox_schuko(True, index),
+            async_turn_off_action=lambda coordinator, index=wallbox[
+                "index"
+            ]: coordinator.async_set_wallbox_schuko(False, index),
+            entity_registry_enabled_default=False,  # Disabled per default as only Wallbox multi connect I provides this feature
         )
-        entities.append(E3DCSwitch(coordinator, wallbox_schuko_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSwitch(
+                coordinator,
+                wallbox_schuko_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
     async_add_entities(entities)
 
@@ -125,7 +147,7 @@ class E3DCSwitch(CoordinatorEntity, SwitchEntity):
         coordinator: E3DCCoordinator,
         description: E3DCSwitchEntityDescription,
         uid: str,
-        device_info: DeviceInfo | None = None
+        device_info: DeviceInfo | None = None,
     ) -> None:
         """Initialize the Switch."""
         super().__init__(coordinator)
