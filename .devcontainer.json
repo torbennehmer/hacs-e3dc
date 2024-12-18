@@ -1,6 +1,6 @@
 {
     "name": "torbennehmer/hacs-e3dc",
-    "image": "mcr.microsoft.com/devcontainers/python:3.12",
+    "image": "mcr.microsoft.com/devcontainers/python:3.13",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [
         8124
@@ -40,8 +40,6 @@
                 "python.editor.formatOnSave": true,
                 "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
                 "python.formatting.provider": "black",
-                "python.linting.enabled": true,
-                "python.linting.pylintEnabled": true,
                 "python.pythonPath": "/usr/bin/python3",
                 "terminal.integrated.defaultProfile.linux": "zsh",
                 "terminal.integrated.profiles.linux": {
