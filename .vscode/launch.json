@@ -28,6 +28,18 @@
                 "config",
                 "--skip-pip"
             ]
+        },
+        {
+            // For this to work against HA Docker, link the following directories (be aware, use the right version)
+            // /usr/src/homeassistant/homeassistant -> /home/vscode/.local/lib/python3.11/site-packages/homeassistant
+            // /config/custom_components -> /workspaces/hacs-e3dc/custom_components/
+            "name": "Python: Attach to Atlantis",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "10.128.20.10",
+                "port": 5678
+            }
         }
     ]
 }
