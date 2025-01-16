@@ -1,7 +1,7 @@
 {
     "filename": "hacs-e3dc_rscp.zip",
     "hide_default_branch": true,
-    "homeassistant": "2024.9.0",
+    "homeassistant": "2025.1.0",
     "name": "E3DC Remote Storage Control Protocol (Git)",
     "render_readme": true,
     "zip_release": true
