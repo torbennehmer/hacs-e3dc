@@ -275,6 +275,11 @@
       "wallbox-max-charge-current": {
         "name": "Max charge current"
       }
+    },
+    "select": {
+      "pset-powermode": {
+        "name": "Powermode"
+      }
     }
   },
   "services": {

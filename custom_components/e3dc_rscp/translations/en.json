@@ -247,6 +247,15 @@
             },
             "wallbox-soc": {
                 "name": "State of charge"
+            },
+            "power-mode": {
+                "name": "Mode"
+            },
+            "pset-powermode": {
+                "name": "Current power mode"
+            },
+            "pset-powervalue": {
+                "name": "Current power value"
             }
         },
         "switch": {

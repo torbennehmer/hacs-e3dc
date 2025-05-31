@@ -1,5 +1,6 @@
 """E3DC sensor platform."""
 import logging
+from dataclasses import dataclass
 from typing import Final
 
 from e3dc._rscpTags import PowermeterType
@@ -18,10 +19,14 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, PowerMode
 from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+@dataclass(frozen=True)
+class MultiIconsSensorEntityDescription(SensorEntityDescription):
+    icons: dict[str, str] = None
 
 SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
     # DIAGNOSTIC SENSORS
@@ -361,6 +366,34 @@ SENSOR_DESCRIPTIONS: Final[tuple[SensorEntityDescription, ...]] = (
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    MultiIconsSensorEntityDescription(
+        key="power-mode",
+        translation_key="power-mode",
+        icons={
+            "IDLE": "mdi:battery-off-outline",
+            "DISCHARGE": "mdi:battery-arrow-down-outline",
+            "CHARGE": "mdi:battery-arrow-up-outline",
+        },
+        icon="mdi:battery-unknown",
+    ),
+    SensorEntityDescription(
+        key="set-power-mode",
+        translation_key="pset-powermode",
+        icon="mdi:flash",
+        entity_category=EntityCategory.DIAGNOSTIC,
+
+        entity_registry_enabled_default = True,
+    ),
+    SensorEntityDescription(
+        key="set-power-value",
+        translation_key="pset-powervalue",
+        icon="mdi:meter-electric",
+        name="Max Charge Power",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        native_unit_of_measurement="W",
+
+        entity_registry_enabled_default = True,
+    ),
 )
 
 
@@ -563,6 +596,18 @@ class E3DCSensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> StateType:
         """Return the reported sensor value."""
         return self.coordinator.data.get(self.entity_description.key)
+
+
+    @property
+    def icon(self) -> str | None:
+        if isinstance(self.entity_description, MultiIconsSensorEntityDescription) and self.entity_description.icons is not None:
+            value: str = self.coordinator.data.get(self.entity_description.key)
+            if self.entity_description.icons.get(value) is not None:
+                icon: str = self.entity_description.icons.get(value)
+                return icon
+
+        return super().icon
+
 
     @property
     def device_info(self) -> DeviceInfo:

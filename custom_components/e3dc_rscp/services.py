@@ -17,6 +17,8 @@ from .const import (
     SERVICE_CLEAR_POWER_LIMITS,
     SERVICE_MANUAL_CHARGE,
     SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT,
+    SERVICE_SET_POWER_MODE,
+    SetPowerMode
 )
 from .coordinator import E3DCCoordinator
 
@@ -28,6 +30,8 @@ ATTR_MAX_CHARGE = "max_charge"
 ATTR_MAX_DISCHARGE = "max_discharge"
 ATTR_CHARGE_AMOUNT = "charge_amount"
 ATTR_MAX_CHARGE_CURRENT = "max_charge_current"
+ATTR_POWER_MODE = "power_mode"
+ATTR_POWER_VALUE = "power_value"
 
 SCHEMA_CLEAR_POWER_LIMITS = vol.Schema(
     {
@@ -57,6 +61,14 @@ SCHEMA_MANUAL_CHARGE = vol.Schema(
     }
 )
 
+
+SCHEMA_SET_POWER_MODE = vol.Schema(
+    {
+        vol.Required(ATTR_DEVICEID): str,
+        vol.Required(ATTR_POWER_MODE): vol.All(str),
+        vol.Optional(ATTR_POWER_VALUE): vol.All(int, vol.Range(min=0)),
+    }
+)
 
 async def async_setup_services(hass: HomeAssistant) -> None:
     """Central hook to register all services, called by component setup."""
@@ -100,6 +112,18 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         service=SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT,
         service_func=async_call_set_wallbox_max_charge_current,
         schema=SCHEMA_SET_WALLBOX_MAX_CHARGE_CURRENT,
+    )
+
+
+    # hass.services.register(DOMAIN, "servicename", lambda, schema)
+    async def async_call_set_power_mode(call: ServiceCall) -> None:
+        await _async_set_power_mode(hass, call)
+
+    hass.services.async_register(
+        domain=DOMAIN,
+        service=SERVICE_SET_POWER_MODE,
+        service_func=async_call_set_power_mode,
+        schema=SCHEMA_SET_POWER_MODE,
     )
 
 
@@ -226,3 +250,37 @@ async def _async_manual_charge(hass: HomeAssistant, call: ServiceCall) -> None:
     )
     charge_amount: int = call.data.get(ATTR_CHARGE_AMOUNT)
     await coordinator.async_manual_charge(charge_amount_wh=charge_amount)
+
+
+async def _async_set_power_mode(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Extract service information and relay to coordinator."""
+    coordinator: E3DCCoordinator = _resolve_device_id(
+        hass, call.data.get(ATTR_DEVICEID)
+    )
+    power_mode: str | None = call.data.get(ATTR_POWER_MODE)
+    power_value: int | None = call.data.get(ATTR_POWER_VALUE)
+
+    power_mode_enum: SetPowerMode | None = SetPowerMode[power_mode] \
+        if power_mode in SetPowerMode.__members__ else None
+
+    if power_mode_enum is None:
+        raise ServiceValidationError(
+            f"{SERVICE_SET_POWER_MODE}: Need to set at least one mode"
+        )
+    if (
+        power_mode_enum == SetPowerMode.CHARGE or
+        power_mode_enum == SetPowerMode.CHARGE_GRID or
+        power_mode_enum == SetPowerMode.DISCHARGE
+    ) and (power_value is None or power_value <= 0):
+        raise ServiceValidationError(
+            f"{SERVICE_SET_POWER_MODE}: must be called with a value above zero for {power_mode}."
+        )
+
+    if (
+        power_mode_enum == SetPowerMode.NORMAL or
+        power_mode_enum == SetPowerMode.IDLE):
+        power_value = None
+
+    await coordinator.async_set_power_mode(
+        mode=power_mode_enum, value=power_value
+    )
