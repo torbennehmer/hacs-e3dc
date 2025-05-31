@@ -281,7 +281,7 @@ class E3DCProxy:
         result : dict[str, Any] = self.e3dc.poll(keepAlive=True)
 
         result["power"] = {
-            "mode": self.e3dc.sendRequestTag(RscpTag.EMS_REQ_MODE, keepAlive=True),
+            "mode": self.get_power_mode()
         }
 
         return result
@@ -423,9 +423,14 @@ class E3DCProxy:
         # TODO: Find a way to deal with the weather regulation api
         self.e3dc.set_weather_regulated_charge(enabled, True)
 
+    @e3dc_call
+    def get_power_mode(self) -> int:
+        """Load the E3DC power mode."""
+        data = self.e3dc.sendRequestTag(RscpTag.EMS_REQ_MODE, keepAlive=True)
+        return data
 
     @e3dc_call
-    def set_power_mode(self, mode: int, value: int ):
+    def set_power_mode(self, mode: int = 0, value: int = 0) -> int:
         data = self.e3dc.sendRequest(
             (
                 RscpTag.EMS_REQ_SET_POWER,
@@ -434,12 +439,12 @@ class E3DCProxy:
                     (
                         RscpTag.EMS_REQ_SET_POWER_MODE,
                         RscpType.UChar8,
-                        mode,
+                        mode if mode is not None else 0,
                     ),
                     (
                         RscpTag.EMS_REQ_SET_POWER_VALUE,
                         RscpType.Int32,
-                        value,
+                        value if value is not None else 0,
                     ),
                 ],
             ),

@@ -252,7 +252,7 @@
                 "name": "Mode"
             },
             "pset-powermode": {
-                "name": "Current power mode"
+                "name": "Current operation mode"
             },
             "pset-powervalue": {
                 "name": "Current power value"

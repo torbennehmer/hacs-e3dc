@@ -705,11 +705,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Manual charging start command has been sent.")
 
-
     @callback
     def _shutdown_power_mode(self, _event: Event | None) -> None:
         self._stop_power_mode()
-
 
     @callback
     def _stop_power_mode(self) -> None:
@@ -717,7 +715,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("Stopping power mode")
             self._stop_set_power_mode()
             self._stop_set_power_mode = None
-
 
     async def _async_set_power(self, _event_time: datetime | None, keepAlive: bool = True) -> None:
         _LOGGER.debug(
@@ -730,16 +727,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.proxy.set_power_mode,
                 SetPowerMode[self._mydata["set-power-mode"]].value,
                 self._mydata["set-power-value"],
-                keepAlive=True
             )
             self._mydata["set-power-value"] = power_value
 
-            power_mode: int = self.e3dc.sendRequestTag(RscpTag.EMS_REQ_MODE, keepAlive=True)
+            power_mode: int = self.proxy.get_power_mode()
             self._mydata["set-power-mode"] = SetPowerMode(power_mode).name
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed set power mode: %s", ex)
             return
-
 
     async def async_set_power_mode(self, mode: SetPowerMode, value: int | None) -> None:
         self._mydata["set-power-mode"] = mode.name
