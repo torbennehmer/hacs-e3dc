@@ -225,6 +225,22 @@ for a 22kW Wallbox.
 - Check your local laws and regulations whether setting the Wallbox to a higher
   charging current requires approvals from your grid operator.
 
+### Set power mode
+
+The action `set_power_mode` will set the power mode of the E3DC system. There are 4
+different modes available:
+- `normal`: Normal operation mode, the system will charge and discharge the
+  battery as needed.
+- `idle`: Idle mode, the system will not charge or discharge the battery.
+- `charge`: Charge mode, the system will charge but will not discharge the
+  battery.
+- `charge from grid`: Charge from grid mode, the system will charge the battery
+  from the grid but will not discharge it.
+- `discharge`: Discharge mode, the system will discharge but will not charge
+  the battery.
+
+Charge and discharge modes need `power` to be set in Watts.
+
 ## Upstream source
 
 The extension is based on [Python E3DC
