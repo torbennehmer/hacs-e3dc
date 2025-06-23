@@ -3,12 +3,12 @@
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 import logging
-from typing import Any, Final
+from typing import Any
 
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
-    NumberEntityDescription
+    NumberEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -31,6 +31,7 @@ class E3DCNumberEntityDescription(NumberEntityDescription):
     async_set_native_value_action: (
         Callable[[E3DCCoordinator, float, int], Coroutine[Any, Any, bool]] | None
     ) = None
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
