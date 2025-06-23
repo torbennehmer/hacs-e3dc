@@ -8,7 +8,7 @@ from typing import Any, Final
 from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
-    NumberEntityDescription, NumberMode,
+    NumberEntityDescription
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -32,33 +32,13 @@ class E3DCNumberEntityDescription(NumberEntityDescription):
         Callable[[E3DCCoordinator, float, int], Coroutine[Any, Any, bool]] | None
     ) = None
 
-
-# NUMBERS: Final[list[E3DCNumberEntityDescription]] = [
-#     E3DCNumberEntityDescription(
-#         key="set-power-value",
-#         translation_key="pset-powervalue",
-#         icon="mdi:meter-electric",
-#         name="Max Charge Power",
-#         native_min_value=0,
-#         native_max_value=4500,
-#         device_class=NumberDeviceClass.POWER,
-#         entity_category=EntityCategory.DIAGNOSTIC,
-#         native_unit_of_measurement="W",
-#
-#         entity_registry_enabled_default = False,
-#     ),
-# ]
-
-
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Initialize Number Platform."""
     assert isinstance(entry.unique_id, str)
     coordinator: E3DCCoordinator = hass.data[DOMAIN][entry.unique_id]
-    entities: list[E3DCNumber] = [
-        # E3DCNumber(coordinator, description, entry.unique_id) for description in NUMBERS
-    ]
+    entities: list[E3DCNumber] = []
 
     # Add Number descriptions for wallboxes
     for wallbox in coordinator.wallboxes:

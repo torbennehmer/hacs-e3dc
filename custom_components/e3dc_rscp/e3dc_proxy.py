@@ -161,11 +161,6 @@ class E3DCProxy:
         return self.e3dc.get_wallbox_data(wbIndex=wallbox_index, keepAlive=True)
 
     @e3dc_call
-    def get_pvi_data(self) -> dict[str, Any]:
-        """Poll current wallbox readings."""
-        return self.e3dc.get_pvi_data(wbIndex=wallbox_index, keepAlive=True)
-
-    @e3dc_call
     def get_wallbox_identification_data(self, wallbox_index: int) -> dict[str, Any]:
         """Get identification data for wallbox with given index."""
         req = self.e3dc.sendRequest(

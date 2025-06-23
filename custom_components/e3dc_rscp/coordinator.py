@@ -75,7 +75,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["system-derate-percent"] = self.proxy.e3dc.deratePercent
         self._mydata["system-derate-power"] = self.proxy.e3dc.deratePower
         self._mydata["system-additional-source-available"] = (
-                self.proxy.e3dc.externalSourceAvailable != 0
+            self.proxy.e3dc.externalSourceAvailable != 0
         )
         self._mydata["system-battery-installed-capacity"] = (
             self.proxy.e3dc.installedBatteryCapacity
@@ -205,18 +205,18 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     .capitalize()
                 )
                 powermeter["key"] = (
-                        powermeter["typeName"]
-                        .replace("PM_TYPE_", "")
-                        .replace("_", "-")
-                        .lower()
-                        + "-"
-                        + str(powermeter["index"])
+                    powermeter["typeName"]
+                    .replace("PM_TYPE_", "")
+                    .replace("_", "-")
+                    .lower()
+                    + "-"
+                    + str(powermeter["index"])
                 )
 
                 match powermeter["type"]:
                     case (
-                    PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value
-                    | PowermeterType.PM_TYPE_ADDITIONAL.value
+                        PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value
+                        | PowermeterType.PM_TYPE_ADDITIONAL.value
                     ):
                         powermeter["total-state-class"] = (
                             SensorStateClass.TOTAL_INCREASING
@@ -312,11 +312,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to poll, not updating data: %s", ex)
             return
+
         self._mydata["additional-production"] = poll_data["production"]["add"]
         self._mydata["autarky"] = poll_data["autarky"]
         self._mydata["battery-charge"] = max(0, poll_data["consumption"]["battery"])
         self._mydata["battery-discharge"] = (
-                min(0, poll_data["consumption"]["battery"]) * -1
+            min(0, poll_data["consumption"]["battery"]) * -1
         )
         self._mydata["battery-netchange"] = poll_data["consumption"]["battery"]
         self._mydata["grid-consumption"] = max(0, poll_data["production"]["grid"])
@@ -409,27 +410,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wallbox_key = wallbox["key"]
                 self._mydata[f"{wallbox_key}-{formatted_key}"] = value
 
-    async def _load_and_process_pvi_data(self) -> None:
-        """Load and process power settings."""
-        try:
-            power_settings: dict[str, Any] = await self.hass.async_add_executor_job(
-                self.proxy.get_pvi_data
-            )
-        except HomeAssistantError as ex:
-            _LOGGER.warning("Failed to load power settings, not updating data: %s", ex)
-            return
-
-        self._mydata["pset-limit-charge"] = power_settings["maxChargePower"]
-        self._mydata["pset-limit-discharge"] = power_settings["maxDischargePower"]
-        self._mydata["pset-limit-discharge-minimum"] = power_settings[
-            "dischargeStartPower"
-        ]
-        self._mydata["pset-limit-enabled"] = power_settings["powerLimitsUsed"]
-        self._mydata["pset-powersaving-enabled"] = power_settings["powerSaveEnabled"]
-        self._mydata["pset-weatherregulationenabled"] = power_settings[
-            "weatherRegulatedChargeEnabled"
-        ]
-
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.
 
@@ -521,7 +501,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return True
 
     async def async_set_wallbox_sun_mode(
-            self, enabled: bool, wallbox_index: int
+        self, enabled: bool, wallbox_index: int
     ) -> bool:
         """Enable or disable wallbox sun mode."""
         _LOGGER.debug("Updating wallbox sun mode to %s", enabled)
@@ -604,7 +584,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully cleared the power limits")
 
     async def async_set_wallbox_max_charge_current(
-            self, current: int | None, wallbox_index: int
+        self, current: int | None, wallbox_index: int
     ) -> None:
         """Set the wallbox max charge current."""
 
@@ -648,7 +628,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Successfully set the wallbox max charge current to %s", current)
 
     async def async_set_power_limits(
-            self, max_charge: int | None, max_discharge: int | None
+        self, max_charge: int | None, max_discharge: int | None
     ) -> None:
         """Set the given power limits and enable them."""
 
@@ -665,8 +645,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             max_charge = self.proxy.e3dc.maxBatChargePower
         if (
-                max_discharge is not None
-                and max_discharge > self.proxy.e3dc.maxBatDischargePower
+            max_discharge is not None
+            and max_discharge > self.proxy.e3dc.maxBatDischargePower
         ):
             _LOGGER.warning(
                 "Limiting max_discharge to %s", self.proxy.e3dc.maxBatDischargePower
@@ -707,16 +687,19 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @callback
     def _shutdown_power_mode(self, _event: Event | None) -> None:
+        """Handle shutdown event to stop power mode updates."""
         self._stop_power_mode()
 
     @callback
     def _stop_power_mode(self) -> None:
+        """Stop the power mode updates."""
         if self._stop_set_power_mode is not None:
             _LOGGER.debug("Stopping power mode")
             self._stop_set_power_mode()
             self._stop_set_power_mode = None
 
     async def _async_set_power(self, _event_time: datetime | None, keepAlive: bool = True) -> None:
+        """Set the power mode and value based on the current state."""
         _LOGGER.debug(
             "Setting power mode: %s at %s W",
             self._mydata["set-power-mode"], self._mydata["set-power-value"]
@@ -737,6 +720,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return
 
     async def async_set_power_mode(self, mode: SetPowerMode, value: int | None) -> None:
+        """Set the power mode and value."""
         self._mydata["set-power-mode"] = mode.name
         self._mydata["set-power-value"] = value
 
