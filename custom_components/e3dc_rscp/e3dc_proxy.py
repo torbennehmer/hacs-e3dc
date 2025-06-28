@@ -426,6 +426,7 @@ class E3DCProxy:
 
     @e3dc_call
     def set_power_mode(self, mode: int = 0, value: int = 0) -> int:
+        """Set the E3DC power mode and value."""
         data = self.e3dc.sendRequest(
             (
                 RscpTag.EMS_REQ_SET_POWER,
