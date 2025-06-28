@@ -381,7 +381,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         translation_key="pset-powermode",
         icon="mdi:flash",
         entity_category=EntityCategory.DIAGNOSTIC,
-
         entity_registry_enabled_default = True,
     ),
     E3DCSensorEntityDescription(

@@ -247,6 +247,24 @@
       },
       "wallbox-soc": {
         "name": "State of charge"
+      },
+      "power-mode": {
+        "name": "Mode",
+        "state": {
+          "NORMAL": "Normal operation",
+          "DISCHARGE": "Discharging",
+          "CHARGE": "Charging"
+        }
+      },
+      "pset-powermode": {
+        "name": "Current operation mode",
+        "state": {
+          "NORMAL": "Normal operation",
+          "DISCHARGE": "Discharging",
+          "CHARGE": "Charging",
+          "CHARGE_GRID": "Charging from grid",
+          "IDLE": "Idle"
+        }
       }
     },
     "switch": {
@@ -274,11 +292,6 @@
     "number": {
       "wallbox-max-charge-current": {
         "name": "Max charge current"
-      }
-    },
-    "select": {
-      "pset-powermode": {
-        "name": "Powermode"
       }
     }
   },
@@ -336,6 +349,24 @@
         "charge_amount": {
           "name": "Charge amount (Wh)",
           "description": "Amount to charge in Wh."
+        }
+      }
+    },
+    "set_power_mode": {
+      "name": "Set Power Mode",
+      "description": "Sets the power mode of the E3DC unit.",
+      "fields": {
+        "device_id": {
+          "name": "E3DC Device ID",
+          "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+        },
+        "power_mode": {
+          "name": "Power Mode",
+          "description": "The power mode to set. Options are: NORMAL, DISCHARGE, CHARGE, IDLE and CHARGE_GRID."
+        },
+        "power_value": {
+            "name": "Charge power (W)",
+            "description": "Amount to charge in Wh."
         }
       }
     }

@@ -328,7 +328,13 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["soc"] = poll_data["stateOfCharge"]
         self._mydata["solar-production"] = poll_data["production"]["solar"]
         self._mydata["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
-        self._mydata["power-mode"] = PowerMode(poll_data["power"]["mode"]).name
+        if (PowerMode.has_value(poll_data["power"]["mode"])):
+            self._mydata["power-mode"] = PowerMode(poll_data["power"]["mode"]).name
+        else:
+            _LOGGER.debug(
+                "Unknown power mode %s", poll_data["power"]["mode"]
+            )
+            self._mydata["power-mode"] = f"Power mode {poll_data["power"]["mode"]}"
 
     async def _load_and_process_db_data_today(self) -> None:
         """Load and process retrieved db data settings."""

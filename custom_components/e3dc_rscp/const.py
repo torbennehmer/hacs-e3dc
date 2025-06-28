@@ -29,6 +29,10 @@ class PowerMode(Enum):
     DISCHARGE = 1
     CHARGE = 2
 
+    @classmethod
+    def has_value(self, value):
+        return value in self._value2member_map_ 
+
 
 class SetPowerMode(Enum):
     NORMAL = 0
@@ -36,3 +40,7 @@ class SetPowerMode(Enum):
     DISCHARGE = 2
     CHARGE = 3
     CHARGE_GRID = 4
+
+    @classmethod
+    def has_value(self, value):
+        return value in self._value2member_map_ 
