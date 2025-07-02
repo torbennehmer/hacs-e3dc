@@ -89,7 +89,7 @@ set_power_mode:
       default: "0"
       selector:
         select:
-          translation_key: "power-mode"
+          translation_key: "power_mode"
           options:
             - "0"
             - "1"
