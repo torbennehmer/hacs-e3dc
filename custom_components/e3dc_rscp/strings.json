@@ -298,11 +298,11 @@
   "selector": {
       "power-mode": {
           "options": {
-            "mode_0": "Normal operation",
-            "mode_1": "Idle",
-            "mode_2": "Discharging",
-            "mode_3": "Charging",
-            "mode_4": "Charging from grid"
+            "0": "Normal operation",
+            "1": "Idle",
+            "2": "Discharging",
+            "3": "Charging",
+            "4": "Charging from grid"
           }
       }
   },
