@@ -296,7 +296,7 @@
     }
   },
   "selector": {
-      "power-mode": {
+      "power_mode": {
           "options": {
             "0": "Normal operation",
             "1": "Idle",
