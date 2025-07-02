@@ -276,7 +276,7 @@ class E3DCProxy:
         result : dict[str, Any] = self.e3dc.poll(keepAlive=True)
 
         result["power"] = {
-            "mode": self.get_power_mode()
+            "mode": str(self.get_power_mode())
         }
 
         return result

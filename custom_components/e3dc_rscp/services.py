@@ -260,8 +260,7 @@ async def _async_set_power_mode(hass: HomeAssistant, call: ServiceCall) -> None:
     power_mode: str | None = call.data.get(ATTR_POWER_MODE)
     power_value: int | None = call.data.get(ATTR_POWER_VALUE)
 
-    power_mode_enum: SetPowerMode | None = SetPowerMode[power_mode] \
-        if power_mode in SetPowerMode.__members__ else None
+    power_mode_enum: SetPowerMode | None = SetPowerMode.get_enum(power_mode)
 
     if power_mode_enum is None:
         raise ServiceValidationError(

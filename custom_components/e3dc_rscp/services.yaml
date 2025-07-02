@@ -85,16 +85,17 @@ set_power_mode:
             integration: e3dc_rscp
     power_mode:
       required: true
-      example: "NORMAL"
-      default: "NORMAL"
+      example: "0"
+      default: "0"
       selector:
         select:
+          translation_key: "power-mode"
           options:
-            - "NORMAL"
-            - "IDLE"
-            - "CHARGE"
-            - "CHARGE_GRID"
-            - "DISCHARGE"
+            - "0"
+            - "1"
+            - "2"
+            - "3"
+            - "4"
     power_value:
       required: false
       example: "3000"

@@ -25,22 +25,35 @@ PLATFORMS: list[Platform] = [
 
 
 class PowerMode(Enum):
-    IDLE = 0
-    DISCHARGE = 1
-    CHARGE = 2
+    """Enum for power modes in E3DC RSCP."""
+    IDLE = '0'
+    DISCHARGE = '1'
+    CHARGE = '2'
 
     @classmethod
     def has_value(self, value):
-        return value in self._value2member_map_ 
+        """Check if a value is a valid PowerMode."""
+        return value in self._value2member_map_
 
+    @classmethod
+    def get_enum(self, value):
+        """Get the PowerMode member by value."""
+        return self._value2member_map_[value] if value in self._value2member_map_ else None
 
 class SetPowerMode(Enum):
-    NORMAL = 0
-    IDLE = 1
-    DISCHARGE = 2
-    CHARGE = 3
-    CHARGE_GRID = 4
+    """Enum for set power modes in E3DC RSCP."""
+    NORMAL = '0'
+    IDLE = '1'
+    DISCHARGE = '2'
+    CHARGE = '3'
+    CHARGE_GRID = '4'
 
     @classmethod
     def has_value(self, value):
-        return value in self._value2member_map_ 
+        """Check if a value is a valid SetPowerMode."""
+        return value in self._value2member_map_
+    
+    @classmethod
+    def get_enum(self, value):
+        """Get the SetPowerMode member by value."""
+        return self._value2member_map_[value] if value in self._value2member_map_ else None

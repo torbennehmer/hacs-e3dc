@@ -251,19 +251,19 @@
             "power-mode": {
                 "name": "Mode",
                 "state": {
-                    "NORMAL": "Normal operation",
-                    "DISCHARGE": "Discharging",
-                    "CHARGE": "Charging"
+                    "0": "Idle",
+                    "1": "Discharging",
+                    "2": "Charging"
                 }
             },
             "pset-powermode": {
                 "name": "Current operation mode",
                 "state": {
-                    "NORMAL": "Normal operation",
-                    "DISCHARGE": "Discharging",
-                    "CHARGE": "Charging",
-                    "CHARGE_GRID": "Charging from grid",
-                    "IDLE": "Idle"
+                    "0": "Normal operation",
+                    "1": "Idle",
+                    "2": "Discharging",
+                    "3": "Charging",
+                    "4": "Charging from grid"
                 }
             },
             "pset-powervalue": {
@@ -295,6 +295,17 @@
         "number": {
             "wallbox-max-charge-current": {
                 "name": "Max charge current"
+            }
+        }
+    },
+    "selector": {
+        "power-mode": {
+            "options": {
+                "0": "Normal operation",
+                "1": "Idle",
+                "2": "Discharging",
+                "3": "Charging",
+                "4": "Charging from grid"
             }
         }
     },
