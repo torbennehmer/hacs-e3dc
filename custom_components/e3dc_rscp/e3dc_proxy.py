@@ -275,10 +275,6 @@ class E3DCProxy:
         """Poll E3DC current state."""
         result : dict[str, Any] = self.e3dc.poll(keepAlive=True)
 
-        result["power"] = {
-            "mode": str(self.get_power_mode())
-        }
-
         return result
 
     @e3dc_call

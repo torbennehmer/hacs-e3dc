@@ -7,7 +7,7 @@ from typing import Any, TypedDict
 import pytz
 import re
 
-from e3dc._rscpTags import PowermeterType, RscpTag, RscpType
+from e3dc._rscpTags import PowermeterType
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback, Event
@@ -20,7 +20,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.util.event_type import EventType
 
-from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE, PowerMode, SetPowerMode, SERVICE_SET_POWER_MODE
+from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE, PowerMode, SetPowerMode
 
 from .e3dc_proxy import E3DCProxy
 
@@ -309,6 +309,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             poll_data: dict[str, Any] = await self.hass.async_add_executor_job(
                 self.proxy.poll
             )
+            power_mode_job = self.hass.async_add_executor_job(
+                self.proxy.get_power_mode
+            )
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to poll, not updating data: %s", ex)
             return
@@ -328,13 +331,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["soc"] = poll_data["stateOfCharge"]
         self._mydata["solar-production"] = poll_data["production"]["solar"]
         self._mydata["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
-        if (PowerMode.has_value(poll_data["power"]["mode"])):
-            self._mydata["power-mode"] = poll_data["power"]["mode"]
+
+        power_mode: str = str(await power_mode_job)
+        if (PowerMode.has_value(power_mode)):
+            self._mydata["power-mode"] = power_mode
         else:
             _LOGGER.debug(
-                "Unknown power mode %s", poll_data["power"]["mode"]
+                "Unknown power mode %s", power_mode
             )
-            self._mydata["power-mode"] = f"Power mode {poll_data["power"]["mode"]}"
+            self._mydata["power-mode"] = f"Power mode {power_mode}"
 
     async def _load_and_process_db_data_today(self) -> None:
         """Load and process retrieved db data settings."""

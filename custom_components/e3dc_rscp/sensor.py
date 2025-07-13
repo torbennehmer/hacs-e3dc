@@ -26,6 +26,8 @@ _LOGGER = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class E3DCSensorEntityDescription(SensorEntityDescription):
+    """Class describing E3DC Sensor entities."""
+
     icons: dict[str, str] = None
 
 SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
@@ -601,6 +603,7 @@ class E3DCSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def icon(self) -> str | None:
+        """Return the icon for the sensor."""
         return (
             self.get_icon()
             if self._has_custom_icons
