@@ -73,3 +73,35 @@ manual_charge:
           unit_of_measurement: Wh
           mode: box
           step: 100
+
+set_power_mode:
+  fields:
+    device_id:
+      required: true
+      example: "64d3b74a1bcf319288844ff9e93e4010"
+      selector:
+        device:
+          filter:
+            integration: e3dc_rscp
+    power_mode:
+      required: true
+      example: "0"
+      default: "0"
+      selector:
+        select:
+          translation_key: "power_mode"
+          options:
+            - "0"
+            - "1"
+            - "2"
+            - "3"
+            - "4"
+    power_value:
+      required: false
+      example: "3000"
+      selector:
+        number:
+          min: 100
+          unit_of_measurement: W
+          mode: box
+          step: 100
