@@ -10,15 +10,17 @@ import re
 from e3dc._rscpTags import PowermeterType
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback, Event
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util.dt import as_timestamp, start_of_local_day
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
+from homeassistant.util.event_type import EventType
 
-from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE
+from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE, PowerMode, SetPowerMode
 
 from .e3dc_proxy import E3DCProxy
 
@@ -51,6 +53,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._wallboxes: list[E3DCWallbox] = []
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
+
+        self._stop_set_power_mode: callback = None
+        hass.bus.async_listen_once(EventType("homeassistant_stop"), self._shutdown_power_mode)
+
+        self._mydata["set-power-mode"] = SetPowerMode.NORMAL.value
+        self._mydata["set-power-value"] = None
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=10)
@@ -301,6 +309,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             poll_data: dict[str, Any] = await self.hass.async_add_executor_job(
                 self.proxy.poll
             )
+            power_mode_job = self.hass.async_add_executor_job(
+                self.proxy.get_power_mode
+            )
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to poll, not updating data: %s", ex)
             return
@@ -320,6 +331,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["soc"] = poll_data["stateOfCharge"]
         self._mydata["solar-production"] = poll_data["production"]["solar"]
         self._mydata["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
+
+        power_mode: str = str(await power_mode_job)
+        if (PowerMode.has_value(power_mode)):
+            self._mydata["power-mode"] = power_mode
+        else:
+            _LOGGER.debug(
+                "Unknown power mode %s", power_mode
+            )
+            self._mydata["power-mode"] = f"Power mode {power_mode}"
 
     async def _load_and_process_db_data_today(self) -> None:
         """Load and process retrieved db data settings."""
@@ -675,3 +695,62 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         _LOGGER.debug("Manual charging start command has been sent.")
+
+    @callback
+    def _shutdown_power_mode(self, _event: Event | None) -> None:
+        """Handle shutdown event to stop power mode updates."""
+        self._stop_power_mode()
+
+    @callback
+    def _stop_power_mode(self) -> None:
+        """Stop the power mode updates."""
+        if self._stop_set_power_mode is not None:
+            _LOGGER.debug("Stopping power mode")
+            self._stop_set_power_mode()
+            self._stop_set_power_mode = None
+        self._mydata["set-power-mode"] = SetPowerMode.NORMAL.value
+        self._mydata["set-power-value"] = None
+
+    async def _async_set_power(self, keepAlive: bool = True) -> None:
+        """Set the power mode and value based on the current state."""
+        _LOGGER.debug(
+            "Setting power mode: %s at %s W",
+            SetPowerMode.get_enum(self._mydata["set-power-mode"]).name, self._mydata["set-power-value"]
+        )
+
+        try:
+            power_value: int = await self.hass.async_add_executor_job(
+                self.proxy.set_power_mode,
+                int(self._mydata["set-power-mode"]),
+                self._mydata["set-power-value"],
+            )
+            self._mydata["set-power-value"] = power_value
+            power_mode_str: str = str(self.proxy.get_power_mode())
+            if (PowerMode.has_value(str(power_mode_str))):
+                self._mydata["power-mode"] = power_mode_str
+            else:
+                _LOGGER.debug(
+                    "Unknown power mode %s", power_mode_str
+                )
+                self._mydata["power-mode"] = f"Power mode {power_mode_str}"
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed set power mode: %s", ex)
+            self._stop_power_mode()
+
+    async def async_set_power_mode(self, mode: SetPowerMode, value: int | None) -> None:
+        """Set the power mode and value."""
+        self._mydata["set-power-mode"] = mode.value
+        self._mydata["set-power-value"] = value
+
+        if mode == SetPowerMode.NORMAL and self._stop_set_power_mode is not None:
+            self._stop_power_mode()
+        else:
+            if mode != SetPowerMode.NORMAL:
+                _LOGGER.debug("Starting power mode")
+                await self._async_set_power()
+                if self._stop_set_power_mode is None:
+                    self._stop_set_power_mode = async_track_time_interval(
+                        self.hass, self._async_set_power, timedelta(seconds=10)
+                    )
+
+
