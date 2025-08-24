@@ -369,6 +369,13 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     E3DCSensorEntityDescription(
+        key="smartgrid",
+        translation_key="smartgrid",
+        icon="mdi:solar-power",
+        device_class=SensorDeviceClass.ENUM,
+        options=["blocked", "normal", "recommendation_on", "startup"],
+    ),
+    E3DCSensorEntityDescription(
         key="power-mode",
         translation_key="power-mode",
         icons={

@@ -274,9 +274,14 @@ class E3DCProxy:
     def poll(self) -> dict[str, Any]:
         """Poll E3DC current state."""
         result : dict[str, Any] = self.e3dc.poll(keepAlive=True)
-
         return result
 
+    @e3dc_call
+    def poll_switches(self) -> dict[str, Any]:
+        """Poll E3DC switches."""
+        result : dict[str, Any] = self.e3dc.poll_switches(keepAlive=True)
+        return result
+    
     @e3dc_call
     def start_manual_charge(self, charge_amount_wh: int) -> None:
         """Initiate the manual charging process, zero will stop charging."""
