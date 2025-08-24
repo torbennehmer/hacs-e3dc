@@ -254,6 +254,27 @@
             },
             "wallbox-soc": {
                 "name": "State of charge"
+            },
+            "power-mode": {
+                "name": "Mode",
+                "state": {
+                    "0": "Idle",
+                    "1": "Discharging",
+                    "2": "Charging"
+                }
+            },
+            "pset-powermode": {
+                "name": "Current operation mode",
+                "state": {
+                    "0": "Normal operation",
+                    "1": "Idle",
+                    "2": "Discharging",
+                    "3": "Charging",
+                    "4": "Charging from grid"
+                }
+            },
+            "pset-powervalue": {
+                "name": "Current power value"
             }
         },
         "switch": {
@@ -281,6 +302,17 @@
         "number": {
             "wallbox-max-charge-current": {
                 "name": "Max charge current"
+            }
+        }
+    },
+    "selector": {
+        "power_mode": {
+            "options": {
+                "0": "Normal operation",
+                "1": "Idle",
+                "2": "Discharging",
+                "3": "Charging",
+                "4": "Charging from grid"
             }
         }
     },
@@ -337,6 +369,24 @@
                 },
                 "charge_amount": {
                     "name": "Charge amount (Wh)",
+                    "description": "Amount to charge in Wh."
+                }
+            }
+        },
+        "set_power_mode": {
+            "name": "Set Power Mode",
+            "description": "Sets the power mode of the E3DC unit.",
+            "fields": {
+                "device_id": {
+                    "name": "E3DC Device ID",
+                    "description": "E3DC Device ID, take it either from the YAML-Mode on the website of out of the URL of the device configuration page."
+                },
+                "power_mode": {
+                    "name": "Power Mode",
+                    "description": "The power mode to set. Options are: NORMAL, DISCHARGE, CHARGE, IDLE and CHARGE_GRID."
+                },
+                "power_value": {
+                    "name": "Charge power (W)",
                     "description": "Amount to charge in Wh."
                 }
             }
