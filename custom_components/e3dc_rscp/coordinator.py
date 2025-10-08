@@ -719,12 +719,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         try:
-            power_value: int = await self.hass.async_add_executor_job(
+            await self.hass.async_add_executor_job(
                 self.proxy.set_power_mode,
                 int(self._mydata["set-power-mode"]),
                 self._mydata["set-power-value"],
             )
-            # self._mydata["set-power-value"] = power_value
             power_mode_str: str = str(self.proxy.get_power_mode())
             if (PowerMode.has_value(str(power_mode_str))):
                 self._mydata["power-mode"] = power_mode_str
