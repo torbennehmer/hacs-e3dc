@@ -39,6 +39,9 @@
             "manual-charge-active": {
                 "name": "Manual charge"
             },
+            "sgready-active": {
+                "name": "SG Ready"
+            },
             "wallbox-battery-to-car": {
                 "name": "Battery to car"
             },
@@ -268,6 +271,15 @@
             },
             "pset-powervalue": {
                 "name": "Current power value"
+            },
+            "sgready-state": {
+                "name": "SG Ready state",
+                "state": {
+                    "1": "Sperrstatus",
+                    "2": "Normalbetrieb",
+                    "3": "Freigabestatus",
+                    "4": "Anlaufstatus"
+                }
             }
         },
         "switch": {
