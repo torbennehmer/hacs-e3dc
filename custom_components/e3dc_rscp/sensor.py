@@ -411,7 +411,7 @@ async def async_setup_entry(
         for description in SENSOR_DESCRIPTIONS
     ]
 
-    # Add SG Ready state if SG Ready is enabled
+    # Add SG Ready sensors if SG Ready is enabled
     if coordinator.sgready_available:
         sgready_state_description = E3DCSensorEntityDescription(
             key="sgready-state",
@@ -420,6 +420,16 @@ async def async_setup_entry(
         )
         entities.append(
             E3DCSensor(coordinator, sgready_state_description, entry.unique_id)
+        )
+
+        sgready_numeric_description = E3DCSensorEntityDescription(
+            key="sgready-numeric-state",
+            translation_key="sgready-numeric-state",
+            icon="mdi:heat-pump",
+            entity_registry_enabled_default=False,
+        )
+        entities.append(
+            E3DCSensor(coordinator, sgready_numeric_description, entry.unique_id)
         )
 
     # Add Sensor descriptions for additional powermeters, skip root PM

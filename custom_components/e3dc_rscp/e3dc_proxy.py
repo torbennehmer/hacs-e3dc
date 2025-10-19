@@ -283,7 +283,9 @@ class E3DCProxy:
         )
         result: dict[str, Any] = {}
         result["sgready-active"] = rscpFindTag(result_data, RscpTag.SGR_AKTIV)[2]
-        result["sgready-state"] = rscpFindTag(result_data, RscpTag.SGR_STATE)[2]
+        sgready_state = rscpFindTag(result_data, RscpTag.SGR_STATE)[2]
+        result["sgready-state"] = sgready_state
+        result["sgready-numeric-state"] = sgready_state
 
         return result
 

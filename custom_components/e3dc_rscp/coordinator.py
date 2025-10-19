@@ -426,6 +426,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return
 
         self._mydata["sgready-state"] = request_data["sgready-state"]
+        self._mydata["sgready-numeric-state"] = request_data["sgready-numeric-state"]
         self._mydata["sgready-active"] = bool(request_data["sgready-active"])
         self._sgready_available = bool(request_data["sgready-active"])
 

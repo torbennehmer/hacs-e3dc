@@ -40,7 +40,7 @@
         "name": "Manual charge"
       },
       "sgready-active": {
-        "name": "SG Ready"
+        "name": "SG Ready active"
       },
       "wallbox-battery-to-car": {
         "name": "Battery to car"
@@ -270,13 +270,16 @@
         }
       },
       "sgready-state": {
-        "name": "SG Ready state",
+        "name": "SG Ready",
         "state": {
-          "1": "Sperrstatus",
-          "2": "Normalbetrieb",
-          "3": "Freigabestatus",
-          "4": "Anlaufstatus"
+          "1": "Locked",
+          "2": "Normal",
+          "3": "Released",
+          "4": "Start-up"
         }
+      },
+      "sgready-numeric-state": {
+        "name": "SG Ready numeric"
       }
     },
     "switch": {
