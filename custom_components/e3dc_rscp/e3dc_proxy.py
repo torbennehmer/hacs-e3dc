@@ -1,5 +1,4 @@
 """Diagnostics support for E3DC RSCP."""
-
 from __future__ import annotations
 
 from functools import wraps
@@ -42,9 +41,7 @@ def e3dc_call(func):
             _LOGGER.debug("Failed to authenticate with E3DC: %s", ex, exc_info=True)
             raise ConfigEntryAuthFailed("Failed to authenticate with E3DC") from ex
         except RSCPKeyError as ex:
-            _LOGGER.debug(
-                "Encryption error with E3DC, key invalid: %s", ex, exc_info=True
-            )
+            _LOGGER.debug("Encryption error with E3DC, key invalid: %s", ex, exc_info=True)
             raise ConfigEntryAuthFailed(
                 "Encryption Error with E3DC, key invalid"
             ) from ex
@@ -119,8 +116,7 @@ class E3DCProxy:
         """Poll manual charging state."""
         try:
             data = self.e3dc.sendRequest(
-                (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None),
-                keepAlive=True,
+                (RscpTag.EMS_REQ_GET_MANUAL_CHARGE, RscpType.NoneType, None), keepAlive=True
             )
 
             result: dict[str, Any] = {}
@@ -142,9 +138,7 @@ class E3DCProxy:
             #     request_data, "EMS_MANUAL_CHARGE_LASTSTART"
             # )[2]
         except SendError:
-            _LOGGER.debug(
-                "Failed to query manual charging data, might be related to a recent E3DC API change, ignoring the error, reverting to empty defaults."
-            )
+            _LOGGER.debug("Failed to query manual charging data, might be related to a recent E3DC API change, ignoring the error, reverting to empty defaults.")
             result: dict[str, Any] = {}
             result["active"] = False
             result["energy"] = 0
@@ -181,7 +175,7 @@ class E3DCProxy:
                     ("WB_REQ_SERIAL", "None", None),
                     ("WB_REQ_WALLBOX_TYPE", "None", None),
                     ("WB_REQ_LOWER_CURRENT_LIMIT", "None", None),
-                    ("WB_REQ_UPPER_CURRENT_LIMIT", "None", None),
+                    ("WB_REQ_UPPER_CURRENT_LIMIT", "None", None)
                 ],
             ),
             keepAlive=True,
@@ -193,9 +187,7 @@ class E3DCProxy:
 
         firmware_version = rscpFindTag(req, "WB_FIRMWARE_VERSION")
         if firmware_version is not None:
-            outObj["firmwareVersion"] = rscpFindTagIndex(
-                firmware_version, "WB_FIRMWARE_VERSION"
-            )
+            outObj["firmwareVersion"] = rscpFindTagIndex(firmware_version, "WB_FIRMWARE_VERSION")
 
         device_name = rscpFindTag(req, "WB_DEVICE_NAME")
         if device_name is not None:
@@ -215,17 +207,14 @@ class E3DCProxy:
 
         lower_current_limit = rscpFindTag(req, "WB_LOWER_CURRENT_LIMIT")
         if lower_current_limit is not None:
-            outObj["lowerCurrentLimit"] = rscpFindTagIndex(
-                lower_current_limit, "WB_LOWER_CURRENT_LIMIT"
-            )
+            outObj["lowerCurrentLimit"] = rscpFindTagIndex(lower_current_limit, "WB_LOWER_CURRENT_LIMIT")
 
         upper_current_limit = rscpFindTag(req, "WB_UPPER_CURRENT_LIMIT")
         if upper_current_limit is not None:
-            outObj["upperCurrentLimit"] = rscpFindTagIndex(
-                upper_current_limit, "WB_UPPER_CURRENT_LIMIT"
-            )
+            outObj["upperCurrentLimit"] = rscpFindTagIndex(upper_current_limit, "WB_UPPER_CURRENT_LIMIT")
 
         return outObj
+
 
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:
@@ -307,7 +296,7 @@ class E3DCProxy:
     @e3dc_call
     def poll(self) -> dict[str, Any]:
         """Poll E3DC current state."""
-        result: dict[str, Any] = self.e3dc.poll(keepAlive=True)
+        result : dict[str, Any] = self.e3dc.poll(keepAlive=True)
 
         return result
 
@@ -335,9 +324,7 @@ class E3DCProxy:
             nothing
 
         """
-        result: bool = self.e3dc.set_wallbox_sunmode(
-            enable=enabled, wbIndex=wallbox_index, keepAlive=True
-        )
+        result: bool = self.e3dc.set_wallbox_sunmode(enable=enabled, wbIndex=wallbox_index, keepAlive=True)
         if not result:
             raise HomeAssistantError("Failed to set wallbox to sun mode %s", enabled)
 
@@ -353,9 +340,7 @@ class E3DCProxy:
             nothing
 
         """
-        result: bool = self.e3dc.set_wallbox_schuko(
-            enable=enabled, wbIndex=wallbox_index, keepAlive=True
-        )
+        result: bool = self.e3dc.set_wallbox_schuko(enable=enabled, wbIndex=wallbox_index, keepAlive=True)
         if not result:
             raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
 
@@ -370,9 +355,7 @@ class E3DCProxy:
             nothing
 
         """
-        result: bool = self.e3dc.toggle_wallbox_charging(
-            wbIndex=wallbox_index, keepAlive=True
-        )
+        result: bool = self.e3dc.toggle_wallbox_charging(wbIndex=wallbox_index, keepAlive=True)
         if not result:
             raise HomeAssistantError("Failed to toggle wallbox charging")
 
@@ -389,9 +372,7 @@ class E3DCProxy:
             nothing
 
         """
-        result: bool = self.e3dc.toggle_wallbox_phases(
-            wbIndex=wallbox_index, keepAlive=True
-        )
+        result: bool = self.e3dc.toggle_wallbox_phases(wbIndex=wallbox_index, keepAlive=True)
         if not result:
             raise HomeAssistantError("Failed to toggle wallbox phases")
 
@@ -410,11 +391,7 @@ class E3DCProxy:
             False if error
 
         """
-        _LOGGER.debug(
-            "Wallbox %s: Setting max_charge_current to %s",
-            wallbox_index,
-            max_charge_current,
-        )
+        _LOGGER.debug("Wallbox %s: Setting max_charge_current to %s", wallbox_index, max_charge_current)
 
         return self.e3dc.set_wallbox_max_charge_current(
             max_charge_current=max_charge_current, wbIndex=wallbox_index, keepAlive=True
