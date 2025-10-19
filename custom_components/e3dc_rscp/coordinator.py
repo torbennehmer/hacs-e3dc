@@ -51,6 +51,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._update_guard_powersettings: bool = False
         self._update_guard_wallboxsettings: bool = False
         self._wallboxes: list[E3DCWallbox] = []
+        self._sgready_available: bool = False
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
 
@@ -154,11 +155,35 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             else:
                 _LOGGER.debug("No Wallbox with index %s has been found", wallbox_index)
 
+    async def async_identify_sgready(self) -> None:
+        """Identify availability of SG Ready support."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_sgready_state
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to identify SG Ready capability, assuming disabled: %s", ex
+            )
+            self._sgready_available = False
+            return
+
+        self._sgready_available = bool(request_data.get("sgready-active"))
+        if self._sgready_available:
+            _LOGGER.debug("SG Ready support detected")
+        else:
+            _LOGGER.debug("SG Ready support not active")
+
     # Getter for _wallboxes
     @property
     def wallboxes(self) -> list[E3DCWallbox]:
         """Get the list of wallboxes."""
         return self._wallboxes
+
+    @property
+    def sgready_available(self) -> bool:
+        """Return if SG Ready information is available."""
+        return self._sgready_available
 
     # Setter for individual wallbox values
     def setWallboxValue(self, index: int, key: str, value: Any) -> None:
@@ -401,7 +426,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return
 
         self._mydata["sgready-state"] = request_data["sgready-state"]
-        self._mydata["sgready-active"] = request_data["sgready-active"]
+        self._mydata["sgready-active"] = bool(request_data["sgready-active"])
+        self._sgready_available = bool(request_data["sgready-active"])
 
     async def _load_and_process_wallbox_data(self) -> None:
         """Load and process wallbox data to existing data."""
