@@ -55,6 +55,15 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         on_icon="mdi:electric-switch-closed",
         off_icon="mdi:electric-switch",
     ),
+    E3DCBinarySensorEntityDescription(
+        key="sgready-active",
+        translation_key="sgready-active",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        on_icon="mdi:flash",
+        off_icon="mdi:flash-outline",
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 
 
