@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from functools import wraps
 import logging
+from threading import Lock
 from typing import Any
 
 from e3dc import E3DC, SendError, NotAvailableError, RSCPKeyError, AuthenticationError
@@ -54,6 +55,19 @@ def e3dc_call(func):
     return wrapper_handle_e3dc_ex
 
 
+class ThreadSafeE3DC(E3DC):
+    """Thread-safe version of E3DC."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the thread-safe E3DC."""
+        self._lock = Lock()
+        super().__init__(*args, **kwargs)
+
+    def sendRequest(self, *args, **kwargs):
+        """Thread-safe sendRequest."""
+        with self._lock:
+            return super().sendRequest(*args, **kwargs)
+
 class E3DCProxy:
     """Proxies requests to pye3dc, takes care of error and async handling."""
 
@@ -86,7 +100,7 @@ class E3DCProxy:
         if config is None:
             config = {}
 
-        self.e3dc = E3DC(
+        self.e3dc = ThreadSafeE3DC(
             E3DC.CONNECT_LOCAL,
             username=self._username,
             password=self._password,
@@ -440,7 +454,7 @@ class E3DCProxy:
                     ),
                 ],
             ),
-            keepAlive=True,
+            keepAlive=False,
         )
 
         return rscpFindTag(data, RscpTag.EMS_SET_POWER)[2]
