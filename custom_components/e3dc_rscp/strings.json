@@ -28,6 +28,16 @@
       "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "create_battery_devices": "Create battery devices"
+        },
+        "title": "E3DC RSCP options"
+      }
+    }
+  },
   "entity": {
     "binary_sensor": {
       "system-additional-source-available": {

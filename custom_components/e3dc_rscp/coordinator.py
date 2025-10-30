@@ -20,7 +20,14 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.util.event_type import EventType
 
-from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE, PowerMode, SetPowerMode
+from .const import (
+    CONF_CREATE_BATTERY_DEVICES,
+    DEFAULT_CREATE_BATTERY_DEVICES,
+    DOMAIN,
+    MAX_WALLBOXES_POSSIBLE,
+    PowerMode,
+    SetPowerMode,
+)
 
 from .e3dc_proxy import E3DCProxy
 
@@ -50,12 +57,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._sw_version: str = ""
         self._update_guard_powersettings: bool = False
         self._update_guard_wallboxsettings: bool = False
+        self.config_entry: ConfigEntry = config_entry
         self._wallboxes: list[E3DCWallbox] = []
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
 
         self._stop_set_power_mode: callback = None
-        hass.bus.async_listen_once(EventType("homeassistant_stop"), self._shutdown_power_mode)
+        hass.bus.async_listen_once(
+            EventType("homeassistant_stop"), self._shutdown_power_mode
+        )
 
         self._mydata["set-power-mode"] = SetPowerMode.NORMAL.value
         self._mydata["set-power-value"] = None
@@ -157,6 +167,13 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def wallboxes(self) -> list[E3DCWallbox]:
         """Get the list of wallboxes."""
         return self._wallboxes
+
+    @property
+    def create_battery_devices(self) -> bool:
+        """Flag indicating if battery devices should be created."""
+        return self.config_entry.options.get(
+            CONF_CREATE_BATTERY_DEVICES, DEFAULT_CREATE_BATTERY_DEVICES
+        )
 
     # Setter for individual wallbox values
     def setWallboxValue(self, index: int, key: str, value: Any) -> None:
@@ -309,9 +326,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             poll_data: dict[str, Any] = await self.hass.async_add_executor_job(
                 self.proxy.poll
             )
-            power_mode_job = self.hass.async_add_executor_job(
-                self.proxy.get_power_mode
-            )
+            power_mode_job = self.hass.async_add_executor_job(self.proxy.get_power_mode)
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to poll, not updating data: %s", ex)
             return
@@ -333,12 +348,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
 
         power_mode: str = str(await power_mode_job)
-        if (PowerMode.has_value(power_mode)):
+        if PowerMode.has_value(power_mode):
             self._mydata["power-mode"] = power_mode
         else:
-            _LOGGER.debug(
-                "Unknown power mode %s", power_mode
-            )
+            _LOGGER.debug("Unknown power mode %s", power_mode)
             self._mydata["power-mode"] = f"Power mode {power_mode}"
 
     async def _load_and_process_db_data_today(self) -> None:
@@ -715,7 +728,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Set the power mode and value based on the current state."""
         _LOGGER.debug(
             "Setting power mode: %s at %s W",
-            SetPowerMode.get_enum(self._mydata["set-power-mode"]).name, self._mydata["set-power-value"]
+            SetPowerMode.get_enum(self._mydata["set-power-mode"]).name,
+            self._mydata["set-power-value"],
         )
 
         try:
@@ -726,12 +740,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             self._mydata["set-power-value"] = power_value
             power_mode_str: str = str(self.proxy.get_power_mode())
-            if (PowerMode.has_value(str(power_mode_str))):
+            if PowerMode.has_value(str(power_mode_str)):
                 self._mydata["power-mode"] = power_mode_str
             else:
-                _LOGGER.debug(
-                    "Unknown power mode %s", power_mode_str
-                )
+                _LOGGER.debug("Unknown power mode %s", power_mode_str)
                 self._mydata["power-mode"] = f"Power mode {power_mode_str}"
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed set power mode: %s", ex)
@@ -752,5 +764,3 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     self._stop_set_power_mode = async_track_time_interval(
                         self.hass, self._async_set_power, timedelta(seconds=10)
                     )
-
-
