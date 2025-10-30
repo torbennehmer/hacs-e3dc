@@ -1,6 +1,6 @@
 """Coordinator for E3DC integration."""
 
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 import logging
 from time import time
 from typing import Any, TypedDict
@@ -25,6 +25,10 @@ from .const import (
     DEFAULT_CREATE_BATTERY_DEVICES,
     DOMAIN,
     MAX_WALLBOXES_POSSIBLE,
+    CONF_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
+    DEFAULT_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
+    BATTERY_MODULE_SENSORS,
+    BATTERY_PACK_SENSORS,
     PowerMode,
     SetPowerMode,
 )
@@ -45,6 +49,23 @@ class E3DCWallbox(TypedDict):
     upperCurrentLimit: int
 
 
+class E3DCBattery(TypedDict):
+    """E3DC Battery module, keeps module index, identifier and device info."""
+
+    pack_index: int
+    dcb_index: int
+    key: str
+    deviceInfo: DeviceInfo
+
+
+class E3DCBatteryPack(TypedDict):
+    """E3DC Battery pack metadata used for diagnostic sensors."""
+
+    index: int
+    key: str
+    name: str
+
+
 class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """E3DC Coordinator, fetches all relevant data and provides proxies for all service calls."""
 
@@ -59,6 +80,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._update_guard_wallboxsettings: bool = False
         self.config_entry: ConfigEntry = config_entry
         self._wallboxes: list[E3DCWallbox] = []
+        self._batteries: list[E3DCBattery] = []
+        self._battery_packs: list[E3DCBatteryPack] = []
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
 
@@ -175,6 +198,160 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             CONF_CREATE_BATTERY_DEVICES, DEFAULT_CREATE_BATTERY_DEVICES
         )
 
+    @property
+    def batteries(self) -> list[E3DCBattery]:
+        """Get the list of identified battery modules."""
+        return self._batteries
+
+    @property
+    def battery_packs(self) -> list[E3DCBatteryPack]:
+        """Get the list of battery packs for diagnostic sensors."""
+        return self._battery_packs
+
+    async def _async_clear_battery_devices(self) -> None:
+        """Remove any previously created battery devices."""
+        device_registry = dr.async_get(self.hass)
+        battery_prefix = f"{self.uid}-battery-"
+        devices_to_remove: list[str] = []
+
+        for entry in device_registry.devices.values():
+            if any(
+                identifier[0] == DOMAIN and identifier[1].startswith(battery_prefix)
+                for identifier in entry.identifiers
+            ):
+                devices_to_remove.append(entry.id)
+
+        for device_id in devices_to_remove:
+            device_registry.async_remove_device(device_id)
+
+        self._batteries.clear()
+        battery_key_prefix = "battery-"
+        for key in list(self._mydata.keys()):
+            if key.startswith("battery-pack-"):
+                continue
+            if key.startswith(battery_key_prefix):
+                self._mydata.pop(key)
+
+    def _clear_battery_diagnostic_data(self) -> None:
+        """Clear previously stored diagnostic battery sensor data."""
+        pack_prefix = "battery-pack-"
+        for key in list(self._mydata.keys()):
+            if key.startswith(pack_prefix):
+                self._mydata.pop(key)
+        self._battery_packs.clear()
+
+    async def async_identify_batteries(self, hass: HomeAssistant) -> None:
+        """Identify installed battery modules if enabled via options."""
+        if not self.create_battery_devices:
+            _LOGGER.debug("Battery devices disabled via options, skipping identification")
+            await self._async_clear_battery_devices()
+            return
+
+        try:
+            batteries_config: list[dict[str, Any]] = await self.hass.async_add_executor_job(
+                self.proxy.get_batteries
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to load battery configuration, skipping battery devices: %s", ex
+            )
+            return
+
+        try:
+            battery_data: Any = await self.hass.async_add_executor_job(
+                self.proxy.get_battery_data
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to load battery data, continuing with limited information: %s", ex
+            )
+            battery_data = None
+
+        if not isinstance(batteries_config, list):
+            _LOGGER.debug("Battery configuration returned unexpected payload: %s", batteries_config)
+            batteries_config = []
+
+        battery_details_by_pack: dict[int, dict[str, Any]] = {}
+        if isinstance(battery_data, list):
+            for pack in battery_data:
+                if isinstance(pack, dict) and "index" in pack:
+                    battery_details_by_pack[pack["index"]] = pack
+        elif isinstance(battery_data, dict):
+            pack_index = battery_data.get("index", 0)
+            battery_details_by_pack[pack_index] = battery_data
+
+        def _normalize(value: Any) -> Any:
+            if isinstance(value, str):
+                stripped = value.strip()
+                if stripped == "" or stripped.upper() == "TODO":
+                    return None
+            return value
+
+        self._batteries.clear()
+
+        for battery_config in batteries_config or []:
+            pack_index = battery_config.get("index", 0)
+            dcb_count = battery_config.get("dcbs", 0)
+            pack_details = battery_details_by_pack.get(pack_index, {})
+            dcbs_details: dict[int, dict[str, Any]] = {}
+            if isinstance(pack_details, dict):
+                dcbs = pack_details.get("dcbs")
+                if isinstance(dcbs, dict):
+                    dcbs_details = dcbs
+
+            for dcb_index in range(dcb_count):
+                battery_key = f"battery-{pack_index}-{dcb_index}"
+                unique_id = f"{self.uid}-{battery_key}"
+                dcb_detail = dcbs_details.get(dcb_index, {}) if isinstance(dcbs_details, dict) else {}
+
+                manufacturer = _normalize(dcb_detail.get("manufactureName")) or "E3DC"
+                model = _normalize(dcb_detail.get("deviceName")) or _normalize(pack_details.get("deviceName")) or "Battery Module"
+                default_name = f"Battery {pack_index + 1} Module {dcb_index + 1}"
+                name = _normalize(dcb_detail.get("deviceName")) or default_name
+                serial = _normalize(dcb_detail.get("serialCode")) or _normalize(dcb_detail.get("serialNo"))
+                fw_version = _normalize(dcb_detail.get("fwVersion"))
+                pcb_version = _normalize(dcb_detail.get("pcbVersion"))
+
+                device_info = DeviceInfo(
+                    identifiers={(DOMAIN, unique_id)},
+                    via_device=(DOMAIN, self.uid),
+                    manufacturer=manufacturer,
+                    name=name,
+                    model=model,
+                    configuration_url="https://my.e3dc.com/",
+                )
+
+                if serial is not None:
+                    device_info["serial_number"] = str(serial)
+                if fw_version is not None:
+                    device_info["sw_version"] = str(fw_version)
+                if pcb_version is not None:
+                    device_info["hw_version"] = str(pcb_version)
+
+                battery_entry: E3DCBattery = {
+                    "pack_index": pack_index,
+                    "dcb_index": dcb_index,
+                    "key": battery_key,
+                    "deviceInfo": device_info,
+                }
+                self._batteries.append(battery_entry)
+
+        if len(self._batteries) > 0:
+            await self._load_and_process_battery_data(battery_data)
+
+        if len(self._batteries) == 0:
+            _LOGGER.debug("No battery modules were identified")
+        else:
+            _LOGGER.debug("Identified %s battery modules", len(self._batteries))
+
+    @property
+    def create_battery_diagnostic_sensors(self) -> bool:
+        """Flag indicating if diagnostic battery sensors should be created."""
+        return self.config_entry.options.get(
+            CONF_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
+            DEFAULT_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
+        )
+
     # Setter for individual wallbox values
     def setWallboxValue(self, index: int, key: str, value: Any) -> None:
         """Set the value for a specific key in a wallbox identified by its index."""
@@ -284,6 +461,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if len(self.wallboxes) > 0:
             _LOGGER.debug("Polling wallbox")
             await self._load_and_process_wallbox_data()
+
+        if self.create_battery_devices or self.create_battery_diagnostic_sensors:
+            _LOGGER.debug("Polling battery data")
+            await self._load_and_process_battery_data()
+        else:
+            self._clear_battery_diagnostic_data()
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
@@ -433,6 +616,150 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     formatted_key = "charging"
                 wallbox_key = wallbox["key"]
                 self._mydata[f"{wallbox_key}-{formatted_key}"] = value
+
+    async def _load_and_process_battery_data(self, battery_data: Any | None = None) -> None:
+        """Load and process battery module data."""
+        data: Any | None = battery_data
+        if data is None:
+            try:
+                data = await self.hass.async_add_executor_job(
+                    self.proxy.get_battery_data
+                )
+            except HomeAssistantError as ex:
+                _LOGGER.warning("Failed to load battery data, not updating sensors: %s", ex)
+                return
+
+        pack_map: dict[int, dict[str, Any]] = {}
+        if isinstance(data, list):
+            for pack in data:
+                if isinstance(pack, dict) and "index" in pack:
+                    pack_map[pack["index"]] = pack
+        elif isinstance(data, dict):
+            pack_index = data.get("index", 0)
+            pack_map[pack_index] = data
+
+        if self.create_battery_diagnostic_sensors:
+            self._update_battery_pack_data(pack_map)
+        else:
+            self._clear_battery_diagnostic_data()
+
+        for battery in self.batteries:
+            pack = pack_map.get(battery["pack_index"], {})
+            dcb_data: dict[str, Any] | None = None
+            if isinstance(pack, dict):
+                dcbs = pack.get("dcbs")
+                if isinstance(dcbs, dict):
+                    dcb_data = dcbs.get(battery["dcb_index"])
+
+            if not isinstance(dcb_data, dict):
+                for _, slug in BATTERY_MODULE_SENSORS:
+                    self._mydata[f"{battery['key']}-{slug}"] = None
+                continue
+
+            for data_key, slug in BATTERY_MODULE_SENSORS:
+                raw_value: Any = dcb_data.get(data_key)
+                if isinstance(raw_value, list | dict | set | tuple):
+                    continue
+
+                processed_value: Any = self._process_battery_sensor_value(
+                    data_key, raw_value
+                )
+                self._mydata[f"{battery['key']}-{slug}"] = processed_value
+
+    def _update_battery_pack_data(self, pack_map: dict[int, dict[str, Any]]) -> None:
+        """Update diagnostic sensor data for battery packs."""
+        existing_keys = {key for key in self._mydata if key.startswith("battery-pack-")}
+        new_keys: set[str] = set()
+        self._battery_packs.clear()
+
+        for pack_index in sorted(pack_map.keys()):
+            pack = pack_map[pack_index]
+            pack_key = f"battery-pack-{pack_index}"
+            pack_name_raw = pack.get("deviceName")
+            pack_name_processed = self._process_battery_sensor_value(
+                "deviceName", pack_name_raw
+            )
+            pack_name = (
+                str(pack_name_processed)
+                if pack_name_processed is not None
+                else f"Battery Pack {pack_index + 1}"
+            )
+            self._battery_packs.append(
+                {"index": pack_index, "key": pack_key, "name": pack_name}
+            )
+
+            for data_key, slug in BATTERY_PACK_SENSORS:
+                full_key = f"{pack_key}-{slug}"
+                new_keys.add(full_key)
+
+                if data_key is None:
+                    value = self._calculate_battery_pack_value(slug, pack)
+                else:
+                    raw_value = pack.get(data_key)
+                    if isinstance(raw_value, list | dict | set | tuple):
+                        value = None
+                    else:
+                        value = raw_value
+
+                processed_value = self._process_battery_sensor_value(
+                    data_key or slug, value
+                )
+                self._mydata[full_key] = processed_value
+
+        for stale_key in existing_keys - new_keys:
+            self._mydata.pop(stale_key, None)
+
+    def _calculate_battery_pack_value(self, slug: str, pack: dict[str, Any]) -> Any:
+        """Calculate derived battery pack values."""
+        if slug == "state-of-health":
+            design_capacity = pack.get("designCapacity")
+            full_charge_capacity = pack.get("fcc")
+            try:
+                design_capacity_float = float(design_capacity)
+                full_charge_capacity_float = float(full_charge_capacity)
+            except (TypeError, ValueError):
+                return None
+
+            if design_capacity_float <= 0:
+                return None
+
+            return (full_charge_capacity_float / design_capacity_float) * 100
+
+        return pack.get(slug)
+
+    def _process_battery_sensor_value(self, data_key: str, value: Any) -> Any:
+        """Process individual battery sensor values before storing."""
+        if value is None:
+            return None
+
+        if data_key == "manufactureDate":
+            try:
+                value_int: int = int(value)
+            except (TypeError, ValueError):
+                return None
+
+            value_str: str = f"{value_int:06d}"
+            year_raw = int(value_str[:2])
+            month = int(value_str[2:4])
+            day = int(value_str[4:6])
+
+            if not 1 <= month <= 12 or not 1 <= day <= 31:
+                return None
+
+            year = 2000 + year_raw if year_raw < 90 else 1900 + year_raw
+            try:
+                manufacture_date = date(year, month, day)
+            except ValueError:
+                return None
+            return manufacture_date.isoformat()
+
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped == "" or stripped.upper() == "TODO":
+                return None
+            return stripped
+
+        return value
 
     async def _load_timezone_settings(self):
         """Load the current timezone offset from the E3DC, using its local timezone data.

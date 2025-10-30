@@ -32,7 +32,8 @@
         "step": {
             "init": {
                 "data": {
-                    "create_battery_devices": "Create battery devices"
+                    "create_battery_devices": "Create battery devices",
+                    "create_battery_diagnostic_sensors": "Create diagnostic battery sensors"
                 },
                 "title": "E3DC RSCP options"
             }
@@ -125,6 +126,78 @@
             },
             "battery-discharge": {
                 "name": "Battery discharge"
+            },
+            "battery-module-current": {
+                "name": "Battery current"
+            },
+            "battery-module-current-avg-30s": {
+                "name": "Battery current (30s avg)"
+            },
+            "battery-module-cycle-count": {
+                "name": "Cycle count"
+            },
+            "battery-module-design-capacity": {
+                "name": "Design capacity"
+            },
+            "battery-module-design-voltage": {
+                "name": "Design voltage"
+            },
+            "battery-module-end-of-discharge": {
+                "name": "End of discharge voltage"
+            },
+            "battery-module-error": {
+                "name": "Error code"
+            },
+            "battery-module-full-charge-capacity": {
+                "name": "Full charge capacity"
+            },
+            "battery-module-max-charge-current": {
+                "name": "Maximum charge current"
+            },
+            "battery-module-max-charge-temperature": {
+                "name": "Maximum charge temperature"
+            },
+            "battery-module-max-charge-voltage": {
+                "name": "Maximum charge voltage"
+            },
+            "battery-module-max-discharge-current": {
+                "name": "Maximum discharge current"
+            },
+            "battery-module-min-charge-temperature": {
+                "name": "Minimum charge temperature"
+            },
+            "battery-module-parallel-cell-count": {
+                "name": "Parallel cell count"
+            },
+            "battery-module-sensor-count": {
+                "name": "Sensor count"
+            },
+            "battery-module-series-cell-count": {
+                "name": "Series cell count"
+            },
+            "battery-module-remaining-capacity": {
+                "name": "Remaining capacity"
+            },
+            "battery-module-soc": {
+                "name": "State of charge"
+            },
+            "battery-module-soh": {
+                "name": "State of health"
+            },
+            "battery-module-status": {
+                "name": "Status code"
+            },
+            "battery-module-voltage": {
+                "name": "Voltage"
+            },
+            "battery-module-voltage-avg-30s": {
+                "name": "Voltage (30s avg)"
+            },
+            "battery-module-warning": {
+                "name": "Warning code"
+            },
+            "battery-module-manufacture-date": {
+                "name": "Manufacture date"
             },
             "grid-production": {
                 "name": "Export to grid"

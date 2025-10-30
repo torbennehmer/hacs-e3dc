@@ -32,7 +32,8 @@
     "step": {
       "init": {
         "data": {
-          "create_battery_devices": "Create battery devices"
+          "create_battery_devices": "Create battery devices",
+          "create_battery_diagnostic_sensors": "Create diagnostic battery sensors"
         },
         "title": "E3DC RSCP options"
       }

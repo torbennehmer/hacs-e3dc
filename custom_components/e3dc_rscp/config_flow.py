@@ -26,7 +26,9 @@ from homeassistant.core import callback
 
 from .const import (
     CONF_CREATE_BATTERY_DEVICES,
+    CONF_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
     DEFAULT_CREATE_BATTERY_DEVICES,
+    DEFAULT_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
     CONF_RSCPKEY,
     CONF_VERSION,
     DOMAIN,
@@ -194,6 +196,13 @@ class E3DCOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                         default=self.config_entry.options.get(
                             CONF_CREATE_BATTERY_DEVICES,
                             DEFAULT_CREATE_BATTERY_DEVICES,
+                        ),
+                    ): cv.boolean,
+                    vol.Required(
+                        CONF_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
+                        default=self.config_entry.options.get(
+                            CONF_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
+                            DEFAULT_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
                         ),
                     ): cv.boolean,
                 }
