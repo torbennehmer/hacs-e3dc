@@ -434,8 +434,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "design-capacity": {
         "translation_key": "battery-module-design-capacity",
         "icon": "mdi:battery-outline",
-        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
-        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "native_unit_of_measurement": "Ah",
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
         "suggested_display_precision": 2,
@@ -466,8 +465,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "full-charge-capacity": {
         "translation_key": "battery-module-full-charge-capacity",
         "icon": "mdi:battery-charging",
-        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
-        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "native_unit_of_measurement": "Ah",
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
         "suggested_display_precision": 2,
@@ -533,8 +531,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "remaining-capacity": {
         "translation_key": "battery-module-remaining-capacity",
         "icon": "mdi:battery-high",
-        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
-        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "native_unit_of_measurement": "Ah",
         "state_class": SensorStateClass.MEASUREMENT,
         "suggested_display_precision": 2,
     },
@@ -616,8 +613,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "design-capacity": {
         "name": "Design capacity",
         "icon": "mdi:battery-outline",
-        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
-        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "native_unit_of_measurement": "Ah",
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
         "suggested_display_precision": 2,
@@ -637,6 +633,15 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
         "icon": "mdi:check-circle",
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
+    "design-energy": {
+        "name": "Design energy",
+        "icon": "mdi:battery-outline",
+        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
     "eod-voltage": {
         "name": "End of discharge voltage",
         "icon": "mdi:battery-arrow-down-outline",
@@ -654,6 +659,14 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "full-charge-capacity": {
         "name": "Full charge capacity",
         "icon": "mdi:battery-charging",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "full-energy": {
+        "name": "Full energy",
+        "icon": "mdi:battery-charging-100",
         "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY_STORAGE,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -714,6 +727,14 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     },
     "remaining-capacity": {
         "name": "Remaining capacity",
+        "icon": "mdi:battery-high",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "remaining-energy": {
+        "name": "Remaining energy",
         "icon": "mdi:battery-high",
         "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY_STORAGE,
@@ -776,8 +797,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "usable-capacity": {
         "name": "Usable capacity",
         "icon": "mdi:battery",
-        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
-        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "native_unit_of_measurement": "Ah",
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
         "suggested_display_precision": 2,
@@ -785,6 +805,14 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "usable-remaining-capacity": {
         "name": "Usable remaining capacity",
         "icon": "mdi:battery",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "usable-remaining-energy": {
+        "name": "Usable remaining energy",
+        "icon": "mdi:battery-check",
         "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY_STORAGE,
         "state_class": SensorStateClass.MEASUREMENT,
