@@ -870,9 +870,11 @@ async def async_setup_entry(
                 )
             )
 
-    if coordinator.create_battery_diagnostic_sensors:
+    if coordinator.create_battery_devices:
         for pack in coordinator.battery_packs:
-            pack_label = pack["name"] or f"Battery Pack {pack['index'] + 1}"
+            pack_label = pack.get("name") or f"Battery Pack {pack['index'] + 1}"
+            pack_unique_id = pack.get("unique_id", entry.unique_id)
+            pack_device_info = pack.get("deviceInfo")
 
             for data_key, slug in BATTERY_PACK_SENSORS:
                 template = BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
@@ -893,7 +895,8 @@ async def async_setup_entry(
                     E3DCSensor(
                         coordinator,
                         description,
-                        entry.unique_id,
+                        pack_unique_id,
+                        pack_device_info,
                     )
                 )
 

@@ -25,8 +25,6 @@ from .const import (
     DEFAULT_CREATE_BATTERY_DEVICES,
     DOMAIN,
     MAX_WALLBOXES_POSSIBLE,
-    CONF_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
-    DEFAULT_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
     BATTERY_MODULE_SENSORS,
     BATTERY_PACK_SENSORS,
     PowerMode,
@@ -59,11 +57,13 @@ class E3DCBattery(TypedDict):
 
 
 class E3DCBatteryPack(TypedDict):
-    """E3DC Battery pack metadata used for diagnostic sensors."""
+    """E3DC Battery pack metadata used for sensors and device linking."""
 
     index: int
     key: str
+    unique_id: str
     name: str
+    deviceInfo: DeviceInfo
 
 
 class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -205,18 +205,22 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def battery_packs(self) -> list[E3DCBatteryPack]:
-        """Get the list of battery packs for diagnostic sensors."""
+        """Get the list of battery packs for the configured batteries."""
         return self._battery_packs
 
     async def _async_clear_battery_devices(self) -> None:
         """Remove any previously created battery devices."""
         device_registry = dr.async_get(self.hass)
-        battery_prefix = f"{self.uid}-battery-"
+        battery_prefixes = (
+            f"{self.uid}-battery-",
+            f"{self.uid}-battery-pack-",
+        )
         devices_to_remove: list[str] = []
 
         for entry in device_registry.devices.values():
             if any(
-                identifier[0] == DOMAIN and identifier[1].startswith(battery_prefix)
+                identifier[0] == DOMAIN
+                and any(identifier[1].startswith(prefix) for prefix in battery_prefixes)
                 for identifier in entry.identifiers
             ):
                 devices_to_remove.append(entry.id)
@@ -227,13 +231,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._batteries.clear()
         battery_key_prefix = "battery-"
         for key in list(self._mydata.keys()):
-            if key.startswith("battery-pack-"):
-                continue
             if key.startswith(battery_key_prefix):
                 self._mydata.pop(key)
+        self._clear_battery_pack_data()
 
-    def _clear_battery_diagnostic_data(self) -> None:
-        """Clear previously stored diagnostic battery sensor data."""
+    def _clear_battery_pack_data(self) -> None:
+        """Clear previously stored battery pack data."""
         pack_prefix = "battery-pack-"
         for key in list(self._mydata.keys()):
             if key.startswith(pack_prefix):
@@ -288,6 +291,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return value
 
         self._batteries.clear()
+        pack_entries: dict[int, E3DCBatteryPack] = {}
 
         for battery_config in batteries_config or []:
             pack_index = battery_config.get("index", 0)
@@ -298,6 +302,47 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 dcbs = pack_details.get("dcbs")
                 if isinstance(dcbs, dict):
                     dcbs_details = dcbs
+
+            pack_key = f"battery-pack-{pack_index}"
+            pack_unique_id = f"{self.uid}-{pack_key}"
+            pack_entry = pack_entries.get(pack_index)
+            if pack_entry is None:
+                pack_manufacturer = _normalize(pack_details.get("manufactureName")) or "E3DC"
+                pack_model = (
+                    _normalize(pack_details.get("deviceTypeName"))
+                    or _normalize(pack_details.get("deviceName"))
+                    or "Battery Pack"
+                )
+                default_pack_name = f"Battery Pack {pack_index + 1}"
+                pack_name = _normalize(pack_details.get("deviceName")) or default_pack_name
+                pack_serial = _normalize(pack_details.get("serialCode")) or _normalize(
+                    pack_details.get("serialNo")
+                )
+                pack_fw_version = _normalize(pack_details.get("fwVersion"))
+                pack_hw_version = _normalize(pack_details.get("pcbVersion"))
+
+                pack_device_info: DeviceInfo = DeviceInfo(
+                    identifiers={(DOMAIN, pack_unique_id)},
+                    via_device=(DOMAIN, self.uid),
+                    manufacturer=pack_manufacturer,
+                    name=pack_name,
+                    model=pack_model,
+                )
+                if pack_serial is not None:
+                    pack_device_info["serial_number"] = str(pack_serial)
+                if pack_fw_version is not None:
+                    pack_device_info["sw_version"] = str(pack_fw_version)
+                if pack_hw_version is not None:
+                    pack_device_info["hw_version"] = str(pack_hw_version)
+
+                pack_entry = {
+                    "index": pack_index,
+                    "key": pack_key,
+                    "unique_id": pack_unique_id,
+                    "name": pack_name,
+                    "deviceInfo": pack_device_info,
+                }
+                pack_entries[pack_index] = pack_entry
 
             for dcb_index in range(dcb_count):
                 battery_key = f"battery-{pack_index}-{dcb_index}"
@@ -314,7 +359,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
                 device_info = DeviceInfo(
                     identifiers={(DOMAIN, unique_id)},
-                    via_device=(DOMAIN, self.uid),
+                    via_device=(DOMAIN, pack_entry["unique_id"]),
                     manufacturer=manufacturer,
                     name=name,
                     model=model,
@@ -336,6 +381,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 }
                 self._batteries.append(battery_entry)
 
+        self._battery_packs = [
+            pack_entries[index] for index in sorted(pack_entries.keys())
+        ]
+
         if len(self._batteries) > 0:
             await self._load_and_process_battery_data(battery_data)
 
@@ -343,14 +392,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("No battery modules were identified")
         else:
             _LOGGER.debug("Identified %s battery modules", len(self._batteries))
-
-    @property
-    def create_battery_diagnostic_sensors(self) -> bool:
-        """Flag indicating if diagnostic battery sensors should be created."""
-        return self.config_entry.options.get(
-            CONF_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
-            DEFAULT_CREATE_BATTERY_DIAGNOSTIC_SENSORS,
-        )
 
     # Setter for individual wallbox values
     def setWallboxValue(self, index: int, key: str, value: Any) -> None:
@@ -462,11 +503,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("Polling wallbox")
             await self._load_and_process_wallbox_data()
 
-        if self.create_battery_devices or self.create_battery_diagnostic_sensors:
+        if self.create_battery_devices:
             _LOGGER.debug("Polling battery data")
             await self._load_and_process_battery_data()
         else:
-            self._clear_battery_diagnostic_data()
+            self._clear_battery_pack_data()
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
@@ -638,10 +679,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             pack_index = data.get("index", 0)
             pack_map[pack_index] = data
 
-        if self.create_battery_diagnostic_sensors:
+        if self.create_battery_devices and self._battery_packs:
             self._update_battery_pack_data(pack_map)
         else:
-            self._clear_battery_diagnostic_data()
+            self._clear_battery_pack_data()
 
         for battery in self.batteries:
             pack = pack_map.get(battery["pack_index"], {})
@@ -667,14 +708,35 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self._mydata[f"{battery['key']}-{slug}"] = processed_value
 
     def _update_battery_pack_data(self, pack_map: dict[int, dict[str, Any]]) -> None:
-        """Update diagnostic sensor data for battery packs."""
+        """Update sensor data for battery packs and refresh pack metadata."""
         existing_keys = {key for key in self._mydata if key.startswith("battery-pack-")}
         new_keys: set[str] = set()
-        self._battery_packs.clear()
+        packs_by_index = {pack["index"]: pack for pack in self._battery_packs}
+        updated_packs: list[E3DCBatteryPack] = []
 
         for pack_index in sorted(pack_map.keys()):
             pack = pack_map[pack_index]
             pack_key = f"battery-pack-{pack_index}"
+            pack_entry = packs_by_index.get(pack_index)
+
+            if pack_entry is None:
+                unique_id = f"{self.uid}-{pack_key}"
+                device_info = DeviceInfo(
+                    identifiers={(DOMAIN, unique_id)},
+                    via_device=(DOMAIN, self.uid),
+                    manufacturer="E3DC",
+                    name=f"Battery Pack {pack_index + 1}",
+                    model="Battery Pack",
+                    configuration_url="https://my.e3dc.com/",
+                )
+                pack_entry = {
+                    "index": pack_index,
+                    "key": pack_key,
+                    "unique_id": unique_id,
+                    "name": f"Battery Pack {pack_index + 1}",
+                    "deviceInfo": device_info,
+                }
+
             pack_name_raw = pack.get("deviceName")
             pack_name_processed = self._process_battery_sensor_value(
                 "deviceName", pack_name_raw
@@ -682,11 +744,20 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             pack_name = (
                 str(pack_name_processed)
                 if pack_name_processed is not None
-                else f"Battery Pack {pack_index + 1}"
+                else pack_entry["name"]
             )
-            self._battery_packs.append(
-                {"index": pack_index, "key": pack_key, "name": pack_name}
-            )
+
+            # Update device name to reflect latest information
+            pack_entry["deviceInfo"]["name"] = pack_name
+
+            updated_pack: E3DCBatteryPack = {
+                "index": pack_index,
+                "key": pack_key,
+                "unique_id": pack_entry["unique_id"],
+                "name": pack_name,
+                "deviceInfo": pack_entry["deviceInfo"],
+            }
+            updated_packs.append(updated_pack)
 
             for data_key, slug in BATTERY_PACK_SENSORS:
                 full_key = f"{pack_key}-{slug}"
@@ -705,6 +776,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     data_key or slug, value
                 )
                 self._mydata[full_key] = processed_value
+
+        self._battery_packs = updated_packs
 
         for stale_key in existing_keys - new_keys:
             self._mydata.pop(stale_key, None)

@@ -10,8 +10,6 @@ ERROR_AUTH_INVALID = "invalid_auth"
 ERROR_CANNOT_CONNECT = "cannot_connect"
 CONF_CREATE_BATTERY_DEVICES = "create_battery_devices"
 DEFAULT_CREATE_BATTERY_DEVICES = False
-CONF_CREATE_BATTERY_DIAGNOSTIC_SENSORS = "create_battery_diagnostic_sensors"
-DEFAULT_CREATE_BATTERY_DIAGNOSTIC_SENSORS = False
 BATTERY_MODULE_SENSORS: tuple[tuple[str, str], ...] = (
     ("current", "current"),
     ("currentAvg30s", "current-avg-30s"),
