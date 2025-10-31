@@ -588,7 +588,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
 
 BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "asoc": {
-        "name": "State of charge",
+        "name": "Absolute state of charge (ASOC)",
         "icon": "mdi:battery",
         "native_unit_of_measurement": PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
@@ -748,7 +748,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
     "rsoc": {
-        "name": "Relative state of charge",
+        "name": "Relative state of charge (RSOC)",
         "icon": "mdi:battery",
         "native_unit_of_measurement": PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
