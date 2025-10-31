@@ -784,22 +784,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _calculate_battery_pack_value(self, slug: str, pack: dict[str, Any]) -> Any:
         """Calculate derived battery pack values."""
-        def _as_float(value: Any) -> float | None:
-            try:
-                if value is None:
-                    return None
-                return float(value)
-            except (TypeError, ValueError):
-                return None
-
-        def _as_int(value: Any) -> int | None:
-            try:
-                if value is None:
-                    return None
-                return int(value)
-            except (TypeError, ValueError):
-                return None
-
         def _get_dcb_count() -> int | None:
             dcbs = pack.get("dcbs")
             if isinstance(dcbs, dict):
@@ -809,7 +793,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if len(dcbs) > 0:
                     return len(dcbs)
 
-            return _as_int(pack.get("dcbCount"))
+            raw_count = pack.get("dcbCount")
+            try:
+                return int(raw_count)
+            except (TypeError, ValueError):
+                return None
 
         def _get_first_dcb_value(key: str) -> Any:
             dcbs = pack.get("dcbs")
@@ -825,45 +813,55 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return None
 
         if slug == "design-energy":
-            design_capacity = _as_float(pack.get("designCapacity"))
-            design_voltage = _as_float(_get_first_dcb_value("designVoltage"))
             dcb_count = _get_dcb_count()
-            if (
-                design_capacity is None
-                or design_voltage is None
-                or dcb_count is None
-                or dcb_count <= 0
-            ):
+            if dcb_count is None or dcb_count <= 0:
+                return None
+
+            design_capacity_raw = pack.get("designCapacity")
+            design_voltage_raw = _get_first_dcb_value("designVoltage")
+
+            try:
+                design_capacity = float(design_capacity_raw)
+                design_voltage = float(design_voltage_raw)
+            except (TypeError, ValueError):
                 return None
 
             return (design_capacity * (dcb_count * design_voltage)) / 1000
 
         if slug == "full-energy":
-            full_charge_capacity = _as_float(pack.get("fcc"))
-            design_voltage = _as_float(_get_first_dcb_value("designVoltage"))
             dcb_count = _get_dcb_count()
-            if (
-                full_charge_capacity is None
-                or design_voltage is None
-                or dcb_count is None
-                or dcb_count <= 0
-            ):
+            if dcb_count is None or dcb_count <= 0:
+                return None
+
+            full_charge_capacity_raw = pack.get("fcc")
+            design_voltage_raw = _get_first_dcb_value("designVoltage")
+
+            try:
+                full_charge_capacity = float(full_charge_capacity_raw)
+                design_voltage = float(design_voltage_raw)
+            except (TypeError, ValueError):
                 return None
 
             return (full_charge_capacity * (dcb_count * design_voltage)) / 1000
 
         if slug == "remaining-energy":
-            remaining_capacity = _as_float(pack.get("rc"))
-            module_voltage = _as_float(pack.get("moduleVoltage"))
-            if remaining_capacity is None or module_voltage is None:
+            remaining_capacity_raw = pack.get("rc")
+            module_voltage_raw = pack.get("moduleVoltage")
+            try:
+                remaining_capacity = float(remaining_capacity_raw)
+                module_voltage = float(module_voltage_raw)
+            except (TypeError, ValueError):
                 return None
 
             return (remaining_capacity * module_voltage) / 1000
 
         if slug == "usable-remaining-energy":
-            usable_remaining_capacity = _as_float(pack.get("usuableRemainingCapacity"))
-            module_voltage = _as_float(pack.get("moduleVoltage"))
-            if usable_remaining_capacity is None or module_voltage is None:
+            usable_remaining_capacity_raw = pack.get("usuableRemainingCapacity")
+            module_voltage_raw = pack.get("moduleVoltage")
+            try:
+                usable_remaining_capacity = float(usable_remaining_capacity_raw)
+                module_voltage = float(module_voltage_raw)
+            except (TypeError, ValueError):
                 return None
 
             return (usable_remaining_capacity * module_voltage) / 1000
