@@ -680,7 +680,79 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             pack_map[pack_index] = data
 
         if self.create_battery_devices and self._battery_packs:
-            self._update_battery_pack_data(pack_map)
+            existing_pack_keys = {
+                key for key in self._mydata if key.startswith("battery-pack-")
+            }
+            observed_pack_keys: set[str] = set()
+            packs_by_index = {pack["index"]: pack for pack in self._battery_packs}
+            updated_packs: list[E3DCBatteryPack] = []
+
+            for pack_index in sorted(pack_map.keys()):
+                pack = pack_map[pack_index]
+                pack_key = f"battery-pack-{pack_index}"
+                pack_entry = packs_by_index.get(pack_index)
+
+                if pack_entry is None:
+                    unique_id = f"{self.uid}-{pack_key}"
+                    device_info = DeviceInfo(
+                        identifiers={(DOMAIN, unique_id)},
+                        via_device=(DOMAIN, self.uid),
+                        manufacturer="E3DC",
+                        name=f"Battery Pack {pack_index + 1}",
+                        model="Battery Pack",
+                        configuration_url="https://my.e3dc.com/",
+                    )
+                    pack_entry = {
+                        "index": pack_index,
+                        "key": pack_key,
+                        "unique_id": unique_id,
+                        "name": f"Battery Pack {pack_index + 1}",
+                        "deviceInfo": device_info,
+                    }
+
+                pack_name_raw = pack.get("deviceName")
+                pack_name_processed = self._process_battery_sensor_value(
+                    "deviceName", pack_name_raw, pack
+                )
+                pack_name = (
+                    str(pack_name_processed)
+                    if pack_name_processed is not None
+                    else pack_entry["name"]
+                )
+
+                pack_entry["deviceInfo"]["name"] = pack_name
+
+                updated_pack: E3DCBatteryPack = {
+                    "index": pack_index,
+                    "key": pack_key,
+                    "unique_id": pack_entry["unique_id"],
+                    "name": pack_name,
+                    "deviceInfo": pack_entry["deviceInfo"],
+                }
+                updated_packs.append(updated_pack)
+
+                for data_key, slug in BATTERY_PACK_SENSORS:
+                    full_key = f"{pack_key}-{slug}"
+                    observed_pack_keys.add(full_key)
+
+                    if data_key is None:
+                        value = self._calculate_battery_pack_value(slug, pack)
+                    else:
+                        raw_value = pack.get(data_key)
+                        if isinstance(raw_value, list | dict | set | tuple):
+                            value = None
+                        else:
+                            value = raw_value
+
+                    processed_value = self._process_battery_sensor_value(
+                        data_key or slug, value, pack
+                    )
+                    self._mydata[full_key] = processed_value
+
+            self._battery_packs = updated_packs
+
+            for stale_key in existing_pack_keys - observed_pack_keys:
+                self._mydata.pop(stale_key, None)
         else:
             self._clear_battery_pack_data()
 
@@ -702,85 +774,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if isinstance(raw_value, list | dict | set | tuple):
                     continue
 
-                processed_value: Any = self._process_battery_sensor_value(
-                    data_key, raw_value
-                )
-                self._mydata[f"{battery['key']}-{slug}"] = processed_value
-
-    def _update_battery_pack_data(self, pack_map: dict[int, dict[str, Any]]) -> None:
-        """Update sensor data for battery packs and refresh pack metadata."""
-        existing_keys = {key for key in self._mydata if key.startswith("battery-pack-")}
-        new_keys: set[str] = set()
-        packs_by_index = {pack["index"]: pack for pack in self._battery_packs}
-        updated_packs: list[E3DCBatteryPack] = []
-
-        for pack_index in sorted(pack_map.keys()):
-            pack = pack_map[pack_index]
-            pack_key = f"battery-pack-{pack_index}"
-            pack_entry = packs_by_index.get(pack_index)
-
-            if pack_entry is None:
-                unique_id = f"{self.uid}-{pack_key}"
-                device_info = DeviceInfo(
-                    identifiers={(DOMAIN, unique_id)},
-                    via_device=(DOMAIN, self.uid),
-                    manufacturer="E3DC",
-                    name=f"Battery Pack {pack_index + 1}",
-                    model="Battery Pack",
-                    configuration_url="https://my.e3dc.com/",
-                )
-                pack_entry = {
-                    "index": pack_index,
-                    "key": pack_key,
-                    "unique_id": unique_id,
-                    "name": f"Battery Pack {pack_index + 1}",
-                    "deviceInfo": device_info,
-                }
-
-            pack_name_raw = pack.get("deviceName")
-            pack_name_processed = self._process_battery_sensor_value(
-                "deviceName", pack_name_raw
-            )
-            pack_name = (
-                str(pack_name_processed)
-                if pack_name_processed is not None
-                else pack_entry["name"]
-            )
-
-            # Update device name to reflect latest information
-            pack_entry["deviceInfo"]["name"] = pack_name
-
-            updated_pack: E3DCBatteryPack = {
-                "index": pack_index,
-                "key": pack_key,
-                "unique_id": pack_entry["unique_id"],
-                "name": pack_name,
-                "deviceInfo": pack_entry["deviceInfo"],
-            }
-            updated_packs.append(updated_pack)
-
-            for data_key, slug in BATTERY_PACK_SENSORS:
-                full_key = f"{pack_key}-{slug}"
-                new_keys.add(full_key)
-
-                if data_key is None:
-                    value = self._calculate_battery_pack_value(slug, pack)
-                else:
-                    raw_value = pack.get(data_key)
-                    if isinstance(raw_value, list | dict | set | tuple):
-                        value = None
-                    else:
-                        value = raw_value
-
                 processed_value = self._process_battery_sensor_value(
-                    data_key or slug, value
+                    data_key, raw_value, dcb_data
                 )
-                self._mydata[full_key] = processed_value
 
-        self._battery_packs = updated_packs
-
-        for stale_key in existing_keys - new_keys:
-            self._mydata.pop(stale_key, None)
+                self._mydata[f"{battery['key']}-{slug}"] = processed_value
 
     def _calculate_battery_pack_value(self, slug: str, pack: dict[str, Any]) -> Any:
         """Calculate derived battery pack values."""
@@ -882,8 +880,32 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return pack.get(slug)
 
-    def _process_battery_sensor_value(self, data_key: str, value: Any) -> Any:
+    def _process_battery_sensor_value(self, data_key: str, value: Any, dcb: dict[str, Any]) -> Any:
         """Process individual battery sensor values before storing."""
+        if data_key == "soc" and value is None:
+            remaining_capacity_raw = dcb.get("remainingCapacity")
+            voltage_raw = dcb.get("voltage")
+            try:
+                remaining_capacity = float(remaining_capacity_raw)
+                voltage = float(voltage_raw)
+            except (TypeError, ValueError):
+                return None
+            return (remaining_capacity * voltage) / 1000
+
+        if data_key == "soh" and value is None:
+            full_charge_capacity_raw = dcb.get("fullChargeCapacity")
+            design_capacity_raw = dcb.get("designCapacity")
+            try:
+                full_charge_capacity = float(full_charge_capacity_raw)
+                design_capacity = float(design_capacity_raw)
+            except (TypeError, ValueError):
+                return None
+
+            if design_capacity <= 0:
+                return None
+
+            return (full_charge_capacity / design_capacity) * 100
+
         if value is None:
             return None
 

@@ -111,6 +111,102 @@
             "battery-netchange": {
                 "name": "Battery net change"
             },
+            "battery-pack-asoc": {
+                "name": "Absolute state of charge (ASOC)"
+            },
+            "battery-pack-charge-cycles": {
+                "name": "Charge cycles"
+            },
+            "battery-pack-current": {
+                "name": "Current"
+            },
+            "battery-pack-design-capacity": {
+                "name": "Design capacity"
+            },
+            "battery-pack-device-connected": {
+                "name": "Connected"
+            },
+            "battery-pack-device-in-service": {
+                "name": "In service"
+            },
+            "battery-pack-device-working": {
+                "name": "Working"
+            },
+            "battery-pack-design-energy": {
+                "name": "Design energy"
+            },
+            "battery-pack-eod-voltage": {
+                "name": "End of discharge voltage"
+            },
+            "battery-pack-error-code": {
+                "name": "Error code"
+            },
+            "battery-pack-full-charge-capacity": {
+                "name": "Full charge capacity"
+            },
+            "battery-pack-full-energy": {
+                "name": "Full energy"
+            },
+            "battery-pack-max-battery-voltage": {
+                "name": "Maximum pack voltage"
+            },
+            "battery-pack-max-charge-current": {
+                "name": "Maximum charge current"
+            },
+            "battery-pack-max-discharge-current": {
+                "name": "Maximum discharge current"
+            },
+            "battery-pack-max-dcb-cell-temperature": {
+                "name": "Maximum DCB cell temperature"
+            },
+            "battery-pack-min-dcb-cell-temperature": {
+                "name": "Minimum DCB cell temperature"
+            },
+            "battery-pack-module-voltage": {
+                "name": "Module voltage"
+            },
+            "battery-pack-remaining-capacity": {
+                "name": "Remaining capacity"
+            },
+            "battery-pack-remaining-energy": {
+                "name": "Remaining energy"
+            },
+            "battery-pack-ready-for-shutdown": {
+                "name": "Ready for shutdown"
+            },
+            "battery-pack-rsoc": {
+                "name": "Relative state of charge (RSOC)"
+            },
+            "battery-pack-rsoc-real": {
+                "name": "Real state of charge"
+            },
+            "battery-pack-status-code": {
+                "name": "Status code"
+            },
+            "battery-pack-terminal-voltage": {
+                "name": "Terminal voltage"
+            },
+            "battery-pack-total-use-time": {
+                "name": "Total use time"
+            },
+            "battery-pack-total-discharge-time": {
+                "name": "Total discharge time"
+            },
+            "battery-pack-training-mode": {
+                "name": "Training mode"
+            },
+            "battery-pack-usable-capacity": {
+                "name": "Usable capacity"
+            },
+            "battery-pack-usable-remaining-capacity": {
+                "name": "Usable remaining capacity"
+            },
+            "battery-pack-usable-remaining-energy": {
+                "name": "Usable remaining energy"
+            },
+            "battery-pack-state-of-health": {
+                "name": "State of health"
+            },
             "grid-consumption": {
                 "name": "Consumption from grid"
             },
@@ -176,6 +272,9 @@
             },
             "battery-module-remaining-capacity": {
                 "name": "Remaining capacity"
+            },
+            "battery-module-soc": {
+                "name": "State of charge (energy)"
             },
             "battery-module-soc": {
                 "name": "State of charge"
