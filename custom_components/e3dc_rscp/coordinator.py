@@ -209,7 +209,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self._battery_packs
 
     async def _async_clear_battery_devices(self) -> None:
-        """Remove any previously created battery devices."""
+        """Remove any previously created battery devices and clear all battery data."""
         device_registry = dr.async_get(self.hass)
         battery_prefixes = (
             f"{self.uid}-battery-",
@@ -228,19 +228,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for device_id in devices_to_remove:
             device_registry.async_remove_device(device_id)
 
+        # Clear battery module data
         self._batteries.clear()
         battery_key_prefix = "battery-"
         for key in list(self._mydata.keys()):
             if key.startswith(battery_key_prefix):
                 self._mydata.pop(key)
-        self._clear_battery_pack_data()
 
-    def _clear_battery_pack_data(self) -> None:
-        """Clear previously stored battery pack data."""
-        pack_prefix = "battery-pack-"
-        for key in list(self._mydata.keys()):
-            if key.startswith(pack_prefix):
-                self._mydata.pop(key)
+        # Clear battery pack data
         self._battery_packs.clear()
 
     async def async_identify_batteries(self, hass: HomeAssistant) -> None:
@@ -488,8 +483,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self.create_battery_devices:
             _LOGGER.debug("Polling battery data")
             await self._load_and_process_battery_data()
-        else:
-            self._clear_battery_pack_data()
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
@@ -661,61 +654,23 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             pack_index = data.get("index", 0)
             pack_map[pack_index] = data
 
+        # Update battery pack sensor values
         if self.create_battery_devices and self._battery_packs:
-            existing_pack_keys = {
-                key for key in self._mydata if key.startswith("battery-pack-")
-            }
-            observed_pack_keys: set[str] = set()
-            packs_by_index = {pack["index"]: pack for pack in self._battery_packs}
-            updated_packs: list[E3DCBatteryPack] = []
+            for pack_entry in self._battery_packs:
+                pack_index = pack_entry["index"]
+                pack = pack_map.get(pack_index)
 
-            for pack_index in sorted(pack_map.keys()):
-                pack = pack_map[pack_index]
-                pack_key = f"battery-pack-{pack_index}"
-                pack_entry = packs_by_index.get(pack_index)
+                if pack is None:
+                    # No data for this pack, set sensors to None
+                    pack_key = pack_entry["key"]
+                    for _, slug in BATTERY_PACK_SENSORS:
+                        full_key = f"{pack_key}-{slug}"
+                        self._mydata[full_key] = None
+                    continue
 
-                if pack_entry is None:
-                    unique_id = f"{self.uid}-{pack_key}"
-                    device_info = DeviceInfo(
-                        identifiers={(DOMAIN, unique_id)},
-                        via_device=(DOMAIN, self.uid),
-                        manufacturer="E3DC",
-                        name=f"Battery Pack {pack_index + 1}",
-                        model="Battery Pack",
-                        configuration_url="https://my.e3dc.com/",
-                    )
-                    pack_entry = {
-                        "index": pack_index,
-                        "key": pack_key,
-                        "unique_id": unique_id,
-                        "name": f"Battery Pack {pack_index + 1}",
-                        "deviceInfo": device_info,
-                    }
-
-                pack_name_raw = pack.get("deviceName")
-                pack_name_processed = self._process_battery_sensor_value(
-                    "deviceName", pack_name_raw, pack
-                )
-                pack_name = (
-                    str(pack_name_processed)
-                    if pack_name_processed is not None
-                    else pack_entry["name"]
-                )
-
-                pack_entry["deviceInfo"]["name"] = pack_name
-
-                updated_pack: E3DCBatteryPack = {
-                    "index": pack_index,
-                    "key": pack_key,
-                    "unique_id": pack_entry["unique_id"],
-                    "name": pack_name,
-                    "deviceInfo": pack_entry["deviceInfo"],
-                }
-                updated_packs.append(updated_pack)
-
+                pack_key = pack_entry["key"]
                 for data_key, slug in BATTERY_PACK_SENSORS:
                     full_key = f"{pack_key}-{slug}"
-                    observed_pack_keys.add(full_key)
 
                     if data_key is None:
                         value = self._calculate_battery_pack_value(slug, pack)
@@ -731,13 +686,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     )
                     self._mydata[full_key] = processed_value
 
-            self._battery_packs = updated_packs
-
-            for stale_key in existing_pack_keys - observed_pack_keys:
-                self._mydata.pop(stale_key, None)
-        else:
-            self._clear_battery_pack_data()
-
+        # Update battery module sensor values
         for battery in self.batteries:
             pack = pack_map.get(battery["pack_index"], {})
             dcb_data: dict[str, Any] | None = None
