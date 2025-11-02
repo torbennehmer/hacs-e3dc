@@ -905,7 +905,7 @@ async def async_setup_entry(
 
     if coordinator.create_battery_devices:
         for pack in coordinator.battery_packs:
-            pack_unique_id = pack.get("unique_id", entry.unique_id)
+            pack_unique_id = pack.get("uniqueId", entry.unique_id)
             pack_device_info = pack.get("deviceInfo")
 
             # Add raw sensors
