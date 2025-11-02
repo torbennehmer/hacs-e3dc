@@ -10,7 +10,9 @@ ERROR_AUTH_INVALID = "invalid_auth"
 ERROR_CANNOT_CONNECT = "cannot_connect"
 CONF_CREATE_BATTERY_DEVICES = "create_battery_devices"
 DEFAULT_CREATE_BATTERY_DEVICES = False
-BATTERY_MODULE_SENSORS: tuple[tuple[str | None, str], ...] = (
+
+# Battery module sensors (all are raw sensors with data_key)
+BATTERY_MODULE_RAW_SENSORS: tuple[tuple[str, str], ...] = (
     ("current", "current"),
     ("currentAvg30s", "current-avg-30s"),
     ("cycleCount", "cycle-count"),
@@ -36,19 +38,19 @@ BATTERY_MODULE_SENSORS: tuple[tuple[str | None, str], ...] = (
     ("warning", "warning"),
     ("manufactureDate", "manufacture-date"),
 )
-BATTERY_PACK_SENSORS: tuple[tuple[str | None, str], ...] = (
+
+# Battery pack raw sensors (data_key, slug)
+BATTERY_PACK_RAW_SENSORS: tuple[tuple[str, str], ...] = (
     ("asoc", "asoc"),
     ("chargeCycles", "charge-cycles"),
     ("current", "current"),
     ("designCapacity", "design-capacity"),
-    (None, "design-energy"),
     ("deviceConnected", "device-connected"),
     ("deviceInService", "device-in-service"),
     ("deviceWorking", "device-working"),
     ("eodVoltage", "eod-voltage"),
     ("errorCode", "error-code"),
     ("fcc", "full-charge-capacity"),
-    (None, "full-energy"),
     ("maxBatVoltage", "max-battery-voltage"),
     ("maxChargeCurrent", "max-charge-current"),
     ("maxDischargeCurrent", "max-discharge-current"),
@@ -56,7 +58,6 @@ BATTERY_PACK_SENSORS: tuple[tuple[str | None, str], ...] = (
     ("minDcbCellTemp", "min-dcb-cell-temperature"),
     ("moduleVoltage", "module-voltage"),
     ("rc", "remaining-capacity"),
-    (None, "remaining-energy"),
     ("readyForShutdown", "ready-for-shutdown"),
     ("rsoc", "rsoc"),
     ("rsocReal", "rsoc-real"),
@@ -67,9 +68,17 @@ BATTERY_PACK_SENSORS: tuple[tuple[str | None, str], ...] = (
     ("trainingMode", "training-mode"),
     ("usuableCapacity", "usable-capacity"),
     ("usuableRemainingCapacity", "usable-remaining-capacity"),
-    (None, "usable-remaining-energy"),
-    (None, "state-of-health"),
 )
+
+# Battery pack calculated sensors (slug only, calculated in _calculate_battery_pack_value)
+BATTERY_PACK_CALCULATED_SENSORS: tuple[str, ...] = (
+    "design-energy",
+    "full-energy",
+    "remaining-energy",
+    "usable-remaining-energy",
+    "state-of-health",
+)
+
 SERVICE_CLEAR_POWER_LIMITS = "clear_power_limits"
 SERVICE_SET_POWER_LIMITS = "set_power_limits"
 SERVICE_MANUAL_CHARGE = "manual_charge"

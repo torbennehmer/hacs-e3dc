@@ -28,8 +28,9 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
-    BATTERY_MODULE_SENSORS,
-    BATTERY_PACK_SENSORS,
+    BATTERY_MODULE_RAW_SENSORS,
+    BATTERY_PACK_RAW_SENSORS,
+    BATTERY_PACK_CALCULATED_SENSORS,
     DOMAIN,
 )
 from .coordinator import E3DCCoordinator
@@ -883,7 +884,7 @@ async def async_setup_entry(
         unique_id = list(battery["deviceInfo"]["identifiers"])[0][1]
         battery_key = battery["key"]
 
-        for _, slug in BATTERY_MODULE_SENSORS:
+        for _, slug in BATTERY_MODULE_RAW_SENSORS:
             template = BATTERY_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
             if template is None:
                 continue
@@ -907,7 +908,28 @@ async def async_setup_entry(
             pack_unique_id = pack.get("unique_id", entry.unique_id)
             pack_device_info = pack.get("deviceInfo")
 
-            for _, slug in BATTERY_PACK_SENSORS:
+            # Add raw sensors
+            for _, slug in BATTERY_PACK_RAW_SENSORS:
+                template = BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
+                if template is None:
+                    continue
+
+                description = E3DCSensorEntityDescription(
+                    has_entity_name=True,
+                    key=f"{pack['key']}-{slug}",
+                    **template,
+                )
+                entities.append(
+                    E3DCSensor(
+                        coordinator,
+                        description,
+                        pack_unique_id,
+                        pack_device_info,
+                    )
+                )
+
+            # Add calculated sensors
+            for slug in BATTERY_PACK_CALCULATED_SENSORS:
                 template = BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
                 if template is None:
                     continue

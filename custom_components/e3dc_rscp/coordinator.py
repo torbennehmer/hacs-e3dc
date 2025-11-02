@@ -25,8 +25,9 @@ from .const import (
     DEFAULT_CREATE_BATTERY_DEVICES,
     DOMAIN,
     MAX_WALLBOXES_POSSIBLE,
-    BATTERY_MODULE_SENSORS,
-    BATTERY_PACK_SENSORS,
+    BATTERY_MODULE_RAW_SENSORS,
+    BATTERY_PACK_RAW_SENSORS,
+    BATTERY_PACK_CALCULATED_SENSORS,
     PowerMode,
     SetPowerMode,
 )
@@ -663,28 +664,36 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if pack is None:
                     # No data for this pack, set sensors to None
                     pack_key = pack_entry["key"]
-                    for _, slug in BATTERY_PACK_SENSORS:
+                    for _, slug in BATTERY_PACK_RAW_SENSORS:
+                        full_key = f"{pack_key}-{slug}"
+                        self._mydata[full_key] = None
+                    for slug in BATTERY_PACK_CALCULATED_SENSORS:
                         full_key = f"{pack_key}-{slug}"
                         self._mydata[full_key] = None
                     continue
 
                 pack_key = pack_entry["key"]
-                for data_key, slug in BATTERY_PACK_SENSORS:
-                    full_key = f"{pack_key}-{slug}"
 
-                    if data_key is None:
-                        value = self._calculate_battery_pack_value(slug, pack)
+                # Process raw sensor values from pack data
+                for data_key, slug in BATTERY_PACK_RAW_SENSORS:
+                    full_key = f"{pack_key}-{slug}"
+                    raw_value = pack.get(data_key)
+
+                    if isinstance(raw_value, list | dict | set | tuple):
+                        value = None
                     else:
-                        raw_value = pack.get(data_key)
-                        if isinstance(raw_value, list | dict | set | tuple):
-                            value = None
-                        else:
-                            value = raw_value
+                        value = raw_value
 
                     processed_value = self._process_battery_sensor_value(
-                        data_key or slug, value, pack
+                        data_key, value, pack
                     )
                     self._mydata[full_key] = processed_value
+
+                # Process calculated sensor values
+                for slug in BATTERY_PACK_CALCULATED_SENSORS:
+                    full_key = f"{pack_key}-{slug}"
+                    calculated_value = self._calculate_battery_pack_value(slug, pack)
+                    self._mydata[full_key] = calculated_value
 
         # Update battery module sensor values
         for battery in self.batteries:
@@ -696,11 +705,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     dcb_data = dcbs.get(battery["dcb_index"])
 
             if not isinstance(dcb_data, dict):
-                for _, slug in BATTERY_MODULE_SENSORS:
+                for _, slug in BATTERY_MODULE_RAW_SENSORS:
                     self._mydata[f"{battery['key']}-{slug}"] = None
                 continue
 
-            for data_key, slug in BATTERY_MODULE_SENSORS:
+            for data_key, slug in BATTERY_MODULE_RAW_SENSORS:
                 raw_value: Any = dcb_data.get(data_key)
                 if isinstance(raw_value, list | dict | set | tuple):
                     continue
