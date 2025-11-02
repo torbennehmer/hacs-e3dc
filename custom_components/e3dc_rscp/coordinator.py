@@ -286,7 +286,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         def _normalize(value: Any) -> Any:
             if isinstance(value, str):
                 stripped = value.strip()
-                if stripped == "" or stripped.upper() == "TODO":
+                if stripped == "":
                     return None
             return value
 
@@ -307,19 +307,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             pack_unique_id = f"{self.uid}-{pack_key}"
             pack_entry = pack_entries.get(pack_index)
             if pack_entry is None:
-                pack_manufacturer = _normalize(pack_details.get("manufactureName")) or "E3DC"
-                pack_model = (
-                    _normalize(pack_details.get("deviceTypeName"))
-                    or _normalize(pack_details.get("deviceName"))
-                    or "Battery Pack"
-                )
-                default_pack_name = f"Battery Pack {pack_index + 1}"
-                pack_name = _normalize(pack_details.get("deviceName")) or default_pack_name
-                pack_serial = _normalize(pack_details.get("serialCode")) or _normalize(
-                    pack_details.get("serialNo")
-                )
-                pack_fw_version = _normalize(pack_details.get("fwVersion"))
-                pack_hw_version = _normalize(pack_details.get("pcbVersion"))
+                pack_manufacturer = _normalize(pack_details.get("manufactureName"))
+                pack_model = _normalize(pack_details.get("deviceName"))
+                pack_name = f"Battery Pack {pack_index + 1}"
 
                 pack_device_info: DeviceInfo = DeviceInfo(
                     identifiers={(DOMAIN, pack_unique_id)},
@@ -328,12 +318,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     name=pack_name,
                     model=pack_model,
                 )
-                if pack_serial is not None:
-                    pack_device_info["serial_number"] = str(pack_serial)
-                if pack_fw_version is not None:
-                    pack_device_info["sw_version"] = str(pack_fw_version)
-                if pack_hw_version is not None:
-                    pack_device_info["hw_version"] = str(pack_hw_version)
 
                 pack_entry = {
                     "index": pack_index,
@@ -349,11 +333,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 unique_id = f"{self.uid}-{battery_key}"
                 dcb_detail = dcbs_details.get(dcb_index, {}) if isinstance(dcbs_details, dict) else {}
 
-                manufacturer = _normalize(dcb_detail.get("manufactureName")) or "E3DC"
-                model = _normalize(dcb_detail.get("deviceName")) or _normalize(pack_details.get("deviceName")) or "Battery Module"
-                default_name = f"Battery {pack_index + 1} Module {dcb_index + 1}"
-                name = _normalize(dcb_detail.get("deviceName")) or default_name
-                serial = _normalize(dcb_detail.get("serialCode")) or _normalize(dcb_detail.get("serialNo"))
+                manufacturer = _normalize(dcb_detail.get("manufactureName"))
+                model = _normalize(dcb_detail.get("deviceName"))
+                name = f"Battery Pack {pack_index + 1} Module {dcb_index + 1}"
+                serial_no = _normalize(dcb_detail.get("serialNo"))
                 fw_version = _normalize(dcb_detail.get("fwVersion"))
                 pcb_version = _normalize(dcb_detail.get("pcbVersion"))
 
@@ -363,11 +346,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     manufacturer=manufacturer,
                     name=name,
                     model=model,
-                    configuration_url="https://my.e3dc.com/",
                 )
 
-                if serial is not None:
-                    device_info["serial_number"] = str(serial)
+                if serial_no is not None:
+                    device_info["serial_number"] = str(serial_no)
                 if fw_version is not None:
                     device_info["sw_version"] = str(fw_version)
                 if pcb_version is not None:
