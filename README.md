@@ -42,6 +42,8 @@ code.
   - [Clear current power limits](#clear-current-power-limits)
   - [Initate manual battery charging](#initate-manual-battery-charging)
   - [Set maximum wallbox charging current](#set-maximum-wallbox-charging-current)
+  - [Set power mode](#set-power-mode)
+- [Optional Battery Pack and Module Devices](#optional-battery-pack-and-module-devices)
 - [Upstream source](#upstream-source)
 
 ## Disclaimer
@@ -240,6 +242,22 @@ different modes available:
   the battery.
 
 Charge and discharge modes need `power` to be set in Watts.
+
+## Optional Battery Pack and Module Devices
+
+The integration offers an option to create devices for the battery packs and battery modules. When enabled in the integration settings, additional devices will be created for each detected battery pack and module. These devices provide detailed diagnostic information about the state and health of your E3DC battery system.
+Notes:
+
+- on some E3DCs some Names of Batteries and Serial Numbers are reported back as "TODO". This is not an error of the integration.
+
+- The following battery pack sensors are calculated by this integration based on raw values from the E3DC energy management system:
+  - **Design Energy**: Calculated as `(design capacity × (DCB count × design voltage)) / 1000` in kWh
+  - **Full Energy**: Calculated as `(full charge capacity × (DCB count × design voltage)) / 1000` in kWh
+  - **Remaining Energy**: Calculated as `(remaining capacity × module voltage) / 1000` in kWh
+  - **Usable Remaining Energy**: Calculated as `(usable remaining capacity × module voltage) / 1000` in kWh
+  - **State of Health**: Calculated as `(full charge capacity / design capacity) × 100` as percentage
+
+- due to the various possible configurations of batteries (different E3DC devices, different amount of battery packs and modules, farming setups, etc.), not all scenarios couldn't be tested. In case your setup is not represented correctly, open an issue including a diagnostic dump.
 
 ## Upstream source
 
