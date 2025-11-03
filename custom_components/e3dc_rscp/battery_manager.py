@@ -57,6 +57,7 @@ class E3DCBatteryManager:
             proxy: E3DC proxy for communication
             mydata: Shared data dictionary for sensor values
             create_battery_devices_callback: Function that returns whether battery devices should be created
+
         """
         self.hass = hass
         self.uid = uid
