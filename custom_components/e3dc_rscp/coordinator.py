@@ -75,9 +75,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         self._stop_set_power_mode: callback = None
-        hass.bus.async_listen_once(
-            EventType("homeassistant_stop"), self._shutdown_power_mode
-        )
+        hass.bus.async_listen_once(EventType("homeassistant_stop"), self._shutdown_power_mode)
 
         self._mydata["set-power-mode"] = SetPowerMode.NORMAL.value
         self._mydata["set-power-value"] = None
@@ -760,8 +758,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Set the power mode and value based on the current state."""
         _LOGGER.debug(
             "Setting power mode: %s at %s W",
-            SetPowerMode.get_enum(self._mydata["set-power-mode"]).name,
-            self._mydata["set-power-value"],
+            SetPowerMode.get_enum(self._mydata["set-power-mode"]).name, self._mydata["set-power-value"]
         )
 
         try:
