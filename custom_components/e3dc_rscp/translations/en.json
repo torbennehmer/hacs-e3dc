@@ -25,6 +25,15 @@
                     "rscpkey": "RSCP encryption key",
                     "username": "Username"
                 }
+            },
+            "discovery_confirm": {
+                "title": "Discovered E3DC device",
+                "description": "E3DC device {name} has been discovered at IP address {host}.\n\nPlease provide your E3DC credentials to complete the setup.",
+                "data": {
+                "username": "[%key:common::config_flow::data::username%]",
+                "password": "[%key:common::config_flow::data::password%]",
+                "rscpkey": "RSCP encryption key"
+                }
             }
         }
     },
@@ -380,7 +389,7 @@
                 },
                 "power_value": {
                     "name": "Charge power (W)",
-                    "description": "Amount to charge in Wh."
+                    "description": "Amount to charge in W."
                 }
             }
         }

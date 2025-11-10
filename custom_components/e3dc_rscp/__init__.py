@@ -14,14 +14,32 @@
 
 from __future__ import annotations
 
+from e3dc import _e3dc_rscp_local
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
-from .const import DOMAIN, PLATFORMS
+from .const import CONF_FARMCONTROLLER, DOMAIN, PLATFORMS
+
+from homeassistant.const import (
+    CONF_API_VERSION,
+    CONF_PORT,
+)
 from .coordinator import E3DCCoordinator
 from .services import async_setup_services
 
+async def async_migrate_entry(hass, config_entry: ConfigEntry):
+    """Migrate config entry to new format."""
+    if config_entry.version < 2:
+        # Migration durchführen
+        new_data = dict(config_entry.data)
+        new_data[CONF_API_VERSION] = 2
+        new_data[CONF_PORT] = _e3dc_rscp_local.PORT
+        new_data[CONF_FARMCONTROLLER] = False
+        hass.config_entries.async_update_entry(config_entry, data=new_data, version=2)
+
+        return True
+    return False
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up E3DC Remote Storage Control Protocol from a config entry."""
@@ -37,6 +55,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.unique_id] = coordinator
+    await coordinator.async_identify_farm(hass)
     await coordinator.async_identify_wallboxes(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_services(hass)

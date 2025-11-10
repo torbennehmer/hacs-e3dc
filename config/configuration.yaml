@@ -8,4 +8,6 @@ http:
 logger:
   default: info
   logs:
-    custom_components.e3dc_rscp: debug
+    custom_components.e3dc_rscp.services: debug
+
+automation: !include automations.yaml

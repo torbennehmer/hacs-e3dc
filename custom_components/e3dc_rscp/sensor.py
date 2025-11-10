@@ -1,6 +1,7 @@
 """E3DC sensor platform."""
 import logging
 from dataclasses import dataclass
+
 from typing import Final
 
 from e3dc._rscpTags import PowermeterType
@@ -19,7 +20,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, EntryType
 from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ class E3DCSensorEntityDescription(SensorEntityDescription):
     """Class describing E3DC Sensor entities."""
 
     icons: dict[str, str] = None
+    type: EntryType = EntryType.BOTH
 
 SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
     # DIAGNOSTIC SENSORS
@@ -397,6 +399,16 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
     ),
 )
 
+FARM_SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
+    E3DCSensorEntityDescription(
+        key="soc",
+        translation_key="soc",
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+)
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -409,7 +421,7 @@ async def async_setup_entry(
         for description in SENSOR_DESCRIPTIONS
     ]
 
-    # Add Sensor descriptions for additional powermeters, skipp root PM
+    # # Add Sensor descriptions for additional powermeters, skipp root PM
     for powermeter_config in coordinator.proxy.e3dc_config["powermeters"]:
         if powermeter_config["type"] == PowermeterType.PM_TYPE_ROOT.value:
             continue

@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Home Assistant",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "homeassistant",
             "justMyCode": false,
@@ -14,11 +14,13 @@
                 "--debug",
                 "-c",
                 "config"
-            ]
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
         },
         {
             "name": "Home Assistant (skip pip)",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "homeassistant",
             "justMyCode": false,
@@ -27,14 +29,16 @@
                 "-c",
                 "config",
                 "--skip-pip"
-            ]
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
         },
         {
             // For this to work against HA Docker, link the following directories (be aware, use the right version)
             // /usr/src/homeassistant/homeassistant -> /home/vscode/.local/lib/python3.11/site-packages/homeassistant
             // /config/custom_components -> /workspaces/hacs-e3dc/custom_components/
             "name": "Python: Attach to Atlantis",
-            "type": "python",
+            "type": "debugpy",
             "request": "attach",
             "connect": {
                 "host": "10.128.20.10",

@@ -254,13 +254,18 @@ async def _async_manual_charge(hass: HomeAssistant, call: ServiceCall) -> None:
 
 async def _async_set_power_mode(hass: HomeAssistant, call: ServiceCall) -> None:
     """Extract service information and relay to coordinator."""
+    _LOGGER.debug("Service call data: %s", call.data)
+
     coordinator: E3DCCoordinator = _resolve_device_id(
         hass, call.data.get(ATTR_DEVICEID)
     )
     power_mode: str | None = call.data.get(ATTR_POWER_MODE)
+    _LOGGER.debug("Resolved power mode string: %s", power_mode)
     power_value: int | None = call.data.get(ATTR_POWER_VALUE)
+    _LOGGER.debug("Resolved power value: %s", power_value)
 
     power_mode_enum: SetPowerMode | None = SetPowerMode.get_enum(power_mode)
+    _LOGGER.debug("Resolved power mode enum: %s", power_mode_enum)
 
     if power_mode_enum is None:
         raise ServiceValidationError(
