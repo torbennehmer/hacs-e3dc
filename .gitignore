@@ -162,3 +162,16 @@ cython_debug/
 # Home Assistant configuration
 config/*
 !config/configuration.yaml
+
+# Hide some OS X stuff
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Thumbnails
+._*
+
+# IntelliJ IDEA
+.idea
+*.iml
