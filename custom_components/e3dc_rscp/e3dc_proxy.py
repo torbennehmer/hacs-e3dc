@@ -266,6 +266,29 @@ class E3DCProxy:
         return self.e3dc.sendRequestTag(RscpTag.INFO_REQ_SW_RELEASE, keepAlive=True)
 
     @e3dc_call
+    def get_sgready_state(self) -> dict[str, Any]:
+        """Return the current SG Ready state of the E3DC."""
+
+        result_data = self.e3dc.sendRequest(
+            (
+                "SGR_REQ_DATA",
+                "Container",
+                [
+                    ("SGR_INDEX", RscpType.Uint16, 0),
+                    ("SGR_REQ_STATE", RscpType.NoneType, None),
+                ],
+            ),
+            keepAlive=True,
+        )
+        result: dict[str, Any] = {}
+        result["sgready-active"] = rscpFindTag(result_data, RscpTag.SGR_AKTIV)[2]
+        sgready_state = rscpFindTag(result_data, RscpTag.SGR_STATE)[2]
+        result["sgready-state"] = sgready_state
+        result["sgready-numeric-state"] = sgready_state
+
+        return result
+
+    @e3dc_call
     def get_time(self) -> int:
         """Get current local timestamp."""
         return self.e3dc.sendRequestTag(RscpTag.INFO_REQ_TIME, keepAlive=True)
