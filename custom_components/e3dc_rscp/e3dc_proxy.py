@@ -215,6 +215,16 @@ class E3DCProxy:
 
         return outObj
 
+    @e3dc_call
+    def get_batteries(self) -> list[dict[str, Any]]:
+        """Return general information about installed batteries."""
+        return self.e3dc.get_batteries()
+
+    @e3dc_call
+    def get_battery_data(self) -> dict[str, Any]:
+        """Return sensor data for installed batteries."""
+        return self.e3dc.get_battery_data()
+
 
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:

@@ -1,7 +1,7 @@
 """E3DC sensor platform."""
 import logging
 from dataclasses import dataclass
-from typing import Final
+from typing import Any, Final
 
 from e3dc._rscpTags import PowermeterType
 
@@ -12,14 +12,27 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfEnergy, UnitOfPower
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import (
+    BATTERY_MODULE_RAW_SENSORS,
+    BATTERY_PACK_RAW_SENSORS,
+    BATTERY_PACK_CALCULATED_SENSORS,
+    DOMAIN,
+)
 from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -397,6 +410,431 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
     ),
 )
 
+BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
+    "current": {
+        "translation_key": "battery-module-current",
+        "icon": "mdi:current-dc",
+        "native_unit_of_measurement": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "current-avg-30s": {
+        "translation_key": "battery-module-current-avg-30s",
+        "icon": "mdi:current-dc",
+        "native_unit_of_measurement": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "cycle-count": {
+        "translation_key": "battery-module-cycle-count",
+        "icon": "mdi:counter",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "design-capacity": {
+        "translation_key": "battery-module-design-capacity",
+        "icon": "mdi:battery-outline",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "design-voltage": {
+        "translation_key": "battery-module-design-voltage",
+        "icon": "mdi:flash-outline",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "end-of-discharge": {
+        "translation_key": "battery-module-end-of-discharge",
+        "icon": "mdi:battery-arrow-down-outline",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "error": {
+        "translation_key": "battery-module-error",
+        "icon": "mdi:alert-circle",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "full-charge-capacity": {
+        "translation_key": "battery-module-full-charge-capacity",
+        "icon": "mdi:battery-charging",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "max-charge-current": {
+        "translation_key": "battery-module-max-charge-current",
+        "icon": "mdi:current-ac",
+        "native_unit_of_measurement": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "max-charge-temperature": {
+        "translation_key": "battery-module-max-charge-temperature",
+        "icon": "mdi:thermometer-high",
+        "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "max-charge-voltage": {
+        "translation_key": "battery-module-max-charge-voltage",
+        "icon": "mdi:flash",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "max-discharge-current": {
+        "translation_key": "battery-module-max-discharge-current",
+        "icon": "mdi:current-ac",
+        "native_unit_of_measurement": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "min-charge-temperature": {
+        "translation_key": "battery-module-min-charge-temperature",
+        "icon": "mdi:thermometer-low",
+        "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "parallel-cell-count": {
+        "translation_key": "battery-module-parallel-cell-count",
+        "icon": "mdi:battery-multiple",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "sensor-count": {
+        "translation_key": "battery-module-sensor-count",
+        "icon": "mdi:counter",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "series-cell-count": {
+        "translation_key": "battery-module-series-cell-count",
+        "icon": "mdi:battery-multiple-outline",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "remaining-capacity": {
+        "translation_key": "battery-module-remaining-capacity",
+        "icon": "mdi:battery-high",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "soc": {
+        "translation_key": "battery-module-soc",
+        "icon": "mdi:battery-charging-80",
+        "native_unit_of_measurement": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 0,
+    },
+    "soh": {
+        "translation_key": "battery-module-soh",
+        "icon": "mdi:battery-heart",
+        "native_unit_of_measurement": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "suggested_display_precision": 0,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "status": {
+        "translation_key": "battery-module-status",
+        "icon": "mdi:information-outline",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "voltage": {
+        "translation_key": "battery-module-voltage",
+        "icon": "mdi:flash",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "voltage-avg-30s": {
+        "translation_key": "battery-module-voltage-avg-30s",
+        "icon": "mdi:flash",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "warning": {
+        "translation_key": "battery-module-warning",
+        "icon": "mdi:alert-outline",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "manufacture-date": {
+        "translation_key": "battery-module-manufacture-date",
+        "icon": "mdi:calendar",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+}
+
+BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
+    "asoc": {
+        "translation_key": "battery-pack-asoc",
+        "icon": "mdi:battery",
+        "native_unit_of_measurement": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "suggested_display_precision": 0,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "charge-cycles": {
+        "translation_key": "battery-pack-charge-cycles",
+        "icon": "mdi:counter",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "current": {
+        "translation_key": "battery-pack-current",
+        "icon": "mdi:current-dc",
+        "native_unit_of_measurement": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "design-capacity": {
+        "translation_key": "battery-pack-design-capacity",
+        "icon": "mdi:battery-outline",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "device-connected": {
+        "translation_key": "battery-pack-device-connected",
+        "icon": "mdi:power-plug",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "device-in-service": {
+        "translation_key": "battery-pack-device-in-service",
+        "icon": "mdi:progress-wrench",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "device-working": {
+        "translation_key": "battery-pack-device-working",
+        "icon": "mdi:check-circle",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "design-energy": {
+        "translation_key": "battery-pack-design-energy",
+        "icon": "mdi:battery-outline",
+        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "eod-voltage": {
+        "translation_key": "battery-pack-eod-voltage",
+        "icon": "mdi:battery-arrow-down-outline",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "error-code": {
+        "translation_key": "battery-pack-error-code",
+        "icon": "mdi:alert-circle",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "full-charge-capacity": {
+        "translation_key": "battery-pack-full-charge-capacity",
+        "icon": "mdi:battery-charging",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "full-energy": {
+        "translation_key": "battery-pack-full-energy",
+        "icon": "mdi:battery-charging-100",
+        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "max-battery-voltage": {
+        "translation_key": "battery-pack-max-battery-voltage",
+        "icon": "mdi:flash",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "max-charge-current": {
+        "translation_key": "battery-pack-max-charge-current",
+        "icon": "mdi:current-ac",
+        "native_unit_of_measurement": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "max-discharge-current": {
+        "translation_key": "battery-pack-max-discharge-current",
+        "icon": "mdi:current-ac",
+        "native_unit_of_measurement": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "max-dcb-cell-temperature": {
+        "translation_key": "battery-pack-max-dcb-cell-temperature",
+        "icon": "mdi:thermometer-high",
+        "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "min-dcb-cell-temperature": {
+        "translation_key": "battery-pack-min-dcb-cell-temperature",
+        "icon": "mdi:thermometer-low",
+        "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "module-voltage": {
+        "translation_key": "battery-pack-module-voltage",
+        "icon": "mdi:flash",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "remaining-capacity": {
+        "translation_key": "battery-pack-remaining-capacity",
+        "icon": "mdi:battery-high",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "remaining-energy": {
+        "translation_key": "battery-pack-remaining-energy",
+        "icon": "mdi:battery-high",
+        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "ready-for-shutdown": {
+        "translation_key": "battery-pack-ready-for-shutdown",
+        "icon": "mdi:power-standby",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "rsoc": {
+        "translation_key": "battery-pack-rsoc",
+        "icon": "mdi:battery",
+        "native_unit_of_measurement": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "rsoc-real": {
+        "translation_key": "battery-pack-rsoc-real",
+        "icon": "mdi:battery",
+        "native_unit_of_measurement": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "status-code": {
+        "translation_key": "battery-pack-status-code",
+        "icon": "mdi:information-outline",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "terminal-voltage": {
+        "translation_key": "battery-pack-terminal-voltage",
+        "icon": "mdi:flash",
+        "native_unit_of_measurement": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+    "total-use-time": {
+        "translation_key": "battery-pack-total-use-time",
+        "icon": "mdi:clock-outline",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "total-discharge-time": {
+        "translation_key": "battery-pack-total-discharge-time",
+        "icon": "mdi:clock-outline",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "training-mode": {
+        "translation_key": "battery-pack-training-mode",
+        "icon": "mdi:account-school",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "usable-capacity": {
+        "translation_key": "battery-pack-usable-capacity",
+        "icon": "mdi:battery",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "usable-remaining-capacity": {
+        "translation_key": "battery-pack-usable-remaining-capacity",
+        "icon": "mdi:battery",
+        "native_unit_of_measurement": "Ah",
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "usable-remaining-energy": {
+        "translation_key": "battery-pack-usable-remaining-energy",
+        "icon": "mdi:battery-check",
+        "native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
+        "device_class": SensorDeviceClass.ENERGY_STORAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 2,
+    },
+    "state-of-health": {
+        "translation_key": "battery-pack-state-of-health",
+        "icon": "mdi:heart-pulse",
+        "native_unit_of_measurement": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "suggested_display_precision": 1,
+    },
+}
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -441,6 +879,74 @@ async def async_setup_entry(
             state_class=SensorStateClass.MEASUREMENT,
         )
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
+
+    for battery in coordinator.batteries:
+        unique_id = list(battery["deviceInfo"]["identifiers"])[0][1]
+        battery_key = battery["key"]
+
+        for _, slug in BATTERY_MODULE_RAW_SENSORS:
+            template = BATTERY_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
+            if template is None:
+                continue
+
+            description = E3DCSensorEntityDescription(
+                has_entity_name=True,
+                key=f"{battery_key}-{slug}",
+                **template,
+            )
+            entities.append(
+                E3DCSensor(
+                    coordinator,
+                    description,
+                    unique_id,
+                    battery["deviceInfo"],
+                )
+            )
+
+    if coordinator.create_battery_devices:
+        for pack in coordinator.battery_packs:
+            pack_unique_id = pack.get("uniqueId", entry.unique_id)
+            pack_device_info = pack.get("deviceInfo")
+
+            # Add raw sensors
+            for _, slug in BATTERY_PACK_RAW_SENSORS:
+                template = BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
+                if template is None:
+                    continue
+
+                description = E3DCSensorEntityDescription(
+                    has_entity_name=True,
+                    key=f"{pack['key']}-{slug}",
+                    **template,
+                )
+                entities.append(
+                    E3DCSensor(
+                        coordinator,
+                        description,
+                        pack_unique_id,
+                        pack_device_info,
+                    )
+                )
+
+            # Add calculated sensors
+            for slug in BATTERY_PACK_CALCULATED_SENSORS:
+                template = BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
+                if template is None:
+                    continue
+
+                description = E3DCSensorEntityDescription(
+                    has_entity_name=True,
+                    key=f"{pack['key']}-{slug}",
+                    **template,
+                )
+                entities.append(
+                    E3DCSensor(
+                        coordinator,
+                        description,
+                        pack_unique_id,
+                        pack_device_info,
+                    )
+                )
 
     for wallbox in coordinator.wallboxes:
         # Get the UID & Key for the given wallbox
