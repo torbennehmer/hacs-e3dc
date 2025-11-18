@@ -60,6 +60,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._update_guard_wallboxsettings: bool = False
         self.config_entry: ConfigEntry = config_entry
         self._wallboxes: list[E3DCWallbox] = []
+        self._sgready_available: bool = False
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
 
@@ -172,11 +173,35 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             else:
                 _LOGGER.debug("No Wallbox with index %s has been found", wallbox_index)
 
+    async def async_identify_sgready(self) -> None:
+        """Identify availability of SG Ready support."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_sgready_state
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to identify SG Ready capability, assuming disabled: %s", ex
+            )
+            self._sgready_available = False
+            return
+
+        self._sgready_available = bool(request_data.get("sgready-active"))
+        if self._sgready_available:
+            _LOGGER.debug("SG Ready support detected")
+        else:
+            _LOGGER.debug("SG Ready support not active")
+
     # Getter for _wallboxes
     @property
     def wallboxes(self) -> list[E3DCWallbox]:
         """Get the list of wallboxes."""
         return self._wallboxes
+
+    @property
+    def sgready_available(self) -> bool:
+        """Return if SG Ready information is available."""
+        return self._sgready_available
 
     @property
     def create_battery_devices(self) -> bool:
@@ -296,6 +321,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Polling manual charge information")
         await self._load_and_process_manual_charge()
+
+        _LOGGER.debug("Getting SG Ready status information")
+        await self._load_and_process_sgready_state()
 
         if self._update_guard_wallboxsettings is False:
             _LOGGER.debug("Polling additional powermeters")
@@ -431,6 +459,21 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         for key, value in request_data.items():
             self._mydata[key] = value
+
+    async def _load_and_process_sgready_state(self) -> None:
+        """Loand and process SG Ready state."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_sgready_state
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load SG Ready state, not updating data: %s", ex)
+            return
+
+        self._mydata["sgready-state"] = request_data["sgready-state"]
+        self._mydata["sgready-numeric-state"] = request_data["sgready-numeric-state"]
+        self._mydata["sgready-active"] = bool(request_data["sgready-active"])
+        self._sgready_available = bool(request_data["sgready-active"])
 
     async def _load_and_process_wallbox_data(self) -> None:
         """Load and process wallbox data to existing data."""
