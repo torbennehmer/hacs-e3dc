@@ -49,6 +49,9 @@
       "manual-charge-active": {
         "name": "Manual charge"
       },
+      "sgready-active": {
+        "name": "SG Ready active"
+      },
       "wallbox-battery-to-car": {
         "name": "Battery to car"
       },
@@ -377,6 +380,18 @@
           "3": "Charging from grid",
           "4": "Idle"
         }
+      },
+      "sgready-state": {
+        "name": "SG Ready",
+        "state": {
+          "1": "Locked",
+          "2": "Normal",
+          "3": "Released",
+          "4": "Start-up"
+        }
+      },
+      "sgready-numeric-state": {
+        "name": "SG Ready numeric"
       }
     },
     "switch": {
@@ -408,15 +423,15 @@
     }
   },
   "selector": {
-      "power_mode": {
-          "options": {
-            "0": "Normal operation",
-            "1": "Idle",
-            "2": "Discharging",
-            "3": "Charging",
-            "4": "Charging from grid"
-          }
+    "power_mode": {
+      "options": {
+        "0": "Normal operation",
+        "1": "Idle",
+        "2": "Discharging",
+        "3": "Charging",
+        "4": "Charging from grid"
       }
+    }
   },
   "services": {
     "clear_power_limits": {
@@ -488,8 +503,8 @@
           "description": "The power mode to set. Options are: NORMAL, DISCHARGE, CHARGE, IDLE and CHARGE_GRID."
         },
         "power_value": {
-            "name": "Charge power (W)",
-            "description": "Amount to charge in Wh."
+          "name": "Charge power (W)",
+          "description": "Amount to charge in Wh."
         }
       }
     }
