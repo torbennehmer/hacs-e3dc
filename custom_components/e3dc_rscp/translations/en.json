@@ -28,6 +28,16 @@
             }
         }
     },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "create_battery_devices": "Create battery devices"
+                },
+                "title": "E3DC RSCP options"
+            }
+        }
+    },
     "entity": {
         "binary_sensor": {
             "system-additional-source-available": {
@@ -38,6 +48,9 @@
             },
             "manual-charge-active": {
                 "name": "Manual charge"
+            },
+            "sgready-active": {
+                "name": "SG Ready active"
             },
             "wallbox-battery-to-car": {
                 "name": "Battery to car"
@@ -101,6 +114,102 @@
             "battery-netchange": {
                 "name": "Battery net change"
             },
+            "battery-pack-asoc": {
+                "name": "Absolute state of charge (ASOC)"
+            },
+            "battery-pack-charge-cycles": {
+                "name": "Charge cycles"
+            },
+            "battery-pack-current": {
+                "name": "Current"
+            },
+            "battery-pack-design-capacity": {
+                "name": "Design capacity"
+            },
+            "battery-pack-device-connected": {
+                "name": "Connected"
+            },
+            "battery-pack-device-in-service": {
+                "name": "In service"
+            },
+            "battery-pack-device-working": {
+                "name": "Working"
+            },
+            "battery-pack-design-energy": {
+                "name": "Design energy"
+            },
+            "battery-pack-eod-voltage": {
+                "name": "End of discharge voltage"
+            },
+            "battery-pack-error-code": {
+                "name": "Error code"
+            },
+            "battery-pack-full-charge-capacity": {
+                "name": "Full charge capacity"
+            },
+            "battery-pack-full-energy": {
+                "name": "Full energy"
+            },
+            "battery-pack-max-battery-voltage": {
+                "name": "Maximum pack voltage"
+            },
+            "battery-pack-max-charge-current": {
+                "name": "Maximum charge current"
+            },
+            "battery-pack-max-discharge-current": {
+                "name": "Maximum discharge current"
+            },
+            "battery-pack-max-dcb-cell-temperature": {
+                "name": "Maximum DCB cell temperature"
+            },
+            "battery-pack-min-dcb-cell-temperature": {
+                "name": "Minimum DCB cell temperature"
+            },
+            "battery-pack-module-voltage": {
+                "name": "Module voltage"
+            },
+            "battery-pack-remaining-capacity": {
+                "name": "Remaining capacity"
+            },
+            "battery-pack-remaining-energy": {
+                "name": "Remaining energy"
+            },
+            "battery-pack-ready-for-shutdown": {
+                "name": "Ready for shutdown"
+            },
+            "battery-pack-rsoc": {
+                "name": "Relative state of charge (RSOC)"
+            },
+            "battery-pack-rsoc-real": {
+                "name": "Real state of charge"
+            },
+            "battery-pack-status-code": {
+                "name": "Status code"
+            },
+            "battery-pack-terminal-voltage": {
+                "name": "Terminal voltage"
+            },
+            "battery-pack-total-use-time": {
+                "name": "Total use time"
+            },
+            "battery-pack-total-discharge-time": {
+                "name": "Total discharge time"
+            },
+            "battery-pack-training-mode": {
+                "name": "Training mode"
+            },
+            "battery-pack-usable-capacity": {
+                "name": "Usable capacity"
+            },
+            "battery-pack-usable-remaining-capacity": {
+                "name": "Usable remaining capacity"
+            },
+            "battery-pack-usable-remaining-energy": {
+                "name": "Usable remaining energy"
+            },
+            "battery-pack-state-of-health": {
+                "name": "State of health"
+            },
             "grid-consumption": {
                 "name": "Consumption from grid"
             },
@@ -115,6 +224,81 @@
             },
             "battery-discharge": {
                 "name": "Battery discharge"
+            },
+            "battery-module-current": {
+                "name": "Battery current"
+            },
+            "battery-module-current-avg-30s": {
+                "name": "Battery current (30s avg)"
+            },
+            "battery-module-cycle-count": {
+                "name": "Cycle count"
+            },
+            "battery-module-design-capacity": {
+                "name": "Design capacity"
+            },
+            "battery-module-design-voltage": {
+                "name": "Design voltage"
+            },
+            "battery-module-end-of-discharge": {
+                "name": "End of discharge voltage"
+            },
+            "battery-module-error": {
+                "name": "Error code"
+            },
+            "battery-module-full-charge-capacity": {
+                "name": "Full charge capacity"
+            },
+            "battery-module-max-charge-current": {
+                "name": "Maximum charge current"
+            },
+            "battery-module-max-charge-temperature": {
+                "name": "Maximum charge temperature"
+            },
+            "battery-module-max-charge-voltage": {
+                "name": "Maximum charge voltage"
+            },
+            "battery-module-max-discharge-current": {
+                "name": "Maximum discharge current"
+            },
+            "battery-module-min-charge-temperature": {
+                "name": "Minimum charge temperature"
+            },
+            "battery-module-parallel-cell-count": {
+                "name": "Parallel cell count"
+            },
+            "battery-module-sensor-count": {
+                "name": "Sensor count"
+            },
+            "battery-module-series-cell-count": {
+                "name": "Series cell count"
+            },
+            "battery-module-remaining-capacity": {
+                "name": "Remaining capacity"
+            },
+            "battery-module-soc": {
+                "name": "State of charge (energy)"
+            },
+            "battery-module-soc": {
+                "name": "State of charge"
+            },
+            "battery-module-soh": {
+                "name": "State of health"
+            },
+            "battery-module-status": {
+                "name": "Status code"
+            },
+            "battery-module-voltage": {
+                "name": "Voltage"
+            },
+            "battery-module-voltage-avg-30s": {
+                "name": "Voltage (30s avg)"
+            },
+            "battery-module-warning": {
+                "name": "Warning code"
+            },
+            "battery-module-manufacture-date": {
+                "name": "Manufacture date"
             },
             "grid-production": {
                 "name": "Export to grid"
@@ -268,6 +452,18 @@
             },
             "pset-powervalue": {
                 "name": "Current power value"
+            },
+            "sgready-state": {
+                "name": "SG Ready",
+                "state": {
+                    "1": "Locked",
+                    "2": "Normal",
+                    "3": "Released",
+                    "4": "Start-up"
+                }
+            },
+            "sgready-numeric-state": {
+                "name": "SG Ready numeric"
             }
         },
         "switch": {
