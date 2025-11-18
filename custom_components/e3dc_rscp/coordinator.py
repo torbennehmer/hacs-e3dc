@@ -20,9 +20,17 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.util.event_type import EventType
 
-from .const import DOMAIN, MAX_WALLBOXES_POSSIBLE, PowerMode, SetPowerMode
+from .const import (
+    CONF_CREATE_BATTERY_DEVICES,
+    DEFAULT_CREATE_BATTERY_DEVICES,
+    DOMAIN,
+    MAX_WALLBOXES_POSSIBLE,
+    PowerMode,
+    SetPowerMode,
+)
 
 from .e3dc_proxy import E3DCProxy
+from .battery_manager import E3DCBatteryManager, E3DCBattery, E3DCBatteryPack
 
 _LOGGER = logging.getLogger(__name__)
 _STAT_REFRESH_INTERVAL = 60
@@ -50,10 +58,22 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._sw_version: str = ""
         self._update_guard_powersettings: bool = False
         self._update_guard_wallboxsettings: bool = False
+        self.config_entry: ConfigEntry = config_entry
         self._wallboxes: list[E3DCWallbox] = []
         self._sgready_available: bool = False
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
+
+        # Initialize battery manager
+        self.battery_manager = E3DCBatteryManager(
+            hass=hass,
+            uid=self.uid,
+            proxy=self.proxy,
+            mydata=self._mydata,
+            create_battery_devices_callback=lambda: self.config_entry.options.get(
+                CONF_CREATE_BATTERY_DEVICES, DEFAULT_CREATE_BATTERY_DEVICES
+            ),
+        )
 
         self._stop_set_power_mode: callback = None
         hass.bus.async_listen_once(EventType("homeassistant_stop"), self._shutdown_power_mode)
@@ -183,6 +203,25 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Return if SG Ready information is available."""
         return self._sgready_available
 
+    @property
+    def create_battery_devices(self) -> bool:
+        """Flag indicating if battery devices should be created."""
+        return self.battery_manager.create_battery_devices
+
+    @property
+    def batteries(self) -> list[E3DCBattery]:
+        """Get the list of identified battery modules."""
+        return self.battery_manager.batteries
+
+    @property
+    def battery_packs(self) -> list[E3DCBatteryPack]:
+        """Get the list of battery packs for the configured batteries."""
+        return self.battery_manager.battery_packs
+
+    async def async_identify_batteries(self, hass: HomeAssistant) -> None:
+        """Identify installed battery modules if enabled via options (delegates to battery manager)."""
+        await self.battery_manager.async_identify_batteries()
+
     # Setter for individual wallbox values
     def setWallboxValue(self, index: int, key: str, value: Any) -> None:
         """Set the value for a specific key in a wallbox identified by its index."""
@@ -295,6 +334,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if len(self.wallboxes) > 0:
             _LOGGER.debug("Polling wallbox")
             await self._load_and_process_wallbox_data()
+
+        if self.create_battery_devices:
+            _LOGGER.debug("Polling battery data")
+            await self.battery_manager.async_load_and_process_battery_data()
 
         # Only poll power statstics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly

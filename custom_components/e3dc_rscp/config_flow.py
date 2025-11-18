@@ -16,13 +16,17 @@ from homeassistant.const import (
 )
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError, ConfigEntryAuthFailed
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import (
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
 )
+from homeassistant.core import callback
 
 from .const import (
+    CONF_CREATE_BATTERY_DEVICES,
+    DEFAULT_CREATE_BATTERY_DEVICES,
     CONF_RSCPKEY,
     CONF_VERSION,
     DOMAIN,
@@ -160,4 +164,38 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reauth_confirm",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors or {},
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Return the options flow handler for this integration."""
+        return E3DCOptionsFlowHandler()
+
+
+class E3DCOptionsFlowHandler(config_entries.OptionsFlowWithReload):
+    """Handle options for E3DC Remote Storage Control Protocol."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_CREATE_BATTERY_DEVICES,
+                        default=self.config_entry.options.get(
+                            CONF_CREATE_BATTERY_DEVICES,
+                            DEFAULT_CREATE_BATTERY_DEVICES,
+                        ),
+                    ): cv.boolean,
+                }
+            ),
         )
