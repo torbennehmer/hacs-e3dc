@@ -4,6 +4,7 @@ from __future__ import annotations
 from functools import wraps
 import logging
 from typing import Any
+from threading import Lock
 
 from e3dc import E3DC, SendError, NotAvailableError, RSCPKeyError, AuthenticationError
 from e3dc._rscpLib import rscpFindTag, rscpFindTagIndex
@@ -17,6 +18,20 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from .const import CONF_RSCPKEY
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class ThreadSafeE3DC(E3DC):
+    """Thread-safe version of E3DC."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the thread-safe E3DC."""
+        self._lock = Lock()
+        super().__init__(*args, **kwargs)
+
+    def sendRequest(self, *args, **kwargs):
+        """Thread-safe sendRequest."""
+        with self._lock:
+            return super().sendRequest(*args, **kwargs)
 
 
 def e3dc_call(func):
@@ -86,7 +101,7 @@ class E3DCProxy:
         if config is None:
             config = {}
 
-        self.e3dc = E3DC(
+        self.e3dc = ThreadSafeE3DC(
             E3DC.CONNECT_LOCAL,
             username=self._username,
             password=self._password,
