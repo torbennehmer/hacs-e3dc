@@ -265,7 +265,7 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             title=f"E3DC {self._proxy.e3dc.model}",
             data=final_data,
         )
-    
+
     @staticmethod
     @callback
     def async_get_options_flow(
