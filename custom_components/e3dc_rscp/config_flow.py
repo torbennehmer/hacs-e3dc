@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 import logging
 from typing import Any
+from urllib.parse import urlparse
 
 import voluptuous as vol
 
@@ -23,6 +24,8 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 from homeassistant.core import callback
+
+from homeassistant.helpers.service_info import ssdp as SSDP
 
 from .const import (
     CONF_CREATE_BATTERY_DEVICES,
@@ -166,6 +169,103 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors or {},
         )
 
+    async def async_step_ssdp(
+        self, discovery_info: SSDP.SsdpServiceInfo
+    ) -> config_entries.ConfigFlowResult:
+        """Handle a discovered E3DC via SSDP."""
+
+        # Extract serial number from the SSDP headers
+        serial_number = None
+        if discovery_info.upnp.get(SSDP.ATTR_UPNP_SERIAL):
+            serial_number = discovery_info.upnp[SSDP.ATTR_UPNP_SERIAL]
+        elif discovery_info.ssdp_headers.get("X-SN.E3DC.COM"):
+            serial_number = discovery_info.ssdp_headers["X-SN.E3DC.COM"]
+
+        if serial_number:
+            await self.async_set_unique_id(serial_number)
+            self._abort_if_unique_id_configured()
+
+        # Extract host from SSDP location
+        if discovery_info.ssdp_location:
+            try:
+                parsed_url = urlparse(discovery_info.ssdp_location)
+                self._host = parsed_url.hostname
+            except Exception:
+                # Fallback: simple string parsing
+                self._host = discovery_info.ssdp_location.split("/")[2].split(":")[0]
+
+        # Store discovered information for later use
+        model = discovery_info.upnp.get('modelName', discovery_info.upnp.get(SSDP.ATTR_UPNP_FRIENDLY_NAME, ''))
+        self._discovered_info = {
+            "host": self._host,
+            "friendly_name": f"E3DC {model} at {self._host}",
+            "serial": serial_number,
+            "location": discovery_info.ssdp_location,
+        }
+
+        # Set title placeholders for the UI
+        friendly_name = self._discovered_info.get("friendly_name")
+        self.context["title_placeholders"] = {"name": friendly_name}
+
+        return await self.async_step_ssdp_confirm()
+
+    async def async_step_ssdp_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Confirm ssdp discovery and ask for credentials."""
+        if user_input is None:
+            friendly_name = self._discovered_info.get("friendly_name", f"E3DC at {self._host}")
+            return self.async_show_form(
+                step_id="ssdp_confirm",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_USERNAME): str,
+                    vol.Required(CONF_PASSWORD): str,
+                    vol.Required(CONF_RSCPKEY): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    ),
+                }),
+                description_placeholders={
+                    "name": friendly_name,
+                    "host": self._host,
+                },
+            )
+
+        # User provided credentials, validate them
+        self._username = user_input[CONF_USERNAME]
+        self._password = user_input[CONF_PASSWORD]
+        self._rscpkey = user_input[CONF_RSCPKEY]
+
+        if error := await self.validate_input():
+            return self.async_show_form(
+                step_id="ssdp_confirm",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_USERNAME): str,
+                    vol.Required(CONF_PASSWORD): str,
+                    vol.Required(CONF_RSCPKEY): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    ),
+                }),
+                errors={"base": error},
+                description_placeholders={
+                    "name": self._discovered_info.get("friendly_name", f"E3DC at {self._host}"),
+                    "host": self._host,
+                },
+            )
+
+        # Create the entry
+        final_data = {
+            CONF_HOST: self._host,
+            CONF_USERNAME: self._username,
+            CONF_PASSWORD: self._password,
+            CONF_RSCPKEY: self._rscpkey,
+            CONF_API_VERSION: CONF_VERSION,
+        }
+
+        return self.async_create_entry(
+            title=f"E3DC {self._proxy.e3dc.model}",
+            data=final_data,
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(
@@ -199,3 +299,4 @@ class E3DCOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                 }
             ),
         )
+

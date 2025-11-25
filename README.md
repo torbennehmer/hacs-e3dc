@@ -89,6 +89,10 @@ control, use the manual installation method.
 Once you add the integration, you'll be asked to authenticate yourself for a
 local connection to your E3DC.
 
+E3DC can be auto-discovered by Home Assistant. If an instance was found, it 
+will be shown as discovered. You can then set it up right away. In that case no 
+hostname has to be provided.
+
 - **Username:** Your E3DC portal user name
 - **Password:** Your E3DC portal password
 - **Hostname:** The Hostname or IP address of the E3/DC system

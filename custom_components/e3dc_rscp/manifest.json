@@ -14,7 +14,12 @@
   "requirements": [
     "pye3dc==0.9.3"
   ],
-  "ssdp": [],
+  "ssdp": [
+    {
+      "manufacturer": "E3DC",
+      "deviceType": "urn:schemas-upnp-org:device:HVAC_System:1"
+    }
+  ],
   "version": "3.9.0",
   "zeroconf": []
 }
