@@ -278,7 +278,7 @@ class E3DCBatteryManager:
                     for slug in BATTERY_PACK_CALCULATED_SENSORS:
                         full_key = f"{pack_key}-{slug}"
                         self._mydata[full_key] = None
-                    # continue
+                    continue
 
                 pack_key = pack_entry["key"]
 
