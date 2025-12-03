@@ -9,9 +9,10 @@ from threading import Lock
 from e3dc import E3DC, SendError, NotAvailableError, RSCPKeyError, AuthenticationError
 from e3dc._rscpLib import rscpFindTag, rscpFindTagIndex
 from e3dc._rscpTags import RscpTag, RscpType, PowermeterType
+from e3dc._e3dc_rscp_local import PORT as RSCP_PORT
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 
@@ -19,6 +20,7 @@ from .const import CONF_RSCPKEY
 
 _LOGGER = logging.getLogger(__name__)
 
+FARM_PARAM_SERIALNO = "FARM_PARAM_SERIALNO"
 
 class ThreadSafeE3DC(E3DC):
     """Thread-safe version of E3DC."""
@@ -45,7 +47,7 @@ def e3dc_call(func):
         except NotAvailableError as ex:
             _LOGGER.debug("E3DC is unavailable: %s", ex, exc_info=True)
             raise HomeAssistantError(
-                "Communication Failure: E3DC mot available"
+                "Communication Failure: E3DC not available"
             ) from ex
         except SendError as ex:
             _LOGGER.debug("Communication error with E3DC: %s", ex, exc_info=True)
@@ -72,7 +74,7 @@ def e3dc_call(func):
 class E3DCProxy:
     """Proxies requests to pye3dc, takes care of error and async handling."""
 
-    def __init__(self, _hass: HomeAssistant, _config: ConfigEntry | dict[str, str]):
+    def __init__(self, _hass: HomeAssistant, _config: ConfigEntry | dict[str, str | int]):
         """Initialize E3DC Proxy and connect."""
         # TODO: move to readonly properties
         self.e3dc: E3DC = None
@@ -83,17 +85,20 @@ class E3DCProxy:
         self._username: str
         self._password: str
         self._rscpkey: str
+        self._port: int
 
         if isinstance(_config, ConfigEntry):
             self._host = self._config.data.get(CONF_HOST)
             self._username = self._config.data.get(CONF_USERNAME)
             self._password = self._config.data.get(CONF_PASSWORD)
             self._rscpkey = self._config.data.get(CONF_RSCPKEY)
+            self._port = self._config.data.get(CONF_PORT, RSCP_PORT)
         else:
             self._host = _config[CONF_HOST]
             self._username = _config[CONF_USERNAME]
             self._password = _config[CONF_PASSWORD]
             self._rscpkey = _config[CONF_RSCPKEY]
+            self._port = _config.get(CONF_PORT, RSCP_PORT)
 
     @e3dc_call
     def connect(self, config: dict[str, Any] | None = None):
@@ -107,6 +112,7 @@ class E3DCProxy:
             password=self._password,
             ipAddress=self._host,
             key=self._rscpkey,
+            port=self._port,
             configuration=config,
         )
 
@@ -488,7 +494,28 @@ class E3DCProxy:
                     ),
                 ],
             ),
-            keepAlive=True,
+            keepAlive=False,
         )
 
         return rscpFindTag(data, RscpTag.EMS_SET_POWER)[2]
+
+    @e3dc_call
+    def get_remote_control_ip(self, keepAlive: bool = False) -> str | None:
+        """Get the E3DC remote control IP."""
+        data = self.e3dc.sendRequestTag(
+            RscpTag.EMS_REQ_IP_REMOTE_CONTROL,
+            keepAlive=keepAlive,
+        )
+
+        return data if data != '' else None
+
+
+    @e3dc_call
+    def get_ip_address(self, keepAlive: bool = False) -> str:
+        """Get the E3DC IP address."""
+        data = self.e3dc.sendRequestTag(
+            RscpTag.INFO_REQ_IP_ADDRESS,
+            keepAlive=keepAlive,
+        )
+
+        return rscpFindTag(data, RscpTag.INFO_IP_ADDRESS)[2]

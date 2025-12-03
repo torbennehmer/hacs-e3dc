@@ -100,6 +100,11 @@ hostname has to be provided.
   have to set on the device under *Main Page -> Personalize -> User profile ->
   RSCP password.*
 
+If you have multiple E3DC instances configured as a farm, the integration will detect
+the farming controller after configuring the first child of the farm and add it to the
+discovered devices. It's fully configured, so you just need to add it to your HA. It
+doesn't make any difference which child is configured first.
+
 ### RSCP configuration
 
 Right now, the integration will use the default configuration provided by

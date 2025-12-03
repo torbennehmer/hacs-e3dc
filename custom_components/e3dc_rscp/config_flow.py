@@ -8,12 +8,17 @@ from urllib.parse import urlparse
 
 import voluptuous as vol
 
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow
+)
 from homeassistant import config_entries
 from homeassistant.const import (
     CONF_API_VERSION,
     CONF_HOST,
     CONF_PASSWORD,
     CONF_USERNAME,
+    CONF_PORT,
 )
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError, ConfigEntryAuthFailed
@@ -23,12 +28,16 @@ from homeassistant.helpers.selector import (
     TextSelectorConfig,
     TextSelectorType,
 )
+
+from custom_components.e3dc_rscp.utils import initialize_farm_controller_flow_if_needed
+
 from homeassistant.core import callback
 
 from homeassistant.helpers.service_info import ssdp as SSDP
 
 from .const import (
     CONF_CREATE_BATTERY_DEVICES,
+    CONF_FARMCONTROLLER,
     DEFAULT_CREATE_BATTERY_DEVICES,
     CONF_RSCPKEY,
     CONF_VERSION,
@@ -52,19 +61,24 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for E3DC Remote Storage Control Protocol."""
+
+    VERSION = CONF_VERSION
 
     def __init__(self) -> None:
         """Initialize config flow."""
-        self._entry: config_entries.ConfigEntry | None = None
+        self._entry: ConfigEntry | None = None
         self._host: str | None = None
         self._username: str | None = None
         self._password: str | None = None
         self._rscpkey: str | None = None
+        self._port: int | None = None
         self._proxy: E3DCProxy = None
+        self._discovered_info: dict[str, Any] | None = None
 
     def _async_check_login(self) -> None:
+        """Check the login credentials."""
         assert isinstance(self._username, str)
         assert isinstance(self._password, str)
         assert isinstance(self._host, str)
@@ -74,7 +88,8 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_HOST: self._host,
             CONF_USERNAME: self._username,
             CONF_PASSWORD: self._password,
-            CONF_RSCPKEY: self._rscpkey
+            CONF_RSCPKEY: self._rscpkey,
+            CONF_PORT: self._port,
         })
         self._proxy.connect()
 
@@ -101,6 +116,7 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._username = user_input[CONF_USERNAME]
         self._password = user_input[CONF_PASSWORD]
         self._rscpkey = user_input[CONF_RSCPKEY]
+        self._port = user_input.get(CONF_PORT, None)
 
         if error := await self.validate_input():
             return self._show_setup_form_init({"base": error})
@@ -110,10 +126,12 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         )
         self._abort_if_unique_id_configured()
         final_data: dict[str, Any] = user_input
+        final_data[CONF_FARMCONTROLLER] = len(self._proxy.e3dc.serialNumber) >= 6 and self._proxy.e3dc.serialNumber[-6] == "1"
         final_data[CONF_API_VERSION] = CONF_VERSION
 
         return self.async_create_entry(
-            title=f"E3DC {self._proxy.e3dc.model}", data=final_data
+            title=f"E3DC {'Farm Controller ' if final_data[CONF_FARMCONTROLLER] else ''}{self._proxy.e3dc.model}",
+            data=final_data,
         )
 
     def _show_setup_form_init(self, errors: dict[str, str] | None = None) -> FlowResult:
@@ -246,7 +264,7 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                 }),
                 errors={"base": error},
-                description_placeholders={
+                description_placeholders = {
                     "name": self._discovered_info.get("friendly_name", f"E3DC at {self._host}"),
                     "host": self._host,
                 },
@@ -261,8 +279,55 @@ class E3DCConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_API_VERSION: CONF_VERSION,
         }
 
+        return await self.async_step_check_is_farm(final_data)
+
+    async def async_step_check_is_farm(
+        self, data: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Check if device is part of a farm and initiate farm controller configuration if so."""
+        await initialize_farm_controller_flow_if_needed(
+            self.hass,
+            self._proxy,
+            self._username,
+            self._password,
+            self._rscpkey
+            )
+
         return self.async_create_entry(
             title=f"E3DC {self._proxy.e3dc.model}",
+            data=data,
+        )
+
+    async def async_step_integration_discovery(self, discovery_info) -> FlowResult:
+        """Handle the integration discovery step."""
+
+        _LOGGER.debug("init farm controller")
+        self._host = self.init_data[CONF_HOST]
+        self._username = self.init_data[CONF_USERNAME]
+        self._password = self.init_data[CONF_PASSWORD]
+        self._rscpkey = self.init_data[CONF_RSCPKEY]
+        self._port = self.init_data.get(CONF_PORT, None)
+
+        if error := await self.validate_input():
+            return self._show_setup_form_init(errors={"base": error})
+
+        _LOGGER.debug(f"unique id: {self.unique_id} / {self._host}:{self._port}:{self._proxy.e3dc.serialNumber}")
+        if not self.unique_id:
+            await self.async_set_unique_id(
+                f"{self._proxy.e3dc.serialNumberPrefix}{self._proxy.e3dc.serialNumber}"
+            )
+            return self.async_show_form(
+                step_id="integration_discovery",
+                description_placeholders={"info": "create farm controller device"},
+            )
+        self._abort_if_unique_id_configured()
+
+        final_data: dict[str, Any] = self.init_data
+        final_data[CONF_FARMCONTROLLER] = len(self._proxy.e3dc.serialNumber) >= 6 and self._proxy.e3dc.serialNumber[-6] == "1"
+        final_data[CONF_API_VERSION] = CONF_VERSION
+
+        return self.async_create_entry(
+            title=f"E3DC {'Farm Controller ' if final_data[CONF_FARMCONTROLLER] else ''}{self._proxy.e3dc.model}",
             data=final_data,
         )
 

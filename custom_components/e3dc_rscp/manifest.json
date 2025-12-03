@@ -5,7 +5,7 @@
     "@torbennehmer"
   ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["ssdp"],
   "documentation": "https://github.com/torbennehmer/hacs-e3dc",
   "homekit": {},
   "integration_type": "device",
