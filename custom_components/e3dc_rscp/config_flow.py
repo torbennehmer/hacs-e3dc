@@ -10,15 +10,14 @@ import voluptuous as vol
 
 from homeassistant.config_entries import (
     ConfigEntry,
-    ConfigFlow,
-    ConfigFlowResult
+    ConfigFlow
 )
 from homeassistant import config_entries
 from homeassistant.const import (
     CONF_API_VERSION,
     CONF_HOST,
     CONF_PASSWORD,
-    CONF_USERNAME,    
+    CONF_USERNAME,
     CONF_PORT,
 )
 from homeassistant.data_entry_flow import FlowResult
@@ -28,11 +27,6 @@ from homeassistant.helpers.selector import (
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
-)
-from homeassistant.helpers.service_info.ssdp import (
-    ATTR_UPNP_FRIENDLY_NAME,
-    ATTR_UPNP_SERIAL,
-    SsdpServiceInfo,
 )
 
 from custom_components.e3dc_rscp.utils import initialize_farm_controller_flow_if_needed
@@ -93,7 +87,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self._proxy = E3DCProxy(self.hass, {
             CONF_HOST: self._host,
             CONF_USERNAME: self._username,
-            CONF_PASSWORD: self._password,           
+            CONF_PASSWORD: self._password,
             CONF_RSCPKEY: self._rscpkey,
             CONF_PORT: self._port,
         })
@@ -303,7 +297,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             title=f"E3DC {self._proxy.e3dc.model}",
             data=data,
         )
-    
+
     async def async_step_integration_discovery(self, discovery_info) -> FlowResult:
         """Handle the integration discovery step."""
 
@@ -336,7 +330,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             title=f"E3DC {'Farm Controller ' if final_data[CONF_FARMCONTROLLER] else ''}{self._proxy.e3dc.model}",
             data=final_data,
         )
-    
+
     @staticmethod
     @callback
     def async_get_options_flow(

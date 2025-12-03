@@ -32,7 +32,6 @@ from .const import (
     BATTERY_PACK_RAW_SENSORS,
     BATTERY_PACK_CALCULATED_SENSORS,
     DOMAIN,
-    EntryType,
 )
 from .coordinator import E3DCCoordinator
 

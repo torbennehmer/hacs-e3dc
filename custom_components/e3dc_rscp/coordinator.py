@@ -142,13 +142,13 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.config_entry.data.get(CONF_PASSWORD, None),
             self.config_entry.data.get(CONF_RSCPKEY, None)
         )
-        
+
     async def async_identify_wallboxes(self, hass: HomeAssistant):
         """Identify availability of Wallboxes if get_wallbox_identification_data() returns meaningful data."""
         if (self._isFarmController):
             """ Farm Controller does not support wallboxes. They are handled by child. """
             return
-        
+
         for wallbox_index in range(0, MAX_WALLBOXES_POSSIBLE - 1):
             try:
                 request_data: dict[str, Any] = await self.hass.async_add_executor_job(

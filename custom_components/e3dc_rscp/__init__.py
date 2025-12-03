@@ -26,6 +26,7 @@ from homeassistant.const import (
 )
 from .coordinator import E3DCCoordinator
 from .services import async_setup_services
+from e3dc._e3dc_rscp_local import PORT as RSCP_PORT
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry):
     """Migrate config entry to new format."""
@@ -33,7 +34,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
         # Migration durchführen
         new_data = dict(config_entry.data)
         new_data[CONF_API_VERSION] = 2
-        new_data[CONF_PORT] = _e3dc_rscp_local.PORT
+        new_data[CONF_PORT] = RSCP_PORT
         new_data[CONF_FARMCONTROLLER] = False
         hass.config_entries.async_update_entry(config_entry, data=new_data, version=2)
 
