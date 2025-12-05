@@ -237,11 +237,7 @@ class E3DCProxy:
 
     @e3dc_call
     def get_battery_data(self) -> list[dict[str, Any]]:
-        """Return sensor data for all installed battery packs.
-
-        Returns:
-            list: A list of battery pack data dictionaries, one per pack.
-        """
+        """Return sensor data for all installed battery packs."""
         # Get battery configuration to determine how many packs exist
         batteries_config = self.e3dc.get_batteries()
 
