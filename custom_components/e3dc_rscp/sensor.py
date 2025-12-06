@@ -901,29 +901,8 @@ async def async_setup_entry(
         )
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
 
-    for battery in coordinator.batteries:
-        unique_id = list(battery["deviceInfo"]["identifiers"])[0][1]
-        battery_key = battery["key"]
-
-        for _, slug in BATTERY_MODULE_RAW_SENSORS:
-            template = BATTERY_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
-            if template is None:
-                continue
-
-            description = E3DCSensorEntityDescription(
-                has_entity_name=True,
-                key=f"{battery_key}-{slug}",
-                **template,
-            )
-            entities.append(
-                E3DCSensor(
-                    coordinator,
-                    description,
-                    unique_id,
-                    battery["deviceInfo"],
-                )
-            )
-
+    # Create battery pack sensors first, before module sensors
+    # This ensures pack devices are registered before modules reference them via via_device
     if coordinator.create_battery_devices:
         for pack in coordinator.battery_packs:
             pack_unique_id = pack.get("uniqueId", entry.unique_id)
@@ -968,6 +947,31 @@ async def async_setup_entry(
                         pack_device_info,
                     )
                 )
+
+    # Create battery module sensors after pack sensors
+    # This ensures pack devices exist before modules reference them via via_device
+    for battery in coordinator.batteries:
+        unique_id = list(battery["deviceInfo"]["identifiers"])[0][1]
+        battery_key = battery["key"]
+
+        for _, slug in BATTERY_MODULE_RAW_SENSORS:
+            template = BATTERY_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
+            if template is None:
+                continue
+
+            description = E3DCSensorEntityDescription(
+                has_entity_name=True,
+                key=f"{battery_key}-{slug}",
+                **template,
+            )
+            entities.append(
+                E3DCSensor(
+                    coordinator,
+                    description,
+                    unique_id,
+                    battery["deviceInfo"],
+                )
+            )
 
     for wallbox in coordinator.wallboxes:
         # Get the UID & Key for the given wallbox
