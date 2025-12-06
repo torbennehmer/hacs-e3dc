@@ -10,6 +10,8 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 
+from .e3dc_proxy import E3DCProxy
+
 from .const import (
     DOMAIN,
     BATTERY_MODULE_RAW_SENSORS,
@@ -46,7 +48,7 @@ class E3DCBatteryManager:
         self,
         hass: HomeAssistant,
         uid: str,
-        proxy: Any,
+        proxy: E3DCProxy,
         mydata: dict[str, Any],
         create_battery_devices_callback: callable,
     ) -> None:
