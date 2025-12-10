@@ -4,7 +4,8 @@ from enum import Enum
 from homeassistant.const import Platform
 
 CONF_RSCPKEY = "rscpkey"
-CONF_VERSION = 1
+CONF_FARMCONTROLLER = "farmcontroller"
+CONF_VERSION = 2
 DOMAIN = "e3dc_rscp"
 ERROR_AUTH_INVALID = "invalid_auth"
 ERROR_CANNOT_CONNECT = "cannot_connect"
@@ -130,3 +131,11 @@ class SetPowerMode(Enum):
     def get_enum(self, value):
         """Get the SetPowerMode member by value."""
         return self._value2member_map_.get(value, None)
+
+
+class EntryType(Enum):
+    """Entry types for E3DC sensors to distinguish between farm controller, members or both (ununsed atm)."""
+
+    FARM = "farm"
+    MEMBER = "member"
+    BOTH = "both"
