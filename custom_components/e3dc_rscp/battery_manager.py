@@ -1,5 +1,6 @@
 """Battery management for E3DC integration."""
 
+import asyncio
 from datetime import date
 import logging
 from typing import Any, TypedDict
@@ -8,6 +9,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
+
+from .e3dc_proxy import E3DCProxy
 
 from .const import (
     DOMAIN,
@@ -45,7 +48,7 @@ class E3DCBatteryManager:
         self,
         hass: HomeAssistant,
         uid: str,
-        proxy: Any,
+        proxy: E3DCProxy,
         mydata: dict[str, Any],
         create_battery_devices_callback: callable,
     ) -> None:
@@ -66,6 +69,7 @@ class E3DCBatteryManager:
         self._create_battery_devices_callback = create_battery_devices_callback
         self._batteries: list[E3DCBattery] = []
         self._battery_packs: list[E3DCBatteryPack] = []
+        self._identify_lock = asyncio.Lock()
 
     @property
     def batteries(self) -> list[E3DCBattery]:
@@ -114,133 +118,134 @@ class E3DCBatteryManager:
 
     async def async_identify_batteries(self) -> None:
         """Identify installed battery modules if enabled via options."""
-        if not self.create_battery_devices:
-            _LOGGER.debug("Battery devices disabled via options, skipping identification")
-            await self.async_clear_battery_devices()
-            return
+        async with self._identify_lock:
+            if not self.create_battery_devices:
+                _LOGGER.debug("Battery devices disabled via options, skipping identification")
+                await self.async_clear_battery_devices()
+                return
 
-        try:
-            batteries_config: list[dict[str, Any]] = await self.hass.async_add_executor_job(
-                self.proxy.get_batteries
-            )
-        except HomeAssistantError as ex:
-            _LOGGER.warning(
-                "Failed to load battery configuration, skipping battery devices: %s", ex
-            )
-            return
-
-        try:
-            battery_data: Any = await self.hass.async_add_executor_job(
-                self.proxy.get_battery_data
-            )
-        except HomeAssistantError as ex:
-            _LOGGER.warning(
-                "Failed to load battery data, continuing with limited information: %s", ex
-            )
-            battery_data = None
-
-        if not isinstance(batteries_config, list):
-            _LOGGER.debug("Battery configuration returned unexpected payload: %s", batteries_config)
-            batteries_config = []
-
-        battery_details_by_pack: dict[int, dict[str, Any]] = {}
-        if isinstance(battery_data, list):
-            for pack in battery_data:
-                if isinstance(pack, dict) and "index" in pack:
-                    battery_details_by_pack[pack["index"]] = pack
-        elif isinstance(battery_data, dict):
-            pack_index = battery_data.get("index", 0)
-            battery_details_by_pack[pack_index] = battery_data
-
-        def _normalize(value: Any) -> Any:
-            if isinstance(value, str):
-                stripped = value.strip()
-                if stripped == "":
-                    return None
-            return value
-
-        self._batteries.clear()
-        pack_entries: dict[int, E3DCBatteryPack] = {}
-
-        for battery_config in batteries_config or []:
-            pack_index = battery_config.get("index", 0)
-            dcb_count = battery_config.get("dcbs", 0)
-            pack_details = battery_details_by_pack.get(pack_index, {})
-            dcbs_details: dict[int, dict[str, Any]] = {}
-            if isinstance(pack_details, dict):
-                dcbs = pack_details.get("dcbs")
-                if isinstance(dcbs, dict):
-                    dcbs_details = dcbs
-
-            pack_key = f"battery-pack-{pack_index}"
-            pack_unique_id = f"{self.uid}-{pack_key}"
-            pack_entry = pack_entries.get(pack_index)
-            if pack_entry is None:
-                pack_manufacturer = _normalize(pack_details.get("manufactureName"))
-                pack_model = _normalize(pack_details.get("deviceName"))
-                pack_name = f"Battery Pack {pack_index + 1}"
-
-                deviceInfo: DeviceInfo = DeviceInfo(
-                    identifiers={(DOMAIN, pack_unique_id)},
-                    via_device=(DOMAIN, self.uid),
-                    manufacturer=pack_manufacturer,
-                    name=pack_name,
-                    model=pack_model,
+            try:
+                batteries_config: list[dict[str, Any]] = await self.hass.async_add_executor_job(
+                    self.proxy.get_batteries
                 )
-
-                pack_entry = {
-                    "index": pack_index,
-                    "key": pack_key,
-                    "uniqueId": pack_unique_id,
-                    "name": pack_name,
-                    "deviceInfo": deviceInfo,
-                }
-                pack_entries[pack_index] = pack_entry
-
-            for dcb_index in range(dcb_count):
-                battery_key = f"battery-{pack_index}-{dcb_index}"
-                unique_id = f"{self.uid}-{battery_key}"
-                dcb_detail = dcbs_details.get(dcb_index, {}) if isinstance(dcbs_details, dict) else {}
-
-                manufacturer = _normalize(dcb_detail.get("manufactureName"))
-                model = _normalize(dcb_detail.get("deviceName"))
-                name = f"Battery Pack {pack_index + 1} Module {dcb_index + 1}"
-                serial_no = _normalize(dcb_detail.get("serialNo"))
-                fw_version = _normalize(dcb_detail.get("fwVersion"))
-                pcb_version = _normalize(dcb_detail.get("pcbVersion"))
-
-                deviceInfo = DeviceInfo(
-                    identifiers={(DOMAIN, unique_id)},
-                    via_device=(DOMAIN, pack_entry["uniqueId"]),
-                    manufacturer=manufacturer,
-                    name=name,
-                    model=model,
+            except HomeAssistantError as ex:
+                _LOGGER.warning(
+                    "Failed to load battery configuration, skipping battery devices: %s", ex
                 )
+                return
 
-                if serial_no is not None:
-                    deviceInfo["serial_number"] = str(serial_no)
-                if fw_version is not None:
-                    deviceInfo["sw_version"] = str(fw_version)
-                if pcb_version is not None:
-                    deviceInfo["hw_version"] = str(pcb_version)
+            try:
+                battery_data: Any = await self.hass.async_add_executor_job(
+                    self.proxy.get_battery_data
+                )
+            except HomeAssistantError as ex:
+                _LOGGER.warning(
+                    "Failed to load battery data, continuing with limited information: %s", ex
+                )
+                battery_data = None
 
-                battery_entry: E3DCBattery = {
-                    "packIndex": pack_index,
-                    "dcbIndex": dcb_index,
-                    "key": battery_key,
-                    "deviceInfo": deviceInfo,
-                }
-                self._batteries.append(battery_entry)
+            if not isinstance(batteries_config, list):
+                _LOGGER.debug("Battery configuration returned unexpected payload: %s", batteries_config)
+                batteries_config = []
 
-        self._battery_packs = [
-            pack_entries[index] for index in sorted(pack_entries.keys())
-        ]
+            battery_details_by_pack: dict[int, dict[str, Any]] = {}
+            if isinstance(battery_data, list):
+                for pack in battery_data:
+                    if isinstance(pack, dict) and "index" in pack:
+                        battery_details_by_pack[pack["index"]] = pack
+            elif isinstance(battery_data, dict):
+                pack_index = battery_data.get("index", 0)
+                battery_details_by_pack[pack_index] = battery_data
 
-        if len(self._batteries) > 0:
-            await self.async_load_and_process_battery_data(battery_data)
-            _LOGGER.debug("Identified %s battery modules across %s packs", len(self._batteries), len(self._battery_packs))
-        else:
-            _LOGGER.debug("No battery modules were identified")
+            def _normalize(value: Any) -> Any:
+                if isinstance(value, str):
+                    stripped = value.strip()
+                    if stripped == "":
+                        return None
+                return value
+
+            self._batteries.clear()
+            pack_entries: dict[int, E3DCBatteryPack] = {}
+
+            for battery_config in batteries_config or []:
+                pack_index = battery_config.get("index", 0)
+                dcb_count = battery_config.get("dcbs", 0)
+                pack_details = battery_details_by_pack.get(pack_index, {})
+                dcbs_details: dict[int, dict[str, Any]] = {}
+                if isinstance(pack_details, dict):
+                    dcbs = pack_details.get("dcbs")
+                    if isinstance(dcbs, dict):
+                        dcbs_details = dcbs
+
+                pack_key = f"battery-pack-{pack_index}"
+                pack_unique_id = f"{self.uid}-{pack_key}"
+                pack_entry = pack_entries.get(pack_index)
+                if pack_entry is None:
+                    pack_manufacturer = _normalize(pack_details.get("manufactureName"))
+                    pack_model = _normalize(pack_details.get("deviceName"))
+                    pack_name = f"Battery Pack {pack_index + 1}"
+
+                    deviceInfo: DeviceInfo = DeviceInfo(
+                        identifiers={(DOMAIN, pack_unique_id)},
+                        via_device=(DOMAIN, self.uid),
+                        manufacturer=pack_manufacturer,
+                        name=pack_name,
+                        model=pack_model,
+                    )
+
+                    pack_entry = {
+                        "index": pack_index,
+                        "key": pack_key,
+                        "uniqueId": pack_unique_id,
+                        "name": pack_name,
+                        "deviceInfo": deviceInfo,
+                    }
+                    pack_entries[pack_index] = pack_entry
+
+                for dcb_index in range(dcb_count):
+                    battery_key = f"battery-{pack_index}-{dcb_index}"
+                    unique_id = f"{self.uid}-{battery_key}"
+                    dcb_detail = dcbs_details.get(dcb_index, {}) if isinstance(dcbs_details, dict) else {}
+
+                    manufacturer = _normalize(dcb_detail.get("manufactureName"))
+                    model = _normalize(dcb_detail.get("deviceName"))
+                    name = f"Battery Pack {pack_index + 1} Module {dcb_index + 1}"
+                    serial_no = _normalize(dcb_detail.get("serialNo"))
+                    fw_version = _normalize(dcb_detail.get("fwVersion"))
+                    pcb_version = _normalize(dcb_detail.get("pcbVersion"))
+
+                    deviceInfo = DeviceInfo(
+                        identifiers={(DOMAIN, unique_id)},
+                        via_device=(DOMAIN, pack_entry["uniqueId"]),
+                        manufacturer=manufacturer,
+                        name=name,
+                        model=model,
+                    )
+
+                    if serial_no is not None:
+                        deviceInfo["serial_number"] = str(serial_no)
+                    if fw_version is not None:
+                        deviceInfo["sw_version"] = str(fw_version)
+                    if pcb_version is not None:
+                        deviceInfo["hw_version"] = str(pcb_version)
+
+                    battery_entry: E3DCBattery = {
+                        "packIndex": pack_index,
+                        "dcbIndex": dcb_index,
+                        "key": battery_key,
+                        "deviceInfo": deviceInfo,
+                    }
+                    self._batteries.append(battery_entry)
+
+            self._battery_packs = [
+                pack_entries[index] for index in sorted(pack_entries.keys())
+            ]
+
+            if len(self._batteries) > 0:
+                await self.async_load_and_process_battery_data(battery_data)
+                _LOGGER.debug("Identified %s battery modules across %s packs", len(self._batteries), len(self._battery_packs))
+            else:
+                _LOGGER.debug("No battery modules were identified")
 
     async def async_load_and_process_battery_data(self, battery_data: Any | None = None) -> None:
         """Load and process battery module data."""
