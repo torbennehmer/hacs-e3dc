@@ -508,7 +508,7 @@ class E3DCProxy:
                     ),
                 ],
             ),
-            keepAlive=False,
+            keepAlive=True,
         )
 
         return rscpFindTag(data, RscpTag.EMS_SET_POWER)[2]
