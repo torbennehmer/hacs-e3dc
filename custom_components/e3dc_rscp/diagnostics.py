@@ -76,6 +76,7 @@ class _DiagnosticsDumper:
             "get_power_settings": self._query_data_for_dump(
                 self.e3dc.get_power_settings
             ),
+            "is_farm_controller": self.coordinator.is_farm_controller(),
             "EMS_REQ_GET_MANUAL_CHARGE": self._query_data_for_dump(
                 lambda: self.e3dc.sendRequestTag(
                     RscpTag.EMS_REQ_GET_MANUAL_CHARGE, keepAlive=True
@@ -102,6 +103,9 @@ class _DiagnosticsDumper:
                     ),
                     keepAlive=True,
                 )
+            ),
+            "EMS_REQ_IP_REMOTE_CONTROL": self._query_data_for_dump(
+                self.proxy.get_remote_control_ip
             ),
         }
 
