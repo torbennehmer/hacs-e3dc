@@ -30,6 +30,7 @@ class E3DCBattery(TypedDict):
     dcbIndex: int
     key: str
     deviceInfo: DeviceInfo
+    hasDeviceReportedSoh: bool  # Whether device provides SoH value
 
 
 class E3DCBatteryPack(TypedDict):
@@ -230,11 +231,15 @@ class E3DCBatteryManager:
                     if pcb_version is not None:
                         deviceInfo["hw_version"] = str(pcb_version)
 
+                    # Check if device reports SoH for this module
+                    has_device_soh = dcb_detail.get("soh") is not None
+
                     battery_entry: E3DCBattery = {
                         "packIndex": pack_index,
                         "dcbIndex": dcb_index,
                         "key": battery_key,
                         "deviceInfo": deviceInfo,
+                        "hasDeviceReportedSoh": has_device_soh,
                     }
                     self._batteries.append(battery_entry)
 

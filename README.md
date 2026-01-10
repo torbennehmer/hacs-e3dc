@@ -266,7 +266,7 @@ Notes:
   - **Usable Remaining Energy**: Calculated as `(usable remaining capacity × module voltage) / 1000` in kWh
   - **State of Health**: Calculated as `(full charge capacity / design capacity) × 100` as percentage
 
-- **Battery Module State of Health (SoH)**: The integration always calculates SoH from capacities using the formula `(full charge capacity / design capacity) × 100`. Some E3DC systems also report their own SoH value, which may differ from the calculated value. If available, this device-reported SoH is accessible as a separate diagnostic sensor (disabled by default) for comparison and debugging purposes. The calculated SoH is used as the primary sensor for consistency and accuracy across all E3DC systems.
+- **Battery Module State of Health (SoH)**: The integration always calculates SoH from capacities using the formula `(full charge capacity / design capacity) × 100`. Some E3DC systems also report their own SoH value, which may differ from the calculated value. If your E3DC system provides device-reported SoH values, an additional diagnostic sensor "State of health (device-reported)" will be created (disabled by default) for comparison and debugging purposes. This sensor is only created for battery modules where the E3DC system actually provides a SoH value. The calculated SoH is used as the primary sensor for consistency and accuracy across all E3DC systems.
 
 - due to the various possible configurations of batteries (different E3DC devices, different amount of battery packs and modules, farming setups, etc.), not all scenarios couldn't be tested. In case your setup is not represented correctly, open an issue including a diagnostic dump.
 

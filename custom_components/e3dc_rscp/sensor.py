@@ -967,6 +967,10 @@ async def async_setup_entry(
 
         # Create raw sensors
         for _, slug in BATTERY_MODULE_RAW_SENSORS:
+            # Skip soh-reported sensor if device doesn't provide it
+            if slug == "soh-reported" and not battery.get("hasDeviceReportedSoh", False):
+                continue
+
             template = BATTERY_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
             if template is None:
                 continue
