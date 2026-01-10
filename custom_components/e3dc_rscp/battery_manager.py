@@ -15,6 +15,7 @@ from .e3dc_proxy import E3DCProxy
 from .const import (
     DOMAIN,
     BATTERY_MODULE_RAW_SENSORS,
+    BATTERY_MODULE_CALCULATED_SENSORS,
     BATTERY_PACK_RAW_SENSORS,
     BATTERY_PACK_CALCULATED_SENSORS,
 )
@@ -322,6 +323,7 @@ class E3DCBatteryManager:
                     self._mydata[f"{battery['key']}-{slug}"] = None
                 continue
 
+            # Process raw sensor values
             for data_key, slug in BATTERY_MODULE_RAW_SENSORS:
                 raw_value: Any = dcb_data.get(data_key)
                 if isinstance(raw_value, list | dict | set | tuple):
@@ -332,6 +334,15 @@ class E3DCBatteryManager:
                 )
 
                 self._mydata[f"{battery['key']}-{slug}"] = processed_value
+
+            # Process calculated sensor values
+            for slug in BATTERY_MODULE_CALCULATED_SENSORS:
+                full_key = f"{battery['key']}-{slug}"
+                if slug == "soh":
+                    calculated_value = self._calculate_battery_soh_from_capacity(dcb_data)
+                else:
+                    calculated_value = None
+                self._mydata[full_key] = calculated_value
 
     def _get_dcb_count_from_pack(self, pack: dict[str, Any]) -> int | None:
         """Get the number of DCB modules in a battery pack."""
@@ -507,9 +518,6 @@ class E3DCBatteryManager:
         """Process individual battery sensor values before storing."""
         if data_key == "soc" and value is None:
             return self._calculate_battery_soc_from_capacity(dcb)
-
-        if data_key == "soh" and value is None:
-            return self._calculate_battery_soh_from_capacity(dcb)
 
         if value is None:
             return None

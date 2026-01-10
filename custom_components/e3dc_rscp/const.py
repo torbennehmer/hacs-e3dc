@@ -32,12 +32,17 @@ BATTERY_MODULE_RAW_SENSORS: tuple[tuple[str, str], ...] = (
     ("seriesCellCount", "series-cell-count"),
     ("remainingCapacity", "remaining-capacity"),
     ("soc", "soc"),
-    ("soh", "soh"),
+    ("soh", "soh-reported"),  # Device-reported SoH (may be inaccurate)
     ("status", "status"),
     ("voltage", "voltage"),
     ("voltageAvg30s", "voltage-avg-30s"),
     ("warning", "warning"),
     ("manufactureDate", "manufacture-date"),
+)
+
+# Battery module calculated sensors (slug only)
+BATTERY_MODULE_CALCULATED_SENSORS: tuple[str, ...] = (
+    "soh",  # Calculated SoH (always calculated from capacities)
 )
 
 # Battery pack raw sensors (data_key, slug)

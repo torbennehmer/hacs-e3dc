@@ -29,6 +29,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     BATTERY_MODULE_RAW_SENSORS,
+    BATTERY_MODULE_CALCULATED_SENSORS,
     BATTERY_PACK_RAW_SENSORS,
     BATTERY_PACK_CALCULATED_SENSORS,
     DOMAIN,
@@ -556,6 +557,16 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
         "suggested_display_precision": 0,
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
+    "soh-reported": {
+        "translation_key": "battery-module-soh-reported",
+        "icon": "mdi:battery-heart-outline",
+        "native_unit_of_measurement": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "suggested_display_precision": 0,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "entity_registry_enabled_default": False,
+    },
     "status": {
         "translation_key": "battery-module-status",
         "icon": "mdi:information-outline",
@@ -954,7 +965,28 @@ async def async_setup_entry(
         unique_id = list(battery["deviceInfo"]["identifiers"])[0][1]
         battery_key = battery["key"]
 
+        # Create raw sensors
         for _, slug in BATTERY_MODULE_RAW_SENSORS:
+            template = BATTERY_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
+            if template is None:
+                continue
+
+            description = E3DCSensorEntityDescription(
+                has_entity_name=True,
+                key=f"{battery_key}-{slug}",
+                **template,
+            )
+            entities.append(
+                E3DCSensor(
+                    coordinator,
+                    description,
+                    unique_id,
+                    battery["deviceInfo"],
+                )
+            )
+
+        # Create calculated sensors
+        for slug in BATTERY_MODULE_CALCULATED_SENSORS:
             template = BATTERY_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
             if template is None:
                 continue
