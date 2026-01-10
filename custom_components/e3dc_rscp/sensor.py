@@ -517,7 +517,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     },
     "parallel-cell-count": {
         "translation_key": "battery-module-parallel-cell-count",
-        "icon": "mdi:battery-multiple",
+        "icon": "mdi:sitemap",
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
     "sensor-count": {
@@ -527,7 +527,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     },
     "series-cell-count": {
         "translation_key": "battery-module-series-cell-count",
-        "icon": "mdi:battery-multiple-outline",
+        "icon": "mdi:layers",
         "entity_category": EntityCategory.DIAGNOSTIC,
     },
     "remaining-capacity": {
