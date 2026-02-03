@@ -89,8 +89,8 @@ control, use the manual installation method.
 Once you add the integration, you'll be asked to authenticate yourself for a
 local connection to your E3DC.
 
-E3DC can be auto-discovered by Home Assistant. If an instance was found, it 
-will be shown as discovered. You can then set it up right away. In that case no 
+E3DC can be auto-discovered by Home Assistant. If an instance was found, it
+will be shown as discovered. You can then set it up right away. In that case no
 hostname has to be provided.
 
 - **Username:** Your E3DC portal user name
@@ -265,6 +265,8 @@ Notes:
   - **Remaining Energy**: Calculated as `(remaining capacity × module voltage) / 1000` in kWh
   - **Usable Remaining Energy**: Calculated as `(usable remaining capacity × module voltage) / 1000` in kWh
   - **State of Health**: Calculated as `(full charge capacity / design capacity) × 100` as percentage
+
+- **Battery Module State of Health (SoH)**: The integration always calculates SoH from capacities using the formula `(full charge capacity / design capacity) × 100`. Some E3DC systems also report their own SoH value, which may differ from the calculated value. If your E3DC system provides device-reported SoH values, an additional diagnostic sensor "State of health (device-reported)" will be created (disabled by default) for comparison and debugging purposes. This sensor is only created for battery modules where the E3DC system actually provides a SoH value. The calculated SoH is used as the primary sensor for consistency and accuracy across all E3DC systems.
 
 - due to the various possible configurations of batteries (different E3DC devices, different amount of battery packs and modules, farming setups, etc.), not all scenarios couldn't be tested. In case your setup is not represented correctly, open an issue including a diagnostic dump.
 

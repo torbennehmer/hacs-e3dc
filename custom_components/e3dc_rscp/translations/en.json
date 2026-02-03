@@ -294,6 +294,9 @@
             "battery-module-soh": {
                 "name": "State of health"
             },
+            "battery-module-soh-reported": {
+                "name": "State of health (device-reported)"
+            },
             "battery-module-status": {
                 "name": "Status code"
             },
