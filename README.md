@@ -33,6 +33,7 @@ code.
   - [Manual Installation](#manual-installation)
 - [Configuration](#configuration)
   - [RSCP configuration](#rscp-configuration)
+  - [Localization](#localization)
   - [Probable causes of connection problems](#probable-causes-of-connection-problems)
     - [Password limitations](#password-limitations)
     - [Network restriction](#network-restriction)
@@ -113,6 +114,17 @@ flow. You can find details about these options at the [pye3dc
 readme](https://github.com/fsantini/python-e3dc#configuration). I will plan to
 add options to configure this in the long run. Please file an issue if you need
 changes here, as I will need ral life examples to get these things running.
+
+### Localization
+
+This integration is available in multiple languages:
+- **English** (en) - Default language
+- **German** (de) - Deutsche Übersetzung
+
+The integration will automatically use the language configured in your Home
+Assistant instance. All entity names, configuration dialogs, and service
+descriptions are translated. To change the language, adjust your Home Assistant
+language settings under *Settings -> System -> General*.
 
 ### Probable causes of connection problems
 
