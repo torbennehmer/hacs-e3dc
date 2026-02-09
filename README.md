@@ -113,7 +113,7 @@ pye3dc. Additional PVIs, powermeters, wallboxes or batteries not covered yet by 
 flow. You can find details about these options at the [pye3dc
 readme](https://github.com/fsantini/python-e3dc#configuration). I will plan to
 add options to configure this in the long run. Please file an issue if you need
-changes here, as I will need ral life examples to get these things running.
+changes here, as I will need real life examples to get these things running.
 
 ### Localization
 
