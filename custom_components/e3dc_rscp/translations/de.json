@@ -545,7 +545,7 @@
     },
     "set_wallbox_max_charge_current": {
       "name": "Wallbox-Maximalstrom festlegen",
-      "description": "Legt den maximalen Ladestrom der Wallbox fest",
+      "description": "Legt den maximalen Ladestrom der Wallbox fest.",
       "fields": {
         "device_id": {
           "name": "E3DC-Geräte-ID",
