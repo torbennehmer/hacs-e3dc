@@ -292,7 +292,7 @@
         "name": "Restkapazität"
       },
       "battery-module-soh-reported": {
-        "name": "Gesundheitszustand (gerätegemeldet)"
+        "name": "Gesundheitszustand (vom Gerät gemeldet)"
       },
       "battery-module-status": {
         "name": "Statuscode"
