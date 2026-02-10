@@ -444,7 +444,7 @@
       "power-mode": {
         "name": "Modus",
         "state": {
-          "0": "Leerlauf",
+          "0": "Bereitschaft",
           "1": "Entladung",
           "2": "Ladung"
         }
@@ -453,10 +453,10 @@
         "name": "Aktueller Betriebsmodus",
         "state": {
           "0": "Normalbetrieb",
-          "1": "Entladung",
-          "2": "Ladung",
-          "3": "Netzladung",
-          "4": "Leerlauf"
+          "1": "Bereitschaft",
+          "2": "Entladung",
+          "3": "Ladung",
+          "4": "Netzladung"
         }
       },
       "pset-powervalue": {
@@ -507,7 +507,7 @@
     "power_mode": {
       "options": {
         "0": "Normalbetrieb",
-        "1": "Leerlauf",
+        "1": "Bereitschaft",
         "2": "Entladung",
         "3": "Ladung",
         "4": "Netzladung"
