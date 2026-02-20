@@ -6,5 +6,7 @@
     "python.formatting.provider": "black",
     "files.associations": {
         "*.yaml": "home-assistant"
-    }
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": []
 }

@@ -5,14 +5,16 @@
     "@torbennehmer"
   ],
   "config_flow": true,
-  "dependencies": ["ssdp"],
+  "dependencies": [
+    "ssdp"
+  ],
   "documentation": "https://github.com/torbennehmer/hacs-e3dc",
   "homekit": {},
   "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/torbennehmer/hacs-e3dc/issues",
   "requirements": [
-    "pye3dc==0.9.3"
+    "pye3dc>=0.10.0,<0.11"
   ],
   "ssdp": [
     {
