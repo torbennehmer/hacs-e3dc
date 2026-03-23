@@ -36,8 +36,8 @@ async def async_setup_entry(
     coordinator: E3DCCoordinator = hass.data[DOMAIN][entry.unique_id]
     entities: list[E3DCSelect] = []
 
-    # Portal charging priority (system-level, not per-wallbox)
-    if coordinator.portal_client is not None and len(coordinator.wallboxes) > 0:
+    # Portal charging priority (system-level)
+    if coordinator.portal_client is not None:
         charging_priority = E3DCSelectEntityDescription(
             key="portal-charging-priority",
             translation_key="portal-charging-priority",

@@ -74,7 +74,7 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
-    # Portal discharge limit (till_soc) - on main E3DC device, system-level
+    # Portal discharge limit (till_soc) - wallbox-specific
     if coordinator.portal_client is not None and len(coordinator.wallboxes) > 0:
         portal_till_soc = E3DCNumberEntityDescription(
             key="portal-till-soc",

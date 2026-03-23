@@ -389,7 +389,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             await self._load_and_process_wallbox_data()
 
         # Portal polling on separate slow interval
-        if self.portal_client is not None and len(self.wallboxes) > 0:
+        if self.portal_client is not None:
             if self._update_guard_portal is False and self._next_portal_update < time():
                 _LOGGER.debug("Polling portal data")
                 await self._load_and_process_portal_data()

@@ -137,7 +137,7 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
-    # Portal charging priorisation switches (on main E3DC device, system-level)
+    # Portal charging priorisation switches (wallbox-specific)
     if coordinator.portal_client is not None and len(coordinator.wallboxes) > 0:
         portal_sun_mode = E3DCSwitchEntityDescription(
             key="portal-sun-mode",
