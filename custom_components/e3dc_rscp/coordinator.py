@@ -494,7 +494,14 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("Failed to load SG Ready state, not updating data: %s", ex)
             return
 
-        self._mydata["sgready-state"] = request_data["sgready-state"]
+        sgready_state_map = {
+            1: "locked",
+            2: "normal",
+            3: "released",
+            4: "start_up",
+        }
+        raw_state = request_data["sgready-state"]
+        self._mydata["sgready-state"] = sgready_state_map.get(raw_state, str(raw_state))
         self._mydata["sgready-numeric-state"] = request_data["sgready-numeric-state"]
         self._mydata["sgready-active"] = bool(request_data["sgready-active"])
         self._sgready_available = bool(request_data["sgready-active"])

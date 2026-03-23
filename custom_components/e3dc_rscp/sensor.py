@@ -864,6 +864,8 @@ async def async_setup_entry(
             key="sgready-state",
             translation_key="sgready-state",
             icon="mdi:heat-pump",
+            device_class=SensorDeviceClass.ENUM,
+            options=["locked", "normal", "released", "start_up"],
         )
         entities.append(
             E3DCSensor(coordinator, sgready_state_description, entry.unique_id)

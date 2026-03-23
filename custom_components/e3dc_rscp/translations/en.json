@@ -468,10 +468,10 @@
             "sgready-state": {
                 "name": "SG Ready",
                 "state": {
-                    "1": "Locked",
-                    "2": "Normal",
-                    "3": "Released",
-                    "4": "Start-up"
+                    "locked": "Locked",
+                    "normal": "Normal",
+                    "released": "Released",
+                    "start_up": "Start-up"
                 }
             },
             "sgready-numeric-state": {
