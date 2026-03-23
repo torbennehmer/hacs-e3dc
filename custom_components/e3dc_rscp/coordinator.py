@@ -1,6 +1,7 @@
 """Coordinator for E3DC integration."""
 
 from datetime import timedelta, datetime
+from functools import partial
 import logging
 from time import time
 from typing import Any, TypedDict
@@ -143,9 +144,21 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._load_timezone_settings()
 
         # Initialize portal client if enabled
-        if self.config_entry.data.get(CONF_PORTAL_ENABLED, DEFAULT_PORTAL_ENABLED):
+        _portal_enabled = self.config_entry.data.get(
+            CONF_PORTAL_ENABLED, DEFAULT_PORTAL_ENABLED
+        )
+        _LOGGER.debug(
+            "Portal enabled check: %s (raw value: %r)",
+            _portal_enabled,
+            self.config_entry.data.get(CONF_PORTAL_ENABLED),
+        )
+        if _portal_enabled:
+            _LOGGER.debug("Starting portal client connection")
             await self._async_connect_portal()
-
+            _LOGGER.debug(
+                "Portal client connection finished, client is %s",
+                "available" if self.portal_client else "None",
+            )
 
     async def async_identify_farm(self, hass: HomeAssistant):
         """Identify if device is part of a farm and initiate farm controller configuration if so."""
@@ -932,89 +945,84 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("Persisted updated portal reAuthToken")
 
     async def _load_and_process_portal_data(self) -> None:
-        """Load charging priorisation data from the portal for each wallbox."""
-        for wallbox in self.wallboxes:
-            wallbox_serial = wallbox["serial"]
-            wallbox_key = wallbox["key"]
-            try:
-                data: dict[str, Any] = await self.hass.async_add_executor_job(
-                    self.portal_client.get_charging_priorisation, wallbox_serial
-                )
-            except HomeAssistantError as ex:
-                _LOGGER.warning(
-                    "Failed to load portal data for wallbox %s: %s",
-                    wallbox_serial,
-                    ex,
-                )
-                self._mydata["portal-connection-status"] = False
-                return
+        """Load charging priorisation data from the portal."""
+        try:
+            data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.portal_client.get_charging_priorisation,
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to load portal data: %s",
+                ex,
+            )
+            self._mydata["portal-connection-status"] = False
+            return
 
-            self._mydata[f"portal-{wallbox_key}-battery-first"] = data.get("isBattery", False)
-            self._mydata[f"portal-{wallbox_key}-sun-mode"] = data.get("inSunMode", False)
-            self._mydata[f"portal-{wallbox_key}-mix-mode"] = data.get("inMixMode", False)
-            self._mydata[f"portal-{wallbox_key}-till-soc"] = data.get("tillSoc", 0)
+        self._mydata["portal-charging-priority"] = (
+            "battery" if data.get("isBattery", False) else "wallbox"
+        )
+        self._mydata["portal-sun-mode"] = data.get("inSunMode", False)
+        self._mydata["portal-mix-mode"] = data.get("inMixMode", False)
+        self._mydata["portal-till-soc"] = data.get("tillSoc", 0)
 
         self._mydata["portal-connection-status"] = True
         await self._async_persist_portal_token()
 
-    async def async_set_portal_battery_first(self, enabled: bool, wallbox_serial: str) -> bool:
-        """Set portal battery-first mode."""
-        _LOGGER.debug("Setting portal battery-first to %s for %s", enabled, wallbox_serial)
+    async def async_set_portal_charging_priority(self, option: str) -> bool:
+        """Set portal charging priority (battery or wallbox)."""
+        is_battery = option == "battery"
+        _LOGGER.debug(
+            "Setting portal charging priority to %s (is_battery=%s)", option, is_battery
+        )
         try:
             self._update_guard_portal = True
             await self.hass.async_add_executor_job(
-                self.portal_client.set_charging_priorisation,
-                wallbox_serial,
-                *(),  # no positional args beyond serial
-                **{"is_battery": enabled},
+                partial(
+                    self.portal_client.set_charging_priorisation, is_battery=is_battery
+                ),
             )
             await self._load_and_process_portal_data()
         finally:
             self._update_guard_portal = False
         return True
 
-    async def async_set_portal_sun_mode(self, enabled: bool, wallbox_serial: str) -> bool:
+    async def async_set_portal_sun_mode(self, enabled: bool) -> bool:
         """Set portal sun mode."""
-        _LOGGER.debug("Setting portal sun mode to %s for %s", enabled, wallbox_serial)
+        _LOGGER.debug("Setting portal sun mode to %s", enabled)
         try:
             self._update_guard_portal = True
             await self.hass.async_add_executor_job(
-                self.portal_client.set_charging_priorisation,
-                wallbox_serial,
-                *(),
-                **{"in_sun_mode": enabled},
+                partial(
+                    self.portal_client.set_charging_priorisation, in_sun_mode=enabled
+                ),
             )
             await self._load_and_process_portal_data()
         finally:
             self._update_guard_portal = False
         return True
 
-    async def async_set_portal_mix_mode(self, enabled: bool, wallbox_serial: str) -> bool:
+    async def async_set_portal_mix_mode(self, enabled: bool) -> bool:
         """Set portal mix mode."""
-        _LOGGER.debug("Setting portal mix mode to %s for %s", enabled, wallbox_serial)
+        _LOGGER.debug("Setting portal mix mode to %s", enabled)
         try:
             self._update_guard_portal = True
             await self.hass.async_add_executor_job(
-                self.portal_client.set_charging_priorisation,
-                wallbox_serial,
-                *(),
-                **{"in_mix_mode": enabled},
+                partial(
+                    self.portal_client.set_charging_priorisation, in_mix_mode=enabled
+                ),
             )
             await self._load_and_process_portal_data()
         finally:
             self._update_guard_portal = False
         return True
 
-    async def async_set_portal_till_soc(self, value: int, wallbox_serial: str) -> bool:
+    async def async_set_portal_till_soc(self, value: int) -> bool:
         """Set portal discharge limit (till_soc)."""
-        _LOGGER.debug("Setting portal till_soc to %s for %s", value, wallbox_serial)
+        _LOGGER.debug("Setting portal till_soc to %s", value)
         try:
             self._update_guard_portal = True
             await self.hass.async_add_executor_job(
-                self.portal_client.set_charging_priorisation,
-                wallbox_serial,
-                *(),
-                **{"till_soc": value},
+                partial(self.portal_client.set_charging_priorisation, till_soc=value),
             )
             await self._load_and_process_portal_data()
         finally:

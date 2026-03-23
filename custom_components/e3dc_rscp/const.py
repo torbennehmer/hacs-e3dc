@@ -96,6 +96,7 @@ MAX_WALLBOXES_POSSIBLE = 8  # 8 is the maximum according to RSCP Specification
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.SENSOR,
+    Platform.SELECT,
     Platform.SWITCH,
     Platform.BUTTON,
     Platform.NUMBER

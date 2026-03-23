@@ -494,14 +494,11 @@
             "wallbox-schuko": {
                 "name": "Schuko"
             },
-            "portal-battery-first": {
-                "name": "Portal battery first"
+            "portal-wb-discharge-sun-mode": {
+                "name": "WB battery discharge sun mode"
             },
-            "portal-sun-mode": {
-                "name": "Portal sun mode"
-            },
-            "portal-mix-mode": {
-                "name": "Portal mix mode"
+            "portal-wb-discharge-mix-mode": {
+                "name": "WB battery discharge mix mode"
             }
         },
         "button": {
@@ -518,6 +515,18 @@
             },
             "portal-discharge-limit": {
                 "name": "Portal discharge limit"
+            },
+            "portal-wb-discharge-limit": {
+                "name": "WB battery discharge limit"
+            }
+        },
+        "select": {
+            "portal-charging-priority": {
+                "name": "Charging priority",
+                "state": {
+                    "battery": "Battery",
+                    "wallbox": "Wallbox"
+                }
             }
         }
     },

@@ -1,7 +1,8 @@
 {
     // Please keep this file in sync with settings in .devcontainer.json
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": false
     },
     "python.formatting.provider": "black",
     "files.associations": {
