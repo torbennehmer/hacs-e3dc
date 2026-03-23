@@ -1,7 +1,7 @@
 {
     "name": "torbennehmer/hacs-e3dc",
     "image": "mcr.microsoft.com/devcontainers/python:3.13",
-    "postCreateCommand": "scripts/setup",
+    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && scripts/setup",
     "forwardPorts": [
         8124
     ],
@@ -58,8 +58,5 @@
             }
         }
     },
-    "remoteUser": "vscode",
-    "features": {
-        "ghcr.io/devcontainers/features/rust:1": {}
-    }
+    "remoteUser": "vscode"
 }

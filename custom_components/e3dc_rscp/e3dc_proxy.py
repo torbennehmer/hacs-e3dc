@@ -9,7 +9,7 @@ from threading import Lock
 from e3dc import E3DC, SendError, NotAvailableError, RSCPKeyError, AuthenticationError
 from e3dc._rscpLib import rscpFindTag, rscpFindTagIndex
 from e3dc._rscpTags import RscpTag, RscpType, PowermeterType
-from e3dc._e3dc_rscp_local import PORT as RSCP_PORT
+from e3dc._e3dc_rscp_local import DEFAULT_PORT as RSCP_PORT
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, CONF_PORT

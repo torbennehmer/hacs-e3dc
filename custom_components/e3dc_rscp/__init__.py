@@ -26,7 +26,8 @@ from homeassistant.const import (
 )
 from .coordinator import E3DCCoordinator
 from .services import async_setup_services
-from e3dc._e3dc_rscp_local import PORT as RSCP_PORT
+from e3dc._e3dc_rscp_local import DEFAULT_PORT as RSCP_PORT
+
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry):
     """Migrate config entry to new format."""
@@ -45,6 +46,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
         hass.config_entries.async_update_entry(config_entry, data=new_data, version=3)
 
     return True
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up E3DC Remote Storage Control Protocol from a config entry."""
