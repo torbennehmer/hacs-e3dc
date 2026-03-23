@@ -136,6 +136,72 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
+    # Portal charging priorisation switches (on main E3DC device)
+    if coordinator.portal_client is not None and len(coordinator.wallboxes) > 0:
+        portal_entities: list[E3DCSwitch] = []
+        for wallbox in coordinator.wallboxes:
+            wallbox_key = wallbox["key"]
+            wallbox_serial = wallbox["serial"]
+
+            portal_battery_first = E3DCSwitchEntityDescription(
+                key=f"portal-{wallbox_key}-battery-first",
+                translation_key="portal-battery-first",
+                name="Portal Battery First",
+                on_icon="mdi:battery-arrow-up",
+                off_icon="mdi:battery-arrow-down-outline",
+                device_class=SwitchDeviceClass.SWITCH,
+                entity_category=EntityCategory.CONFIG,
+                async_turn_on_action=lambda coordinator, serial=wallbox_serial: coordinator.async_set_portal_battery_first(
+                    True, serial
+                ),
+                async_turn_off_action=lambda coordinator, serial=wallbox_serial: coordinator.async_set_portal_battery_first(
+                    False, serial
+                ),
+            )
+            portal_entities.append(
+                E3DCSwitch(coordinator, portal_battery_first, entry.unique_id)
+            )
+
+            portal_sun_mode = E3DCSwitchEntityDescription(
+                key=f"portal-{wallbox_key}-sun-mode",
+                translation_key="portal-sun-mode",
+                name="Portal Sun Mode",
+                on_icon="mdi:weather-sunny",
+                off_icon="mdi:weather-sunny-off",
+                device_class=SwitchDeviceClass.SWITCH,
+                entity_category=EntityCategory.CONFIG,
+                async_turn_on_action=lambda coordinator, serial=wallbox_serial: coordinator.async_set_portal_sun_mode(
+                    True, serial
+                ),
+                async_turn_off_action=lambda coordinator, serial=wallbox_serial: coordinator.async_set_portal_sun_mode(
+                    False, serial
+                ),
+            )
+            portal_entities.append(
+                E3DCSwitch(coordinator, portal_sun_mode, entry.unique_id)
+            )
+
+            portal_mix_mode = E3DCSwitchEntityDescription(
+                key=f"portal-{wallbox_key}-mix-mode",
+                translation_key="portal-mix-mode",
+                name="Portal Mix Mode",
+                on_icon="mdi:swap-horizontal",
+                off_icon="mdi:swap-horizontal-variant",
+                device_class=SwitchDeviceClass.SWITCH,
+                entity_category=EntityCategory.CONFIG,
+                async_turn_on_action=lambda coordinator, serial=wallbox_serial: coordinator.async_set_portal_mix_mode(
+                    True, serial
+                ),
+                async_turn_off_action=lambda coordinator, serial=wallbox_serial: coordinator.async_set_portal_mix_mode(
+                    False, serial
+                ),
+            )
+            portal_entities.append(
+                E3DCSwitch(coordinator, portal_mix_mode, entry.unique_id)
+            )
+
+        async_add_entities(portal_entities)
+
 
 class E3DCSwitch(CoordinatorEntity, SwitchEntity):
     """Custom E3DC Switch Implementation."""

@@ -18,7 +18,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
-from .const import CONF_FARMCONTROLLER, DOMAIN, PLATFORMS
+from .const import CONF_FARMCONTROLLER, CONF_PORTAL_ENABLED, CONF_PORTAL_RE_AUTH_TOKEN, DEFAULT_PORTAL_ENABLED, DOMAIN, PLATFORMS
 
 from homeassistant.const import (
     CONF_API_VERSION,
@@ -38,8 +38,13 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
         new_data[CONF_FARMCONTROLLER] = False
         hass.config_entries.async_update_entry(config_entry, data=new_data, version=2)
 
-        return True
-    return False
+    if config_entry.version < 3:
+        new_data = dict(config_entry.data)
+        new_data[CONF_PORTAL_ENABLED] = DEFAULT_PORTAL_ENABLED
+        new_data[CONF_PORTAL_RE_AUTH_TOKEN] = None
+        hass.config_entries.async_update_entry(config_entry, data=new_data, version=3)
+
+    return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up E3DC Remote Storage Control Protocol from a config entry."""

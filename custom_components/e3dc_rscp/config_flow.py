@@ -38,14 +38,19 @@ from homeassistant.helpers.service_info import ssdp as SSDP
 from .const import (
     CONF_CREATE_BATTERY_DEVICES,
     CONF_FARMCONTROLLER,
+    CONF_PORTAL_ENABLED,
+    CONF_PORTAL_RE_AUTH_TOKEN,
     DEFAULT_CREATE_BATTERY_DEVICES,
+    DEFAULT_PORTAL_ENABLED,
     CONF_RSCPKEY,
     CONF_VERSION,
     DOMAIN,
     ERROR_AUTH_INVALID,
     ERROR_CANNOT_CONNECT,
+    ERROR_PORTAL_AUTH_FAILED,
 )
 from .e3dc_proxy import E3DCProxy
+from .e3dc_portal_client import E3DCPortalClient, PortalAuthenticationError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,6 +62,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_RSCPKEY): TextSelector(
             TextSelectorConfig(type=TextSelectorType.PASSWORD)
         ),
+        vol.Optional(CONF_PORTAL_ENABLED, default=DEFAULT_PORTAL_ENABLED): cv.boolean,
     }
 )
 
@@ -74,6 +80,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self._password: str | None = None
         self._rscpkey: str | None = None
         self._port: int | None = None
+        self._portal_enabled: bool = False
         self._proxy: E3DCProxy = None
         self._discovered_info: dict[str, Any] | None = None
 
@@ -103,6 +110,20 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             return ERROR_CANNOT_CONNECT
         return None
 
+    async def _validate_portal_login(self) -> str | None:
+        """Validate portal login credentials. Returns error key or None."""
+        try:
+            portal_client = E3DCPortalClient(
+                username=self._username,
+                password=self._password,
+                serial_number="",
+            )
+            await self.hass.async_add_executor_job(portal_client.login)
+            return None
+        except (PortalAuthenticationError, ConfigEntryAuthFailed, HomeAssistantError):
+            _LOGGER.warning("Portal authentication failed during setup")
+            return ERROR_PORTAL_AUTH_FAILED
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -117,9 +138,17 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self._password = user_input[CONF_PASSWORD]
         self._rscpkey = user_input[CONF_RSCPKEY]
         self._port = user_input.get(CONF_PORT, None)
+        self._portal_enabled = user_input.get(CONF_PORTAL_ENABLED, DEFAULT_PORTAL_ENABLED)
 
         if error := await self.validate_input():
             return self._show_setup_form_init({"base": error})
+
+        # Validate portal login if enabled
+        if self._portal_enabled:
+            if portal_error := await self._validate_portal_login():
+                # Portal auth failed — disable portal and warn
+                self._portal_enabled = False
+                return self._show_setup_form_init({"base": portal_error})
 
         await self.async_set_unique_id(
             f"{self._proxy.e3dc.serialNumberPrefix}{self._proxy.e3dc.serialNumber}"
@@ -128,6 +157,8 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         final_data: dict[str, Any] = user_input
         final_data[CONF_FARMCONTROLLER] = len(self._proxy.e3dc.serialNumber) >= 6 and self._proxy.e3dc.serialNumber[-6] == "1"
         final_data[CONF_API_VERSION] = CONF_VERSION
+        final_data[CONF_PORTAL_ENABLED] = self._portal_enabled
+        final_data[CONF_PORTAL_RE_AUTH_TOKEN] = None
 
         return self.async_create_entry(
             title=f"E3DC {'Farm Controller ' if final_data[CONF_FARMCONTROLLER] else ''}{self._proxy.e3dc.model}",
@@ -241,6 +272,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_RSCPKEY): TextSelector(
                         TextSelectorConfig(type=TextSelectorType.PASSWORD)
                     ),
+                    vol.Optional(CONF_PORTAL_ENABLED, default=DEFAULT_PORTAL_ENABLED): cv.boolean,
                 }),
                 description_placeholders={
                     "name": friendly_name,
@@ -252,6 +284,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self._username = user_input[CONF_USERNAME]
         self._password = user_input[CONF_PASSWORD]
         self._rscpkey = user_input[CONF_RSCPKEY]
+        self._portal_enabled = user_input.get(CONF_PORTAL_ENABLED, DEFAULT_PORTAL_ENABLED)
 
         if error := await self.validate_input():
             return self.async_show_form(
@@ -262,6 +295,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_RSCPKEY): TextSelector(
                         TextSelectorConfig(type=TextSelectorType.PASSWORD)
                     ),
+                    vol.Optional(CONF_PORTAL_ENABLED, default=DEFAULT_PORTAL_ENABLED): cv.boolean,
                 }),
                 errors={"base": error},
                 description_placeholders = {
@@ -277,6 +311,8 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             CONF_PASSWORD: self._password,
             CONF_RSCPKEY: self._rscpkey,
             CONF_API_VERSION: CONF_VERSION,
+            CONF_PORTAL_ENABLED: self._portal_enabled,
+            CONF_PORTAL_RE_AUTH_TOKEN: None,
         }
 
         return await self.async_step_check_is_farm(final_data)
@@ -348,6 +384,16 @@ class E3DCOptionsFlowHandler(config_entries.OptionsFlowWithReload):
     ) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
+            # Portal toggle is stored in config entry data (not options)
+            portal_enabled = user_input.pop(CONF_PORTAL_ENABLED, DEFAULT_PORTAL_ENABLED)
+            current_data = dict(self.config_entry.data)
+            if portal_enabled != current_data.get(CONF_PORTAL_ENABLED, DEFAULT_PORTAL_ENABLED):
+                current_data[CONF_PORTAL_ENABLED] = portal_enabled
+                if not portal_enabled:
+                    current_data[CONF_PORTAL_RE_AUTH_TOKEN] = None
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry, data=current_data
+                )
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
@@ -359,6 +405,13 @@ class E3DCOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                         default=self.config_entry.options.get(
                             CONF_CREATE_BATTERY_DEVICES,
                             DEFAULT_CREATE_BATTERY_DEVICES,
+                        ),
+                    ): cv.boolean,
+                    vol.Required(
+                        CONF_PORTAL_ENABLED,
+                        default=self.config_entry.data.get(
+                            CONF_PORTAL_ENABLED,
+                            DEFAULT_PORTAL_ENABLED,
                         ),
                     ): cv.boolean,
                 }

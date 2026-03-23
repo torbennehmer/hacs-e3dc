@@ -9,10 +9,11 @@ from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
     NumberEntityDescription,
+    NumberMode,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, PERCENTAGE
 
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -71,6 +72,38 @@ async def async_setup_entry(
         )
 
     async_add_entities(entities)
+
+    # Portal discharge limit (till_soc) - on main E3DC device
+    if coordinator.portal_client is not None and len(coordinator.wallboxes) > 0:
+        portal_entities: list[E3DCNumber] = []
+        for wallbox in coordinator.wallboxes:
+            wallbox_key = wallbox["key"]
+            wallbox_serial = wallbox["serial"]
+
+            portal_till_soc = E3DCNumberEntityDescription(
+                key=f"portal-{wallbox_key}-till-soc",
+                translation_key="portal-discharge-limit",
+                name="Portal Discharge Limit",
+                icon="mdi:battery-lock",
+                native_min_value=0,
+                native_max_value=100,
+                native_step=1,
+                mode=NumberMode.SLIDER,
+                entity_category=EntityCategory.CONFIG,
+                native_unit_of_measurement=PERCENTAGE,
+                async_set_native_value_action=lambda coordinator, value, serial=wallbox_serial: coordinator.async_set_portal_till_soc(
+                    int(value), serial
+                ),
+            )
+            portal_entities.append(
+                E3DCNumber(
+                    coordinator,
+                    portal_till_soc,
+                    entry.unique_id,
+                )
+            )
+
+        async_add_entities(portal_entities)
 
 
 class E3DCNumber(CoordinatorEntity, NumberEntity):

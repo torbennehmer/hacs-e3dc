@@ -15,7 +15,8 @@
           "host": "[%key:common::config_flow::data::host%]",
           "username": "[%key:common::config_flow::data::username%]",
           "password": "[%key:common::config_flow::data::password%]",
-          "rscpkey": "RSCP encryption key"
+          "rscpkey": "RSCP encryption key",
+          "portal_enabled": "Enable E3DC Portal features"
         }
       },
       "discovery_confirm": {
@@ -30,7 +31,8 @@
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "portal_auth_failed": "Portal authentication failed. Portal features will be disabled. You can enable them later in integration options."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
@@ -41,7 +43,8 @@
     "step": {
       "init": {
         "data": {
-          "create_battery_devices": "Create battery devices"
+          "create_battery_devices": "Create battery devices",
+          "portal_enabled": "Enable E3DC Portal features"
         },
         "title": "E3DC RSCP options"
       }
@@ -60,6 +63,9 @@
       },
       "sgready-active": {
         "name": "SG Ready active"
+      },
+      "portal-connection-status": {
+        "name": "Portal connection"
       },
       "wallbox-battery-to-car": {
         "name": "Battery to car"
@@ -415,6 +421,15 @@
       },
       "wallbox-schuko": {
         "name": "Schuko"
+      },
+      "portal-battery-first": {
+        "name": "Portal battery first"
+      },
+      "portal-sun-mode": {
+        "name": "Portal sun mode"
+      },
+      "portal-mix-mode": {
+        "name": "Portal mix mode"
       }
     },
     "button": {
@@ -428,6 +443,9 @@
     "number": {
       "wallbox-max-charge-current": {
         "name": "Max charge current"
+      },
+      "portal-discharge-limit": {
+        "name": "Portal discharge limit"
       }
     }
   },

@@ -30,14 +30,19 @@ from custom_components.e3dc_rscp.utils import initialize_farm_controller_flow_if
 from .const import (
     CONF_RSCPKEY,
     CONF_CREATE_BATTERY_DEVICES,
+    CONF_PORTAL_ENABLED,
+    CONF_PORTAL_RE_AUTH_TOKEN,
     DEFAULT_CREATE_BATTERY_DEVICES,
+    DEFAULT_PORTAL_ENABLED,
     DOMAIN,
     MAX_WALLBOXES_POSSIBLE,
+    PORTAL_POLL_INTERVAL,
     PowerMode,
     SetPowerMode,
 )
 
 from .e3dc_proxy import E3DCProxy
+from .e3dc_portal_client import E3DCPortalClient
 from .battery_manager import E3DCBatteryManager, E3DCBattery, E3DCBatteryPack
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,6 +54,7 @@ class E3DCWallbox(TypedDict):
 
     index: int
     key: str
+    serial: str
     deviceInfo: DeviceInfo
     lowerCurrentLimit: int
     upperCurrentLimit: int
@@ -71,7 +77,12 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._sgready_available: bool = False
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
+        self._next_portal_update: float = 0
         self._isFarmController: bool = config_entry.data.get("farmcontroller", False)
+
+        # Portal client (optional)
+        self.portal_client: E3DCPortalClient | None = None
+        self._update_guard_portal: bool = False
 
         # Initialize battery manager
         self.battery_manager = E3DCBatteryManager(
@@ -131,6 +142,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         await self._load_timezone_settings()
 
+        # Initialize portal client if enabled
+        if self.config_entry.data.get(CONF_PORTAL_ENABLED, DEFAULT_PORTAL_ENABLED):
+            await self._async_connect_portal()
+
 
     async def async_identify_farm(self, hass: HomeAssistant):
         """Identify if device is part of a farm and initiate farm controller configuration if so."""
@@ -189,6 +204,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wallbox: E3DCWallbox = {
                     "index": wallbox_index,
                     "key": unique_id,
+                    "serial": request_data["wallboxSerial"],
                     "deviceInfo": deviceInfo,
                     "lowerCurrentLimit": request_data["lowerCurrentLimit"],
                     "upperCurrentLimit": request_data["upperCurrentLimit"],
@@ -358,6 +374,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if len(self.wallboxes) > 0:
             _LOGGER.debug("Polling wallbox")
             await self._load_and_process_wallbox_data()
+
+        # Portal polling on separate slow interval
+        if self.portal_client is not None and len(self.wallboxes) > 0:
+            if self._update_guard_portal is False and self._next_portal_update < time():
+                _LOGGER.debug("Polling portal data")
+                await self._load_and_process_portal_data()
+                self._next_portal_update = time() + PORTAL_POLL_INTERVAL
+            else:
+                _LOGGER.debug("Skipping portal poll")
 
         if self.create_battery_devices:
             _LOGGER.debug("Polling battery data")
@@ -860,6 +885,141 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     self._stop_set_power_mode = async_track_time_interval(
                         self.hass, self._async_set_power, timedelta(seconds=10), cancel_on_shutdown=True
                     )
+
+    # --- Portal integration methods ---
+
+    async def _async_connect_portal(self) -> None:
+        """Initialize portal client and attempt login."""
+        username = self.config_entry.data.get(CONF_USERNAME)
+        password = self.config_entry.data.get(CONF_PASSWORD)
+        serial = self.proxy.e3dc.serialNumber
+
+        self.portal_client = E3DCPortalClient(
+            username=username,
+            password=password,
+            serial_number=serial,
+        )
+
+        # Restore persisted reAuthToken if available
+        re_auth_token = self.config_entry.data.get(CONF_PORTAL_RE_AUTH_TOKEN)
+        if re_auth_token:
+            self.portal_client.set_token_state({"re_auth_token": re_auth_token})
+            _LOGGER.debug("Restored portal reAuthToken from config entry")
+
+        try:
+            await self.hass.async_add_executor_job(self.portal_client.login)
+            await self._async_persist_portal_token()
+            _LOGGER.info("Portal client connected successfully")
+            self._mydata["portal-connection-status"] = True
+        except Exception as ex:
+            _LOGGER.warning("Portal login failed: %s", ex)
+            self._mydata["portal-connection-status"] = False
+            self.portal_client = None
+
+    async def _async_persist_portal_token(self) -> None:
+        """Persist the portal reAuthToken in config entry data."""
+        if self.portal_client is None:
+            return
+        token_state = self.portal_client.get_token_state()
+        current_stored = self.config_entry.data.get(CONF_PORTAL_RE_AUTH_TOKEN)
+        new_token = token_state.get("re_auth_token")
+        if new_token != current_stored:
+            new_data = dict(self.config_entry.data)
+            new_data[CONF_PORTAL_RE_AUTH_TOKEN] = new_token
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data=new_data
+            )
+            _LOGGER.debug("Persisted updated portal reAuthToken")
+
+    async def _load_and_process_portal_data(self) -> None:
+        """Load charging priorisation data from the portal for each wallbox."""
+        for wallbox in self.wallboxes:
+            wallbox_serial = wallbox["serial"]
+            wallbox_key = wallbox["key"]
+            try:
+                data: dict[str, Any] = await self.hass.async_add_executor_job(
+                    self.portal_client.get_charging_priorisation, wallbox_serial
+                )
+            except HomeAssistantError as ex:
+                _LOGGER.warning(
+                    "Failed to load portal data for wallbox %s: %s",
+                    wallbox_serial,
+                    ex,
+                )
+                self._mydata["portal-connection-status"] = False
+                return
+
+            self._mydata[f"portal-{wallbox_key}-battery-first"] = data.get("isBattery", False)
+            self._mydata[f"portal-{wallbox_key}-sun-mode"] = data.get("inSunMode", False)
+            self._mydata[f"portal-{wallbox_key}-mix-mode"] = data.get("inMixMode", False)
+            self._mydata[f"portal-{wallbox_key}-till-soc"] = data.get("tillSoc", 0)
+
+        self._mydata["portal-connection-status"] = True
+        await self._async_persist_portal_token()
+
+    async def async_set_portal_battery_first(self, enabled: bool, wallbox_serial: str) -> bool:
+        """Set portal battery-first mode."""
+        _LOGGER.debug("Setting portal battery-first to %s for %s", enabled, wallbox_serial)
+        try:
+            self._update_guard_portal = True
+            await self.hass.async_add_executor_job(
+                self.portal_client.set_charging_priorisation,
+                wallbox_serial,
+                *(),  # no positional args beyond serial
+                **{"is_battery": enabled},
+            )
+            await self._load_and_process_portal_data()
+        finally:
+            self._update_guard_portal = False
+        return True
+
+    async def async_set_portal_sun_mode(self, enabled: bool, wallbox_serial: str) -> bool:
+        """Set portal sun mode."""
+        _LOGGER.debug("Setting portal sun mode to %s for %s", enabled, wallbox_serial)
+        try:
+            self._update_guard_portal = True
+            await self.hass.async_add_executor_job(
+                self.portal_client.set_charging_priorisation,
+                wallbox_serial,
+                *(),
+                **{"in_sun_mode": enabled},
+            )
+            await self._load_and_process_portal_data()
+        finally:
+            self._update_guard_portal = False
+        return True
+
+    async def async_set_portal_mix_mode(self, enabled: bool, wallbox_serial: str) -> bool:
+        """Set portal mix mode."""
+        _LOGGER.debug("Setting portal mix mode to %s for %s", enabled, wallbox_serial)
+        try:
+            self._update_guard_portal = True
+            await self.hass.async_add_executor_job(
+                self.portal_client.set_charging_priorisation,
+                wallbox_serial,
+                *(),
+                **{"in_mix_mode": enabled},
+            )
+            await self._load_and_process_portal_data()
+        finally:
+            self._update_guard_portal = False
+        return True
+
+    async def async_set_portal_till_soc(self, value: int, wallbox_serial: str) -> bool:
+        """Set portal discharge limit (till_soc)."""
+        _LOGGER.debug("Setting portal till_soc to %s for %s", value, wallbox_serial)
+        try:
+            self._update_guard_portal = True
+            await self.hass.async_add_executor_job(
+                self.portal_client.set_charging_priorisation,
+                wallbox_serial,
+                *(),
+                **{"till_soc": value},
+            )
+            await self._load_and_process_portal_data()
+        finally:
+            self._update_guard_portal = False
+        return True
 
     def is_farm_controller(self) -> bool:
         """Return whether the device is a farm controller."""

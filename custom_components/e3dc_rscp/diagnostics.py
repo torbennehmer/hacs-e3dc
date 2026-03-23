@@ -20,7 +20,7 @@ from .e3dc_proxy import E3DCProxy
 
 _LOGGER = logging.getLogger(__name__)
 
-_redact_regex = re.compile("(system-mac|macAddress|serial)", re.IGNORECASE)
+_redact_regex = re.compile("(system-mac|macAddress|serial|reAuthToken|re_auth_token|access_token|token)", re.IGNORECASE)
 
 
 async def async_get_config_entry_diagnostics(
@@ -76,6 +76,15 @@ class _DiagnosticsDumper:
             "get_power_settings": self._query_data_for_dump(
                 self.e3dc.get_power_settings
             ),
+            "portal_status": {
+                "portal_enabled": self.entry.data.get("portal_enabled", False),
+                "portal_connected": self.coordinator.portal_client is not None,
+                "portal_authenticated": (
+                    self.coordinator.portal_client.is_authenticated
+                    if self.coordinator.portal_client is not None
+                    else False
+                ),
+            },
             "EMS_REQ_GET_MANUAL_CHARGE": self._query_data_for_dump(
                 lambda: self.e3dc.sendRequestTag(
                     RscpTag.EMS_REQ_GET_MANUAL_CHARGE, keepAlive=True

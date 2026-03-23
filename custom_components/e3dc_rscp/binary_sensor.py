@@ -214,6 +214,20 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
+    # Portal connection status binary sensor (on main E3DC device)
+    if coordinator.portal_client is not None:
+        portal_status = E3DCBinarySensorEntityDescription(
+            key="portal-connection-status",
+            translation_key="portal-connection-status",
+            device_class=BinarySensorDeviceClass.CONNECTIVITY,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            on_icon="mdi:cloud-check",
+            off_icon="mdi:cloud-off-outline",
+        )
+        async_add_entities(
+            [E3DCBinarySensor(coordinator, portal_status, entry.unique_id)]
+        )
+
 
 class E3DCBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Custom E3DC Binary Sensor implementation."""
