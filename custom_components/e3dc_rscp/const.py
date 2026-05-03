@@ -5,12 +5,18 @@ from homeassistant.const import Platform
 
 CONF_RSCPKEY = "rscpkey"
 CONF_FARMCONTROLLER = "farmcontroller"
-CONF_VERSION = 2
+CONF_VERSION = 3
 DOMAIN = "e3dc_rscp"
 ERROR_AUTH_INVALID = "invalid_auth"
 ERROR_CANNOT_CONNECT = "cannot_connect"
+ERROR_PORTAL_AUTH_FAILED = "portal_auth_failed"
 CONF_CREATE_BATTERY_DEVICES = "create_battery_devices"
 DEFAULT_CREATE_BATTERY_DEVICES = False
+CONF_PORTAL_ENABLED = "portal_enabled"
+DEFAULT_PORTAL_ENABLED = False
+CONF_PORTAL_RE_AUTH_TOKEN = "portal_re_auth_token"
+
+PORTAL_POLL_INTERVAL = 120  # seconds between portal data polls
 
 # Battery module sensors (all are raw sensors with data_key)
 BATTERY_MODULE_RAW_SENSORS: tuple[tuple[str, str], ...] = (
@@ -95,6 +101,7 @@ MAX_WALLBOXES_POSSIBLE = 8  # 8 is the maximum according to RSCP Specification
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.SENSOR,
+    Platform.SELECT,
     Platform.SWITCH,
     Platform.BUTTON,
     Platform.NUMBER

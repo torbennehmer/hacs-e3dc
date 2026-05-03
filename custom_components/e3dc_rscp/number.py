@@ -9,10 +9,11 @@ from homeassistant.components.number import (
     NumberDeviceClass,
     NumberEntity,
     NumberEntityDescription,
+    NumberMode,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, PERCENTAGE
 
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -31,6 +32,7 @@ class E3DCNumberEntityDescription(NumberEntityDescription):
     async_set_native_value_action: (
         Callable[[E3DCCoordinator, float, int], Coroutine[Any, Any, bool]] | None
     ) = None
+    available_fn: Callable[[E3DCCoordinator], bool] | None = None
 
 
 async def async_setup_entry(
@@ -72,6 +74,32 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
+    # Portal discharge limit (till_soc) - wallbox-specific
+    if coordinator.portal_client is not None and len(coordinator.wallboxes) > 0:
+        portal_till_soc = E3DCNumberEntityDescription(
+            key="portal-till-soc",
+            translation_key="portal-wb-discharge-limit",
+            icon="mdi:battery-lock",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            mode=NumberMode.SLIDER,
+            entity_category=EntityCategory.CONFIG,
+            native_unit_of_measurement=PERCENTAGE,
+            async_set_native_value_action=lambda coordinator, value: coordinator.async_set_portal_till_soc(
+                int(value),
+            ),
+            available_fn=lambda coordinator: coordinator.data.get(
+                "portal-sun-mode", False
+            )
+            is True,
+        )
+        async_add_entities(
+            [
+                E3DCNumber(coordinator, portal_till_soc, entry.unique_id),
+            ]
+        )
+
 
 class E3DCNumber(CoordinatorEntity, NumberEntity):
     """Custom E3DC Number Implementation."""
@@ -95,6 +123,13 @@ class E3DCNumber(CoordinatorEntity, NumberEntity):
             self._deviceInfo = device_info
         else:
             self._deviceInfo = self.coordinator.device_info()
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        if self.entity_description.available_fn is not None:
+            return self.entity_description.available_fn(self.coordinator)
+        return super().available
 
     @property
     def native_value(self):

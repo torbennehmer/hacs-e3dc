@@ -35,6 +35,7 @@ class E3DCSwitchEntityDescription(SwitchEntityDescription):
     async_turn_off_action: (
         Callable[[E3DCCoordinator], Coroutine[Any, Any, bool]] | None
     ) = None
+    available_fn: Callable[[E3DCCoordinator], bool] | None = None
 
 
 SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
@@ -136,6 +137,47 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
+    # Portal charging priorisation switches (wallbox-specific)
+    if coordinator.portal_client is not None and len(coordinator.wallboxes) > 0:
+        portal_sun_mode = E3DCSwitchEntityDescription(
+            key="portal-sun-mode",
+            translation_key="portal-wb-discharge-sun-mode",
+            on_icon="mdi:battery-arrow-down",
+            off_icon="mdi:battery-off-outline",
+            device_class=SwitchDeviceClass.SWITCH,
+            entity_category=EntityCategory.CONFIG,
+            async_turn_on_action=lambda coordinator: coordinator.async_set_portal_sun_mode(
+                True,
+            ),
+            async_turn_off_action=lambda coordinator: coordinator.async_set_portal_sun_mode(
+                False,
+            ),
+            available_fn=lambda coordinator: coordinator.data.get(
+                "portal-charging-priority"
+            )
+            == "wallbox",
+        )
+        portal_mix_mode = E3DCSwitchEntityDescription(
+            key="portal-mix-mode",
+            translation_key="portal-wb-discharge-mix-mode",
+            on_icon="mdi:battery-arrow-down",
+            off_icon="mdi:battery-off-outline",
+            device_class=SwitchDeviceClass.SWITCH,
+            entity_category=EntityCategory.CONFIG,
+            async_turn_on_action=lambda coordinator: coordinator.async_set_portal_mix_mode(
+                True,
+            ),
+            async_turn_off_action=lambda coordinator: coordinator.async_set_portal_mix_mode(
+                False,
+            ),
+        )
+        async_add_entities(
+            [
+                E3DCSwitch(coordinator, portal_sun_mode, entry.unique_id),
+                E3DCSwitch(coordinator, portal_mix_mode, entry.unique_id),
+            ]
+        )
+
 
 class E3DCSwitch(CoordinatorEntity, SwitchEntity):
     """Custom E3DC Switch Implementation."""
@@ -163,6 +205,13 @@ class E3DCSwitch(CoordinatorEntity, SwitchEntity):
             self._deviceInfo = device_info
         else:
             self._deviceInfo = self.coordinator.device_info()
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        if self.entity_description.available_fn is not None:
+            return self.entity_description.available_fn(self.coordinator)
+        return super().available
 
     @property
     def icon(self) -> str | None:

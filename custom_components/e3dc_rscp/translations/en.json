@@ -6,7 +6,8 @@
         },
         "error": {
             "cannot_connect": "Failed to connect",
-            "invalid_auth": "Invalid authentication"
+            "invalid_auth": "Invalid authentication",
+            "portal_auth_failed": "Portal authentication failed. Portal features will be disabled. You can enable them later in integration options."
         },
         "step": {
             "reauth_confirm": {
@@ -23,7 +24,8 @@
                     "host": "Host",
                     "password": "Password",
                     "rscpkey": "RSCP encryption key",
-                    "username": "Username"
+                    "username": "Username",
+                    "portal_enabled": "Enable E3DC Portal features"
                 }
             },
             "discovery_confirm": {
@@ -41,7 +43,8 @@
         "step": {
             "init": {
                 "data": {
-                    "create_battery_devices": "Create battery devices"
+                    "create_battery_devices": "Create battery devices",
+                    "portal_enabled": "Enable E3DC Portal features"
                 },
                 "title": "E3DC RSCP options"
             }
@@ -60,6 +63,9 @@
             },
             "sgready-active": {
                 "name": "SG Ready active"
+            },
+            "portal-connection-status": {
+                "name": "Portal connection"
             },
             "wallbox-battery-to-car": {
                 "name": "Battery to car"
@@ -490,6 +496,12 @@
             },
             "wallbox-schuko": {
                 "name": "Schuko"
+            },
+            "portal-wb-discharge-sun-mode": {
+                "name": "WB battery discharge sun mode"
+            },
+            "portal-wb-discharge-mix-mode": {
+                "name": "WB battery discharge mix mode"
             }
         },
         "button": {
@@ -503,6 +515,21 @@
         "number": {
             "wallbox-max-charge-current": {
                 "name": "Max charge current"
+            },
+            "portal-discharge-limit": {
+                "name": "Portal discharge limit"
+            },
+            "portal-wb-discharge-limit": {
+                "name": "WB battery discharge limit"
+            }
+        },
+        "select": {
+            "portal-charging-priority": {
+                "name": "Charging priority",
+                "state": {
+                    "battery": "Battery",
+                    "wallbox": "Wallbox"
+                }
             }
         }
     },
