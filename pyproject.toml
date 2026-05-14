@@ -49,7 +49,7 @@ max-complexity = 25
 
 [tool.pyright]
 include = ["custom_components/e3dc_rscp"]
-exclude = ["config", ".venv", ".ruff_cache", ".pytest_cache", "build", "dist"]
+exclude = ["config", ".venv", ".ruff_cache", ".pytest_cache", "build", "dist", "**/node_modules", "**/__pycache__", "**/.*"]
 typeCheckingMode = "basic"
 pythonVersion = "3.11"
 reportMissingTypeStubs = false

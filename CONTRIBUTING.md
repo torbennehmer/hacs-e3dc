@@ -109,8 +109,4 @@ so all contributors get the same defaults.
 ## License
 
 By contributing, you agree that your contributions will be licensed under its
-[GPL v3 license](license).
-
-***
-
-[license]: https://github.com/torbennehmer/hacs-e3dc/blob/main/LICENSE
+[GPL v3 license](https://github.com/torbennehmer/hacs-e3dc/blob/main/LICENSE).
