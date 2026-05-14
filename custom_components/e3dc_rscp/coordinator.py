@@ -85,7 +85,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         self._stop_set_power_mode = None
-        hass.bus.async_listen_once(EventType("homeassistant_stop"), self._shutdown_power_mode)
+        hass.bus.async_listen_once(
+            EventType("homeassistant_stop"), self._shutdown_power_mode
+        )
 
         self._mydata["set-power-mode"] = SetPowerMode.NORMAL.value
         self._mydata["set-power-value"] = None
@@ -131,7 +133,6 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         await self._load_timezone_settings()
 
-
     async def async_identify_farm(self, hass: HomeAssistant):
         """Identify if device is part of a farm and initiate farm controller configuration if so."""
 
@@ -140,13 +141,13 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.proxy,
             self.config_entry.data.get(CONF_USERNAME, None),
             self.config_entry.data.get(CONF_PASSWORD, None),
-            self.config_entry.data.get(CONF_RSCPKEY, None)
+            self.config_entry.data.get(CONF_RSCPKEY, None),
         )
 
     async def async_identify_wallboxes(self, hass: HomeAssistant):
         """Identify availability of Wallboxes if get_wallbox_identification_data() returns meaningful data."""
-        if (self._isFarmController):
-            """ Farm Controller does not support wallboxes. They are handled by child. """
+        if self._isFarmController:
+            """Farm Controller does not support wallboxes. They are handled by child."""
             return
 
         for wallbox_index in range(0, MAX_WALLBOXES_POSSIBLE - 1):
@@ -404,9 +405,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             poll_data: dict[str, Any] = await self.hass.async_add_executor_job(
                 self.proxy.poll
             )
-            power_mode_job = self.hass.async_add_executor_job(
-                self.proxy.get_power_mode
-            )
+            power_mode_job = self.hass.async_add_executor_job(self.proxy.get_power_mode)
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to poll, not updating data: %s", ex)
             return
@@ -428,12 +427,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["wallbox-consumption"] = poll_data["consumption"]["wallbox"]
 
         power_mode: str = str(await power_mode_job)
-        if (PowerMode.has_value(power_mode)):
+        if PowerMode.has_value(power_mode):
             self._mydata["power-mode"] = power_mode
         else:
-            _LOGGER.debug(
-                "Unknown power mode %s", power_mode
-            )
+            _LOGGER.debug("Unknown power mode %s", power_mode)
             self._mydata["power-mode"] = f"Power mode {power_mode}"
 
     async def _load_and_process_db_data_today(self) -> None:
@@ -589,10 +586,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Return default device info structure."""
         return DeviceInfo(
             manufacturer="E3DC",
-            model=self.proxy.e3dc.model + (self._isFarmController and " Farm Controller" or ""),
-            name=self.proxy.e3dc.model + (self._isFarmController and " Farm Controller" or ""),
+            model=self.proxy.e3dc.model
+            + (self._isFarmController and " Farm Controller" or ""),
+            name=self.proxy.e3dc.model
+            + (self._isFarmController and " Farm Controller" or ""),
             serial_number=self.proxy.e3dc.serialNumber,
-            connections={(dr.CONNECTION_NETWORK_MAC, self.proxy.e3dc.macAddress)} if not self._isFarmController else None,
+            connections=(
+                {(dr.CONNECTION_NETWORK_MAC, self.proxy.e3dc.macAddress)}
+                if not self._isFarmController
+                else None
+            ),
             identifiers={(DOMAIN, self.uid)},
             sw_version=self._sw_version,
             configuration_url="https://my.e3dc.com/",
@@ -706,7 +709,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Call RSCP service.
         # no update guard necessary, as we're called from a service, not an entity
         await self.hass.async_add_executor_job(
-            self.proxy.set_power_limits, False, None, None, None
+            self.proxy.set_power_limits, False, None, None
         )
 
         _LOGGER.debug("Successfully cleared the power limits")
@@ -788,7 +791,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         await self.hass.async_add_executor_job(
-            self.proxy.set_power_limits, True, max_charge, max_discharge, None
+            self.proxy.set_power_limits, True, max_charge, max_discharge
         )
 
         _LOGGER.debug("Successfully set the power limits")
@@ -832,7 +835,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Set the power mode and value based on the current state."""
         _LOGGER.debug(
             "Setting power mode: %s at %s W",
-            SetPowerMode.get_enum(self._mydata["set-power-mode"]).name, self._mydata["set-power-value"]
+            SetPowerMode.get_enum(self._mydata["set-power-mode"]).name,
+            self._mydata["set-power-value"],
         )
 
         try:
@@ -842,12 +846,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self._mydata["set-power-value"],
             )
             power_mode_str: str = str(self.proxy.get_power_mode())
-            if (PowerMode.has_value(str(power_mode_str))):
+            if PowerMode.has_value(str(power_mode_str)):
                 self._mydata["power-mode"] = power_mode_str
             else:
-                _LOGGER.debug(
-                    "Unknown power mode %s", power_mode_str
-                )
+                _LOGGER.debug("Unknown power mode %s", power_mode_str)
                 self._mydata["power-mode"] = f"Power mode {power_mode_str}"
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed set power mode: %s", ex)
@@ -865,7 +867,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 await self._async_set_power()
                 if self._stop_set_power_mode is None:
                     self._stop_set_power_mode = async_track_time_interval(
-                        self.hass, self._async_set_power, timedelta(seconds=10), cancel_on_shutdown=True
+                        self.hass,
+                        self._async_set_power,
+                        timedelta(seconds=10),
+                        cancel_on_shutdown=True,
                     )
 
     def is_farm_controller(self) -> bool:
