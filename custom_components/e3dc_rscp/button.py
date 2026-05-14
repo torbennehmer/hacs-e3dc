@@ -54,9 +54,8 @@ async def async_setup_entry(
             key=f"{wallbox_key}-toggle-wallbox-phases",
             translation_key="wallbox-toggle-wallbox-phases",
             icon="mdi:sine-wave",
-            async_press_action=lambda coordinator, index=wallbox[
-                "index"
-            ]: coordinator.async_toggle_wallbox_phases(index),
+            async_press_action=lambda coordinator,
+            index=wallbox["index"]: coordinator.async_toggle_wallbox_phases(index),
         )
         entities.append(
             E3DCButton(
@@ -71,9 +70,8 @@ async def async_setup_entry(
             key=f"{wallbox_key}-toggle-wallbox-charging",
             translation_key="wallbox-toggle-wallbox-charging",
             icon="mdi:car-electric",
-            async_press_action=lambda coordinator, index=wallbox[
-                "index"
-            ]: coordinator.async_toggle_wallbox_charging(index),
+            async_press_action=lambda coordinator,
+            index=wallbox["index"]: coordinator.async_toggle_wallbox_charging(index),
         )
         entities.append(
             E3DCButton(

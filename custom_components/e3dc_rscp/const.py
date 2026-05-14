@@ -1,4 +1,5 @@
 """Constants for the E3DC Remote Storage Control Protocol integration."""
+
 from enum import Enum
 
 from homeassistant.const import Platform
@@ -97,16 +98,16 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
     Platform.BUTTON,
-    Platform.NUMBER
+    Platform.NUMBER,
 ]
 
 
 class PowerMode(Enum):
     """Enum for power modes in E3DC RSCP."""
 
-    IDLE = '0'
-    DISCHARGE = '1'
-    CHARGE = '2'
+    IDLE = "0"
+    DISCHARGE = "1"
+    CHARGE = "2"
 
     @classmethod
     def has_value(self, value):
@@ -118,14 +119,15 @@ class PowerMode(Enum):
         """Get the PowerMode member by value."""
         return self._value2member_map_.get(value, None)
 
+
 class SetPowerMode(Enum):
     """Enum for set power modes in E3DC RSCP."""
 
-    NORMAL = '0'
-    IDLE = '1'
-    DISCHARGE = '2'
-    CHARGE = '3'
-    CHARGE_GRID = '4'
+    NORMAL = "0"
+    IDLE = "1"
+    DISCHARGE = "2"
+    CHARGE = "3"
+    CHARGE_GRID = "4"
 
     @classmethod
     def has_value(self, value):

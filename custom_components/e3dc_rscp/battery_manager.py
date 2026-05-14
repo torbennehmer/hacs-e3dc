@@ -122,17 +122,20 @@ class E3DCBatteryManager:
         """Identify installed battery modules if enabled via options."""
         async with self._identify_lock:
             if not self.create_battery_devices:
-                _LOGGER.debug("Battery devices disabled via options, skipping identification")
+                _LOGGER.debug(
+                    "Battery devices disabled via options, skipping identification"
+                )
                 await self.async_clear_battery_devices()
                 return
 
             try:
-                batteries_config: list[dict[str, Any]] = await self.hass.async_add_executor_job(
-                    self.proxy.get_batteries
-                )
+                batteries_config: list[
+                    dict[str, Any]
+                ] = await self.hass.async_add_executor_job(self.proxy.get_batteries)
             except HomeAssistantError as ex:
                 _LOGGER.warning(
-                    "Failed to load battery configuration, skipping battery devices: %s", ex
+                    "Failed to load battery configuration, skipping battery devices: %s",
+                    ex,
                 )
                 return
 
@@ -142,12 +145,16 @@ class E3DCBatteryManager:
                 )
             except HomeAssistantError as ex:
                 _LOGGER.warning(
-                    "Failed to load battery data, continuing with limited information: %s", ex
+                    "Failed to load battery data, continuing with limited information: %s",
+                    ex,
                 )
                 battery_data = None
 
             if not isinstance(batteries_config, list):
-                _LOGGER.debug("Battery configuration returned unexpected payload: %s", batteries_config)
+                _LOGGER.debug(
+                    "Battery configuration returned unexpected payload: %s",
+                    batteries_config,
+                )
                 batteries_config = []
 
             battery_details_by_pack: dict[int, dict[str, Any]] = {}
@@ -207,7 +214,11 @@ class E3DCBatteryManager:
                 for dcb_index in range(dcb_count):
                     battery_key = f"battery-{pack_index}-{dcb_index}"
                     unique_id = f"{self.uid}-{battery_key}"
-                    dcb_detail = dcbs_details.get(dcb_index, {}) if isinstance(dcbs_details, dict) else {}
+                    dcb_detail = (
+                        dcbs_details.get(dcb_index, {})
+                        if isinstance(dcbs_details, dict)
+                        else {}
+                    )
 
                     manufacturer = _normalize(dcb_detail.get("manufactureName"))
                     model = _normalize(dcb_detail.get("deviceName"))
@@ -249,11 +260,17 @@ class E3DCBatteryManager:
 
             if len(self._batteries) > 0:
                 await self.async_load_and_process_battery_data(battery_data)
-                _LOGGER.debug("Identified %s battery modules across %s packs", len(self._batteries), len(self._battery_packs))
+                _LOGGER.debug(
+                    "Identified %s battery modules across %s packs",
+                    len(self._batteries),
+                    len(self._battery_packs),
+                )
             else:
                 _LOGGER.debug("No battery modules were identified")
 
-    async def async_load_and_process_battery_data(self, battery_data: Any | None = None) -> None:
+    async def async_load_and_process_battery_data(
+        self, battery_data: Any | None = None
+    ) -> None:
         """Load and process battery module data."""
         data: Any | None = battery_data
         if data is None:
@@ -262,7 +279,9 @@ class E3DCBatteryManager:
                     self.proxy.get_battery_data
                 )
             except HomeAssistantError as ex:
-                _LOGGER.warning("Failed to load battery data, not updating sensors: %s", ex)
+                _LOGGER.warning(
+                    "Failed to load battery data, not updating sensors: %s", ex
+                )
                 return
 
         pack_map: dict[int, dict[str, Any]] = {}
@@ -344,7 +363,9 @@ class E3DCBatteryManager:
             for slug in BATTERY_MODULE_CALCULATED_SENSORS:
                 full_key = f"{battery['key']}-{slug}"
                 if slug == "soh":
-                    calculated_value = self._calculate_battery_soh_from_capacity(dcb_data)
+                    calculated_value = self._calculate_battery_soh_from_capacity(
+                        dcb_data
+                    )
                 else:
                     calculated_value = None
                 self._mydata[full_key] = calculated_value
@@ -429,7 +450,9 @@ class E3DCBatteryManager:
 
         return (remaining_capacity * module_voltage) / 1000
 
-    def _calculate_battery_usable_remaining_energy(self, pack: dict[str, Any]) -> float | None:
+    def _calculate_battery_usable_remaining_energy(
+        self, pack: dict[str, Any]
+    ) -> float | None:
         """Calculate battery pack usable remaining energy in kWh."""
         usable_remaining_capacity_raw = pack.get("usuableRemainingCapacity")
         module_voltage_raw = pack.get("moduleVoltage")
@@ -519,7 +542,9 @@ class E3DCBatteryManager:
             return None
         return manufacture_date.isoformat()
 
-    def _process_battery_sensor_value(self, data_key: str, value: Any, dcb: dict[str, Any]) -> Any:
+    def _process_battery_sensor_value(
+        self, data_key: str, value: Any, dcb: dict[str, Any]
+    ) -> Any:
         """Process individual battery sensor values before storing."""
         if data_key == "soc" and value is None:
             return self._calculate_battery_soc_from_capacity(dcb)
