@@ -6,6 +6,10 @@ from homeassistant.const import Platform
 CONF_RSCPKEY = "rscpkey"
 CONF_FARMCONTROLLER = "farmcontroller"
 CONF_VERSION = 2
+CONF_AUTH_TYPE = "auth_type"
+AUTH_TYPE_CLOUD = "cloud"
+AUTH_TYPE_LOCAL = "local"
+LOCAL_USERNAME = "local.user"
 DOMAIN = "e3dc_rscp"
 ERROR_AUTH_INVALID = "invalid_auth"
 ERROR_CANNOT_CONNECT = "cannot_connect"

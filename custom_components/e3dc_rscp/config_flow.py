@@ -27,6 +27,9 @@ from homeassistant.helpers.selector import (
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
 )
 
 from custom_components.e3dc_rscp.utils import initialize_farm_controller_flow_if_needed
@@ -44,15 +47,41 @@ from .const import (
     DOMAIN,
     ERROR_AUTH_INVALID,
     ERROR_CANNOT_CONNECT,
+    CONF_AUTH_TYPE,
+    AUTH_TYPE_CLOUD,
+    AUTH_TYPE_LOCAL,
+    LOCAL_USERNAME,
 )
 from .e3dc_proxy import E3DCProxy
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
+STEP_AUTH_TYPE_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_AUTH_TYPE, default=AUTH_TYPE_CLOUD): SelectSelector(
+            SelectSelectorConfig(
+                options=[AUTH_TYPE_CLOUD, AUTH_TYPE_LOCAL],
+                mode=SelectSelectorMode.LIST,
+                translation_key="auth_type",
+            )
+        ),
+    }
+)
+
+STEP_CREDENTIALS_CLOUD_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_USERNAME): str,
+        vol.Required(CONF_PASSWORD): str,
+        vol.Required(CONF_RSCPKEY): TextSelector(
+            TextSelectorConfig(type=TextSelectorType.PASSWORD)
+        ),
+    }
+)
+
+STEP_CREDENTIALS_LOCAL_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_HOST): str,
         vol.Required(CONF_PASSWORD): str,
         vol.Required(CONF_RSCPKEY): TextSelector(
             TextSelectorConfig(type=TextSelectorType.PASSWORD)
@@ -76,6 +105,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self._port: int | None = None
         self._proxy: E3DCProxy = None
         self._discovered_info: dict[str, Any] | None = None
+        self._auth_type: str = AUTH_TYPE_CLOUD
 
     def _async_check_login(self) -> None:
         """Check the login credentials."""
@@ -106,26 +136,48 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step."""
-        errors: dict[str, str] = {}
+        """Step 1 of initial setup: choose authentication type."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=STEP_AUTH_TYPE_SCHEMA,
+            )
+
+        self._auth_type = user_input.get(CONF_AUTH_TYPE, AUTH_TYPE_CLOUD)
+        return await self.async_step_credentials()
+
+    async def async_step_credentials(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2 of initial setup: collect credentials for the chosen auth type."""
+        schema = (
+            STEP_CREDENTIALS_LOCAL_SCHEMA
+            if self._auth_type == AUTH_TYPE_LOCAL
+            else STEP_CREDENTIALS_CLOUD_SCHEMA
+        )
 
         if user_input is None:
-            return self._show_setup_form_init(errors)
+            return self._show_credentials_form(schema)
 
         self._host = user_input[CONF_HOST]
-        self._username = user_input[CONF_USERNAME]
         self._password = user_input[CONF_PASSWORD]
         self._rscpkey = user_input[CONF_RSCPKEY]
         self._port = user_input.get(CONF_PORT, None)
+        if self._auth_type == AUTH_TYPE_LOCAL:
+            self._username = LOCAL_USERNAME
+        else:
+            self._username = user_input[CONF_USERNAME]
 
         if error := await self.validate_input():
-            return self._show_setup_form_init({"base": error})
+            return self._show_credentials_form(schema, {"base": error})
 
         await self.async_set_unique_id(
             f"{self._proxy.e3dc.serialNumberPrefix}{self._proxy.e3dc.serialNumber}"
         )
         self._abort_if_unique_id_configured()
-        final_data: dict[str, Any] = user_input
+        final_data: dict[str, Any] = dict(user_input)
+        final_data[CONF_USERNAME] = self._username
+        final_data[CONF_AUTH_TYPE] = self._auth_type
         final_data[CONF_FARMCONTROLLER] = len(self._proxy.e3dc.serialNumber) >= 6 and self._proxy.e3dc.serialNumber[-6] == "1"
         final_data[CONF_API_VERSION] = CONF_VERSION
 
@@ -134,11 +186,25 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
             data=final_data,
         )
 
+    def _show_credentials_form(
+        self, schema, errors: dict[str, str] | None = None
+    ) -> FlowResult:
+        """Show the credentials form, with the username hint for local user."""
+        placeholders = {}
+        if self._auth_type == AUTH_TYPE_LOCAL:
+            placeholders["username"] = LOCAL_USERNAME
+        return self.async_show_form(
+            step_id="credentials",
+            data_schema=schema,
+            errors=errors or {},
+            description_placeholders=placeholders,
+        )
+
     def _show_setup_form_init(self, errors: dict[str, str] | None = None) -> FlowResult:
-        """Show the setup form to the user."""
+        """Show the auth-type selector form (used by error re-entry paths)."""
         return self.async_show_form(
             step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
+            data_schema=STEP_AUTH_TYPE_SCHEMA,
             errors=errors or {},
         )
 
@@ -146,45 +212,207 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         """Handle flow upon API authentication errors."""
         self._entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
         self._host = entry_data[CONF_HOST]
-        self._username = entry_data[CONF_USERNAME]
+        self._username = entry_data.get(CONF_USERNAME)
         self._password = entry_data[CONF_PASSWORD]
         self._rscpkey = entry_data[CONF_RSCPKEY]
+        self._auth_type = entry_data.get(CONF_AUTH_TYPE, AUTH_TYPE_CLOUD)
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Inform the user that a reauth is required."""
-
+        """Step 1 of reauth: choose authentication type."""
         if user_input is None:
             return self._show_setup_form_reauth_confirm()
 
+        self._auth_type = user_input.get(CONF_AUTH_TYPE, AUTH_TYPE_CLOUD)
+        return await self.async_step_reauth_credentials()
+
+    async def async_step_reauth_credentials(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2 of reauth: collect credentials."""
+        schema = (
+            STEP_CREDENTIALS_LOCAL_SCHEMA
+            if self._auth_type == AUTH_TYPE_LOCAL
+            else STEP_CREDENTIALS_CLOUD_SCHEMA
+        )
+
+        if user_input is None:
+            return self._show_reauth_credentials_form(schema)
+
         self._host = user_input[CONF_HOST]
-        self._username = user_input[CONF_USERNAME]
         self._password = user_input[CONF_PASSWORD]
         self._rscpkey = user_input[CONF_RSCPKEY]
+        if self._auth_type == AUTH_TYPE_LOCAL:
+            self._username = LOCAL_USERNAME
+        else:
+            self._username = user_input[CONF_USERNAME]
 
         if error := await self.validate_input():
-            return self._show_setup_form_reauth_confirm({"base": error})
+            return self._show_reauth_credentials_form(schema, {"base": error})
 
         assert isinstance(self._entry, config_entries.ConfigEntry)
-        final_data: dict[str, Any] = user_input
-        final_data[CONF_API_VERSION] = CONF_VERSION
-        self.hass.config_entries.async_update_entry(
-            self._entry,
-            data=final_data,
-        )
+        new_data = dict(self._entry.data)
+        new_data[CONF_HOST] = self._host
+        new_data[CONF_USERNAME] = self._username
+        new_data[CONF_PASSWORD] = self._password
+        new_data[CONF_RSCPKEY] = self._rscpkey
+        new_data[CONF_AUTH_TYPE] = self._auth_type
+        new_data[CONF_API_VERSION] = CONF_VERSION
+        self.hass.config_entries.async_update_entry(self._entry, data=new_data)
         await self.hass.config_entries.async_reload(self._entry.entry_id)
         return self.async_abort(reason="reauth_successful")
+
+    def _show_reauth_credentials_form(
+        self, schema, errors: dict[str, str] | None = None
+    ) -> FlowResult:
+        """Show the reauth credentials form."""
+        placeholders = {}
+        if self._auth_type == AUTH_TYPE_LOCAL:
+            placeholders["username"] = LOCAL_USERNAME
+        return self.async_show_form(
+            step_id="reauth_credentials",
+            data_schema=schema,
+            errors=errors or {},
+            description_placeholders=placeholders,
+        )
 
     def _show_setup_form_reauth_confirm(
         self, errors: dict[str, str] | None = None
     ) -> FlowResult:
-        """Show the setup form to the user."""
+        """Show the reauth auth-type selector form."""
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_AUTH_TYPE, default=self._auth_type
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=[AUTH_TYPE_CLOUD, AUTH_TYPE_LOCAL],
+                        mode=SelectSelectorMode.LIST,
+                        translation_key="auth_type",
+                    )
+                ),
+            }
+        )
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=STEP_USER_DATA_SCHEMA,
+            data_schema=schema,
             errors=errors or {},
+        )
+
+    # ------------------------------------------------------------------
+    # Reconfigure flow (three-dot menu -> "Reconfigure")
+    # ------------------------------------------------------------------
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 1 of reconfigure: choose authentication type."""
+        self._entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+        if self._entry is not None:
+            self._host = self._entry.data.get(CONF_HOST)
+            self._username = self._entry.data.get(CONF_USERNAME)
+            self._password = self._entry.data.get(CONF_PASSWORD)
+            self._rscpkey = self._entry.data.get(CONF_RSCPKEY)
+            self._port = self._entry.data.get(CONF_PORT)
+            self._auth_type = self._entry.data.get(
+                CONF_AUTH_TYPE, AUTH_TYPE_CLOUD
+            )
+
+        if user_input is None:
+            schema = vol.Schema(
+                {
+                    vol.Required(
+                        CONF_AUTH_TYPE, default=self._auth_type
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[AUTH_TYPE_CLOUD, AUTH_TYPE_LOCAL],
+                            mode=SelectSelectorMode.LIST,
+                            translation_key="auth_type",
+                        )
+                    ),
+                }
+            )
+            return self.async_show_form(
+                step_id="reconfigure",
+                data_schema=schema,
+            )
+
+        self._auth_type = user_input.get(CONF_AUTH_TYPE, AUTH_TYPE_CLOUD)
+        return await self.async_step_reconfigure_credentials()
+
+    async def async_step_reconfigure_credentials(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2 of reconfigure: collect credentials, pre-filled."""
+        if self._auth_type == AUTH_TYPE_LOCAL:
+            schema = vol.Schema(
+                {
+                    vol.Required(CONF_HOST, default=self._host or ""): str,
+                    vol.Required(CONF_PASSWORD, default=self._password or ""): str,
+                    vol.Required(
+                        CONF_RSCPKEY, default=self._rscpkey or ""
+                    ): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    ),
+                }
+            )
+        else:
+            schema = vol.Schema(
+                {
+                    vol.Required(CONF_HOST, default=self._host or ""): str,
+                    vol.Required(
+                        CONF_USERNAME, default=self._username or ""
+                    ): str,
+                    vol.Required(CONF_PASSWORD, default=self._password or ""): str,
+                    vol.Required(
+                        CONF_RSCPKEY, default=self._rscpkey or ""
+                    ): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    ),
+                }
+            )
+
+        if user_input is None:
+            return self._show_reconfigure_credentials_form(schema)
+
+        self._host = user_input[CONF_HOST]
+        self._password = user_input[CONF_PASSWORD]
+        self._rscpkey = user_input[CONF_RSCPKEY]
+        if self._auth_type == AUTH_TYPE_LOCAL:
+            self._username = LOCAL_USERNAME
+        else:
+            self._username = user_input[CONF_USERNAME]
+
+        if error := await self.validate_input():
+            return self._show_reconfigure_credentials_form(schema, {"base": error})
+
+        assert isinstance(self._entry, config_entries.ConfigEntry)
+        new_data = dict(self._entry.data)
+        new_data[CONF_HOST] = self._host
+        new_data[CONF_USERNAME] = self._username
+        new_data[CONF_PASSWORD] = self._password
+        new_data[CONF_RSCPKEY] = self._rscpkey
+        new_data[CONF_AUTH_TYPE] = self._auth_type
+        new_data[CONF_API_VERSION] = CONF_VERSION
+        self.hass.config_entries.async_update_entry(self._entry, data=new_data)
+        await self.hass.config_entries.async_reload(self._entry.entry_id)
+        return self.async_abort(reason="reconfigure_successful")
+
+    def _show_reconfigure_credentials_form(
+        self, schema, errors: dict[str, str] | None = None
+    ) -> FlowResult:
+        """Show the reconfigure credentials form."""
+        placeholders = {}
+        if self._auth_type == AUTH_TYPE_LOCAL:
+            placeholders["username"] = LOCAL_USERNAME
+        return self.async_show_form(
+            step_id="reconfigure_credentials",
+            data_schema=schema,
+            errors=errors or {},
+            description_placeholders=placeholders,
         )
 
     async def async_step_ssdp(
