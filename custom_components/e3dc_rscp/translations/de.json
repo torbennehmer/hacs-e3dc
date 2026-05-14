@@ -1,0 +1,593 @@
+{
+  "config": {
+    "step": {
+      "reauth_confirm": {
+        "title": "E3DC-Zugangsdaten aktualisieren",
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]",
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "rscpkey": "RSCP-Verschlüsselungsschlüssel"
+        }
+      },
+      "user": {
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]",
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "rscpkey": "RSCP-Verschlüsselungsschlüssel"
+        }
+      },
+      "discovery_confirm": {
+        "title": "E3DC-Gerät erkannt",
+        "description": "E3DC-Gerät **{name}** wurde an IP-Adresse **{host}** erkannt.\n\nBitte geben Sie Ihre E3DC-Zugangsdaten ein, um die Einrichtung abzuschließen.",
+        "data": {
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "rscpkey": "RSCP-Verschlüsselungsschlüssel"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "create_battery_devices": "Batteriegeräte erstellen"
+        },
+        "title": "E3DC RSCP-Optionen"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "system-additional-source-available": {
+        "name": "Zusätzliche Quelle"
+      },
+      "pset-limit-enabled": {
+        "name": "Leistungsbegrenzung"
+      },
+      "manual-charge-active": {
+        "name": "Manuelle Ladung"
+      },
+      "sgready-active": {
+        "name": "SG Ready aktiv"
+      },
+      "wallbox-battery-to-car": {
+        "name": "Batterie zu Fahrzeug"
+      },
+      "wallbox-charging": {
+        "name": "Ladevorgang"
+      },
+      "wallbox-charging-canceled": {
+        "name": "Ladevorgang abgebrochen"
+      },
+      "wallbox-sun-mode": {
+        "name": "Sonnenmodus"
+      },
+      "wallbox-plug-lock": {
+        "name": "Steckersperre"
+      },
+      "wallbox-plug": {
+        "name": "Stecker"
+      },
+      "wallbox-schuko": {
+        "name": "Schuko"
+      },
+      "wallbox-key-state": {
+        "name": "Schlüsselstatus"
+      }
+    },
+    "sensor": {
+      "system-derate-percent": {
+        "name": "Einspeisereduktion ab %"
+      },
+      "system-derate-power": {
+        "name": "Einspeisereduktion ab W"
+      },
+      "system-battery-installed-capacity": {
+        "name": "Installierte Batteriekapazität"
+      },
+      "system-battery-installed-peak": {
+        "name": "Installierte Spitzenleistung"
+      },
+      "system-ac-maxpower": {
+        "name": "Maximale AC-Leistung"
+      },
+      "system-battery-charge-max": {
+        "name": "System-Maximalladung"
+      },
+      "system-battery-discharge-max": {
+        "name": "System-Maximalentladung"
+      },
+      "system-mac": {
+        "name": "MAC-Adresse"
+      },
+      "system-battery-discharge-minimum-default": {
+        "name": "System-Minimalentladung"
+      },
+      "autarky": {
+        "name": "Autarkie"
+      },
+      "battery-charge": {
+        "name": "Batterieladung"
+      },
+      "battery-netchange": {
+        "name": "Batterie-Nettoveränderung"
+      },
+      "battery-pack-asoc": {
+        "name": "Absoluter Ladezustand (ASOC)"
+      },
+      "battery-pack-charge-cycles": {
+        "name": "Ladezyklen"
+      },
+      "battery-pack-current": {
+        "name": "Strom"
+      },
+      "battery-pack-design-capacity": {
+        "name": "Auslegungskapazität"
+      },
+      "battery-pack-device-connected": {
+        "name": "Verbunden"
+      },
+      "battery-pack-device-in-service": {
+        "name": "In Betrieb"
+      },
+      "battery-pack-device-working": {
+        "name": "Arbeitet"
+      },
+      "battery-pack-design-energy": {
+        "name": "Auslegungsenergie"
+      },
+      "battery-pack-eod-voltage": {
+        "name": "Entladeschlussspannung"
+      },
+      "battery-pack-error-code": {
+        "name": "Fehlercode"
+      },
+      "battery-pack-full-charge-capacity": {
+        "name": "Vollladungskapazität"
+      },
+      "battery-pack-full-energy": {
+        "name": "Vollladungsenergie"
+      },
+      "battery-pack-max-battery-voltage": {
+        "name": "Maximale Packspannung"
+      },
+      "battery-pack-max-charge-current": {
+        "name": "Maximaler Ladestrom"
+      },
+      "battery-pack-max-discharge-current": {
+        "name": "Maximaler Entladestrom"
+      },
+      "battery-pack-max-dcb-cell-temperature": {
+        "name": "Maximale DCB-Zellentemperatur"
+      },
+      "battery-pack-min-dcb-cell-temperature": {
+        "name": "Minimale DCB-Zellentemperatur"
+      },
+      "battery-pack-module-voltage": {
+        "name": "Modulspannung"
+      },
+      "battery-pack-remaining-capacity": {
+        "name": "Restkapazität"
+      },
+      "battery-pack-remaining-energy": {
+        "name": "Restenergie"
+      },
+      "battery-pack-ready-for-shutdown": {
+        "name": "Bereit zum Herunterfahren"
+      },
+      "battery-pack-rsoc": {
+        "name": "Relativer Ladezustand (RSOC)"
+      },
+      "battery-pack-rsoc-real": {
+        "name": "Tatsächlicher Ladezustand"
+      },
+      "battery-pack-status-code": {
+        "name": "Statuscode"
+      },
+      "battery-pack-terminal-voltage": {
+        "name": "Klemmenspannung"
+      },
+      "battery-pack-total-use-time": {
+        "name": "Gesamtnutzungszeit"
+      },
+      "battery-pack-total-discharge-time": {
+        "name": "Gesamtentladungszeit"
+      },
+      "battery-pack-training-mode": {
+        "name": "Trainingsmodus"
+      },
+      "battery-pack-usable-capacity": {
+        "name": "Nutzbare Kapazität"
+      },
+      "battery-pack-usable-remaining-capacity": {
+        "name": "Nutzbare Restkapazität"
+      },
+      "battery-pack-usable-remaining-energy": {
+        "name": "Nutzbare Restenergie"
+      },
+      "battery-pack-state-of-health": {
+        "name": "Gesundheitszustand"
+      },
+      "battery-module-soc": {
+        "name": "Ladezustand"
+      },
+      "battery-module-soh": {
+        "name": "Gesundheitszustand"
+      },
+      "grid-consumption": {
+        "name": "Netzbezug"
+      },
+      "house-consumption": {
+        "name": "Hausverbrauch"
+      },
+      "wallbox-consumption": {
+        "name": "Wallbox-Verbrauch"
+      },
+      "grid-netchange": {
+        "name": "Netzübertragung"
+      },
+      "battery-discharge": {
+        "name": "Batterieentladung"
+      },
+      "battery-module-current": {
+        "name": "Batteriestrom"
+      },
+      "battery-module-current-avg-30s": {
+        "name": "Batteriestrom (30s Durchschnitt)"
+      },
+      "battery-module-cycle-count": {
+        "name": "Zyklenanzahl"
+      },
+      "battery-module-design-capacity": {
+        "name": "Auslegungskapazität"
+      },
+      "battery-module-design-voltage": {
+        "name": "Auslegungsspannung"
+      },
+      "battery-module-end-of-discharge": {
+        "name": "Entladeschlussspannung"
+      },
+      "battery-module-error": {
+        "name": "Fehlercode"
+      },
+      "battery-module-full-charge-capacity": {
+        "name": "Vollladungskapazität"
+      },
+      "battery-module-max-charge-current": {
+        "name": "Maximaler Ladestrom"
+      },
+      "battery-module-max-charge-temperature": {
+        "name": "Maximale Ladetemperatur"
+      },
+      "battery-module-max-charge-voltage": {
+        "name": "Maximale Ladespannung"
+      },
+      "battery-module-max-discharge-current": {
+        "name": "Maximaler Entladestrom"
+      },
+      "battery-module-min-charge-temperature": {
+        "name": "Minimale Ladetemperatur"
+      },
+      "battery-module-parallel-cell-count": {
+        "name": "Anzahl paralleler Zellen"
+      },
+      "battery-module-sensor-count": {
+        "name": "Anzahl Sensoren"
+      },
+      "battery-module-series-cell-count": {
+        "name": "Anzahl serieller Zellen"
+      },
+      "battery-module-remaining-capacity": {
+        "name": "Restkapazität"
+      },
+      "battery-module-soh-reported": {
+        "name": "Gesundheitszustand (vom Gerät gemeldet)"
+      },
+      "battery-module-status": {
+        "name": "Statuscode"
+      },
+      "battery-module-voltage": {
+        "name": "Spannung"
+      },
+      "battery-module-voltage-avg-30s": {
+        "name": "Spannung (30s Durchschnitt)"
+      },
+      "battery-module-warning": {
+        "name": "Warncode"
+      },
+      "battery-module-manufacture-date": {
+        "name": "Herstellungsdatum"
+      },
+      "grid-production": {
+        "name": "Netzeinspeisung"
+      },
+      "solar-production": {
+        "name": "Solarproduktion"
+      },
+      "pset-limit-charge": {
+        "name": "Maximale Ladung"
+      },
+      "pset-limit-discharge": {
+        "name": "Maximale Entladung"
+      },
+      "pset-limit-discharge-minimum": {
+        "name": "Minimal erforderliche Entladung"
+      },
+      "selfconsumption": {
+        "name": "Eigenverbrauch"
+      },
+      "soc": {
+        "name": "Ladezustand"
+      },
+      "db-day-autarky": {
+        "name": "Autarkie - heute"
+      },
+      "db-day-battery-charge": {
+        "name": "Batterieladung - heute"
+      },
+      "db-day-battery-discharge": {
+        "name": "Batterieentladung - heute"
+      },
+      "db-day-grid-consumption": {
+        "name": "Netzbezug - heute"
+      },
+      "db-day-house-consumption": {
+        "name": "Hausverbrauch - heute"
+      },
+      "db-day-grid-production": {
+        "name": "Netzeinspeisung - heute"
+      },
+      "db-day-solar-production": {
+        "name": "Solarproduktion - heute"
+      },
+      "db-day-selfconsumption": {
+        "name": "Eigenverbrauch - heute"
+      },
+      "manual-charge-energy": {
+        "name": "Aus Netz geladene Energie"
+      },
+      "undefined": {
+        "name": "Undefiniertes Energiemessgerät"
+      },
+      "root-pm": {
+        "name": "Haupt-Energiemessgerät"
+      },
+      "additional": {
+        "name": "Zusätzliches Energiemessgerät"
+      },
+      "additional-production": {
+        "name": "Zusätzliche Produktion"
+      },
+      "additional-consumption": {
+        "name": "Zusätzlicher Verbrauch"
+      },
+      "farm": {
+        "name": "Farm"
+      },
+      "unused": {
+        "name": "Ungenutztes Energiemessgerät"
+      },
+      "wallbox": {
+        "name": "Wallbox"
+      },
+      "farm-additional": {
+        "name": "Farm-Zusatz-Energiemessgerät"
+      },
+      "undefined-total": {
+        "name": "Undefiniertes Energiemessgerät - gesamt"
+      },
+      "root-pm-total": {
+        "name": "Haupt-Energiemessgerät - gesamt"
+      },
+      "additional-total": {
+        "name": "Zusätzliches Energiemessgerät - gesamt"
+      },
+      "additional-production-total": {
+        "name": "Zusätzliche Produktion - gesamt"
+      },
+      "additional-consumption-total": {
+        "name": "Zusätzlicher Verbrauch - gesamt"
+      },
+      "farm-total": {
+        "name": "Farm - gesamt"
+      },
+      "unused-total": {
+        "name": "Ungenutztes Energiemessgerät - gesamt"
+      },
+      "wallbox-total": {
+        "name": "Wallbox - gesamt"
+      },
+      "farm-additional-total": {
+        "name": "Farm-Zusatz-Energiemessgerät - gesamt"
+      },
+      "wallbox-app-software": {
+        "name": "App-Software"
+      },
+      "wallbox-consumption-net": {
+        "name": "Verbrauch Netz"
+      },
+      "wallbox-consumption-sun": {
+        "name": "Verbrauch Sonne"
+      },
+      "wallbox-energy-all": {
+        "name": "Energie gesamt"
+      },
+      "wallbox-energy-net": {
+        "name": "Energie Netz"
+      },
+      "wallbox-energy-sun": {
+        "name": "Energie Sonne"
+      },
+      "wallbox-index": {
+        "name": "Index"
+      },
+      "wallbox-max-charge-current": {
+        "name": "Maximaler Ladestrom"
+      },
+      "wallbox-phases": {
+        "name": "Phasen"
+      },
+      "wallbox-soc": {
+        "name": "Ladezustand"
+      },
+      "power-mode": {
+        "name": "Modus",
+        "state": {
+          "0": "Bereitschaft",
+          "1": "Entladung",
+          "2": "Ladung"
+        }
+      },
+      "pset-powermode": {
+        "name": "Aktueller Betriebsmodus",
+        "state": {
+          "0": "Normalbetrieb",
+          "1": "Bereitschaft",
+          "2": "Entladung",
+          "3": "Ladung",
+          "4": "Netzladung"
+        }
+      },
+      "pset-powervalue": {
+        "name": "Aktueller Leistungswert"
+      },
+      "sgready-state": {
+        "name": "SG Ready",
+        "state": {
+          "1": "Gesperrt",
+          "2": "Normal",
+          "3": "Freigegeben",
+          "4": "Anlauf"
+        }
+      },
+      "sgready-numeric-state": {
+        "name": "SG Ready numerisch"
+      }
+    },
+    "switch": {
+      "pset-weatherregulationenabled": {
+        "name": "Wetterregelung"
+      },
+      "pset-powersaving-enabled": {
+        "name": "SmartPower Energiesparen"
+      },
+      "wallbox-sun-mode": {
+        "name": "Sonnenmodus"
+      },
+      "wallbox-schuko": {
+        "name": "Schuko"
+      }
+    },
+    "button": {
+      "wallbox-toggle-wallbox-charging": {
+        "name": "Ladevorgang umschalten"
+      },
+      "wallbox-toggle-wallbox-phases": {
+        "name": "Phasen umschalten"
+      }
+    },
+    "number": {
+      "wallbox-max-charge-current": {
+        "name": "Maximaler Ladestrom"
+      }
+    }
+  },
+  "selector": {
+    "power_mode": {
+      "options": {
+        "0": "Normalbetrieb",
+        "1": "Bereitschaft",
+        "2": "Entladung",
+        "3": "Ladung",
+        "4": "Netzladung"
+      }
+    }
+  },
+  "services": {
+    "clear_power_limits": {
+      "name": "Leistungsbegrenzung aufheben",
+      "description": "Hebt jede aktive Leistungsbegrenzung des E3DC-Systems auf.",
+      "fields": {
+        "device_id": {
+          "name": "E3DC-Geräte-ID",
+          "description": "E3DC-Geräte-ID, entnehmen Sie diese entweder aus dem YAML-Modus auf der Website oder aus der URL der Gerätekonfigurationsseite."
+        }
+      }
+    },
+    "set_power_limits": {
+      "name": "Leistungsbegrenzung festlegen",
+      "description": "Legt die maximalen Lade-/Entladegrenzen des E3DC-Systems fest.",
+      "fields": {
+        "device_id": {
+          "name": "E3DC-Geräte-ID",
+          "description": "E3DC-Geräte-ID, entnehmen Sie diese entweder aus dem YAML-Modus auf der Website oder aus der URL der Gerätekonfigurationsseite."
+        },
+        "max_charge": {
+          "name": "Maximale Ladung (W)",
+          "description": "Maximal zulässige Batterieladung in Watt."
+        },
+        "max_discharge": {
+          "name": "Maximale Entladung (W)",
+          "description": "Maximal zulässige Batterieentladung in Watt."
+        }
+      }
+    },
+    "set_wallbox_max_charge_current": {
+      "name": "Wallbox-Maximalstrom festlegen",
+      "description": "Legt den maximalen Ladestrom der Wallbox fest.",
+      "fields": {
+        "device_id": {
+          "name": "E3DC-Geräte-ID",
+          "description": "E3DC-Geräte-ID, entnehmen Sie diese entweder aus dem YAML-Modus auf der Website oder aus der URL der Gerätekonfigurationsseite."
+        },
+        "max_charge_current": {
+          "name": "Maximaler Ladestrom (A)",
+          "description": "Maximal zulässiger Ladestrom über Wallbox in Ampere."
+        }
+      }
+    },
+    "manual_charge": {
+      "name": "Manuelle Ladung steuern",
+      "description": "Startet oder stoppt die manuelle Ladung. Setzen Sie die Lademenge auf Null, um eine laufende Ladung zu stoppen. Verwenden Sie diese Funktion auf eigene Gefahr. Beachten Sie Umwandlungsverluste, Batterieverschleiß, lokale Gesetze/Vorschriften und die E3DC-Garantie bei der Nutzung dieser Aktion. Der Aufruf unterliegt einer Ratenbegrenzung (einmal alle paar Stunden).",
+      "fields": {
+        "device_id": {
+          "name": "E3DC-Geräte-ID",
+          "description": "E3DC-Geräte-ID, entnehmen Sie diese entweder aus dem YAML-Modus auf der Website oder aus der URL der Gerätekonfigurationsseite."
+        },
+        "charge_amount": {
+          "name": "Lademenge (Wh)",
+          "description": "Zu ladende Menge in Wh."
+        }
+      }
+    },
+    "set_power_mode": {
+      "name": "Betriebsmodus festlegen",
+      "description": "Legt den Betriebsmodus des E3DC-Systems fest.",
+      "fields": {
+        "device_id": {
+          "name": "E3DC-Geräte-ID",
+          "description": "E3DC-Geräte-ID, entnehmen Sie diese entweder aus dem YAML-Modus auf der Website oder aus der URL der Gerätekonfigurationsseite."
+        },
+        "power_mode": {
+          "name": "Betriebsmodus",
+          "description": "Der festzulegende Betriebsmodus. Optionen sind: NORMAL, DISCHARGE, CHARGE, IDLE und CHARGE_GRID."
+        },
+        "power_value": {
+          "name": "Ladeleistung (W)",
+          "description": "Zu ladende Leistung in W."
+        }
+      }
+    }
+  }
+}
