@@ -30,9 +30,9 @@
                 "title": "Discovered E3DC device",
                 "description": "E3DC device {name} has been discovered at IP address {host}.\n\nPlease provide your E3DC credentials to complete the setup.",
                 "data": {
-                "username": "[%key:common::config_flow::data::username%]",
-                "password": "[%key:common::config_flow::data::password%]",
-                "rscpkey": "RSCP encryption key"
+                    "username": "[%key:common::config_flow::data::username%]",
+                    "password": "[%key:common::config_flow::data::password%]",
+                    "rscpkey": "RSCP encryption key"
                 }
             }
         }
@@ -490,6 +490,27 @@
             },
             "wallbox-schuko": {
                 "name": "Schuko"
+            },
+            "battery-before-car-mode": {
+                "name": "Wallbox charging priorization",
+                "state": {
+                    "on": "Battery first",
+                    "off": "Wallbox first"
+                }
+            },
+            "battery-to-car-mode": {
+                "name": "Battery discharge by wallbox in sun mode",
+                "state": {
+                    "on": "Allowed",
+                    "off": "Disallowed"
+                }
+            },
+            "wallbox-enforce-power-assignment": {
+                "name": "Battery discharge by wallbox in special modes",
+                "state": {
+                    "on": "Suspended",
+                    "off": "Allow in mix mode, during hold time and time function"
+                }
             }
         },
         "button": {
@@ -503,6 +524,9 @@
         "number": {
             "wallbox-max-charge-current": {
                 "name": "Max charge current"
+            },
+            "battery-wallbox-discharge-limit": {
+                "name": "Battery-to-Wallbox SOC limit"
             }
         }
     },

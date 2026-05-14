@@ -1,7 +1,7 @@
 """E3DC Number platform."""
 
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import logging
 from typing import Any
 
@@ -28,6 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 class E3DCNumberEntityDescription(NumberEntityDescription):
     """Derived helper for advanced configs."""
 
+    enabling_depends_on_wallbox: bool = False
     async_set_native_value_action: (
         Callable[[E3DCCoordinator, float, int], Coroutine[Any, Any, bool]] | None
     ) = None
@@ -40,6 +41,33 @@ async def async_setup_entry(
     assert isinstance(entry.unique_id, str)
     coordinator: E3DCCoordinator = hass.data[DOMAIN][entry.unique_id]
     entities: list[E3DCNumber] = []
+    wallboxes_present = len(coordinator.wallboxes) > 0
+
+    # All number entity descriptions (merge all here)
+    NUMBER_DESCRIPTIONS: tuple[E3DCNumberEntityDescription, ...] = (
+        E3DCNumberEntityDescription(
+            key="battery-wallbox-discharge-limit",
+            translation_key="battery-wallbox-discharge-limit",
+            icon="mdi:battery-lock-open",
+            native_min_value=0,
+            native_max_value=100,
+            native_step=1,
+            device_class=NumberDeviceClass.BATTERY,
+            entity_category=EntityCategory.CONFIG,
+            native_unit_of_measurement="%",
+            enabling_depends_on_wallbox=True,
+            async_set_native_value_action=lambda coordinator,
+            value: coordinator.async_set_battery_wallbox_discharge_limit(int(value)),
+        ),
+        # Wallbox-specific numbers are still added per wallbox below
+    )
+
+    for description in NUMBER_DESCRIPTIONS:
+        if getattr(description, "enabling_depends_on_wallbox", False):
+            desc = replace(description, entity_registry_enabled_default=wallboxes_present)
+            entities.append(E3DCNumber(coordinator, desc, entry.unique_id))
+        else:
+            entities.append(E3DCNumber(coordinator, description, entry.unique_id))
 
     # Add Number descriptions for wallboxes
     for wallbox in coordinator.wallboxes:

@@ -415,6 +415,27 @@
       },
       "wallbox-schuko": {
         "name": "Schuko"
+      },
+      "battery-before-car-mode": {
+        "name": "Wallbox charging priorization",
+        "state": {
+          "on": "Battery First",
+          "off": "Wallbox First"
+        }
+      },
+      "battery-to-car-mode": {
+        "name": "Battery discharge by wallbox in sun mode",
+        "state": {
+          "on": "Allowed",
+          "off": "Blocked"
+        }
+      },
+      "wallbox-enforce-power-assignment": {
+        "name": "Enforce settings when discharging battery by wallbox",
+        "state": {
+          "on": "Blocked",
+          "off": "Allow in mixed mode and during hold and timers"
+        }
       }
     },
     "button": {
@@ -428,6 +449,9 @@
     "number": {
       "wallbox-max-charge-current": {
         "name": "Max charge current"
+      },
+      "battery-wallbox-discharge-limit": {
+        "name": "Battery-to-Wallbox SOC limit"
       }
     }
   },

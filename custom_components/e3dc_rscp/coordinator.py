@@ -350,15 +350,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Getting SG Ready status information")
         await self._load_and_process_sgready_state()
 
+        _LOGGER.debug("Polling additional powermeters")
+        await self._load_and_process_powermeters_data()
+
         if self._update_guard_wallboxsettings is False:
-            _LOGGER.debug("Polling additional powermeters")
-            await self._load_and_process_powermeters_data()
+            if len(self.wallboxes) > 0:
+                _LOGGER.debug("Polling wallbox")
+            await self._load_and_process_wallbox_data()
         else:
             _LOGGER.debug("Not polling wallbox, they are updating right now")
-
-        if len(self.wallboxes) > 0:
-            _LOGGER.debug("Polling wallbox")
-            await self._load_and_process_wallbox_data()
 
         if self.create_battery_devices:
             _LOGGER.debug("Polling battery data")
@@ -506,6 +506,27 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _load_and_process_wallbox_data(self) -> None:
         """Load and process wallbox data to existing data."""
 
+        # Load EMS general settings:
+
+        try:
+            ems_wb_state: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_wallbox_ems_settings
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load EMS wallbox settings: %s", ex)
+            return
+
+        self._mydata["battery-before-car-mode"] = ems_wb_state[
+            "battery-before-car-mode"
+        ]
+        self._mydata["battery-to-car-mode"] = ems_wb_state["battery-to-car-mode"]
+        self._mydata["battery-wallbox-discharge-limit"] = ems_wb_state[
+            "battery-wallbox-discharge-limit"
+        ]
+        self._mydata["wallbox-enforce-power-assignment"] = ems_wb_state[
+            "wallbox-enforce-power-assignment"
+        ]
+
         for wallbox in self.wallboxes:
             try:
                 request_data: dict[str, Any] = await self.hass.async_add_executor_job(
@@ -630,6 +651,70 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Updated powersaving to %s", enabled)
         return True
+
+    async def async_set_battery_before_car_mode(self, enabled: bool) -> None:
+        """Enable or disable battery charge before car mode."""
+        _LOGGER.debug("Updating battery before car mode to %s", enabled)
+
+        try:
+            self._update_guard_wallboxsettings = True
+            await self.hass.async_add_executor_job(
+                self.proxy.set_battery_before_car_mode, enabled
+            )
+            self._mydata["battery-before-car-mode"] = enabled
+        finally:
+            self._update_guard_wallboxsettings = False
+
+        _LOGGER.debug("Successfully updated battery before car mode to %s", enabled)
+
+    async def async_set_battery_to_car_mode(self, enabled: bool) -> None:
+        """Enable or disable battery charge car with battery mode."""
+        _LOGGER.debug("Updating battery to car mode to %s", enabled)
+
+        try:
+            self._update_guard_wallboxsettings = True
+            await self.hass.async_add_executor_job(
+                self.proxy.set_battery_to_car_mode, enabled
+            )
+            self._mydata["battery-to-car-mode"] = enabled
+        finally:
+            self._update_guard_wallboxsettings = False
+
+        _LOGGER.debug("Successfully updated battery to car mode to %s", enabled)
+
+    async def async_set_battery_wallbox_discharge_limit(self, limit: int) -> None:
+        """Set the battery wallbox discharge limit (SoC limit)."""
+        _LOGGER.debug("Updating battery wallbox discharge limit to %s%%", limit)
+
+        try:
+            self._update_guard_wallboxsettings = True
+            await self.hass.async_add_executor_job(
+                self.proxy.set_battery_wallbox_discharge_limit, limit
+            )
+            self._mydata["battery-wallbox-discharge-limit"] = limit
+        finally:
+            self._update_guard_wallboxsettings = False
+
+        _LOGGER.debug(
+            "Successfully updated battery wallbox discharge limit to %s%%", limit
+        )
+
+    async def async_set_wallbox_enforce_power_assignment(self, enforce: bool) -> None:
+        """Enable or disable wallbox enforce power assignment mode."""
+        _LOGGER.debug("Updating wallbox enforce power assignment to %s", enforce)
+
+        try:
+            self._update_guard_wallboxsettings = True
+            await self.hass.async_add_executor_job(
+                self.proxy.set_wallbox_enforce_power_assignment, enforce
+            )
+            self._mydata["wallbox-enforce-power-assignment"] = enforce
+        finally:
+            self._update_guard_wallboxsettings = False
+
+        _LOGGER.debug(
+            "Successfully updated wallbox enforce power assignment to %s", enforce
+        )
 
     async def async_set_wallbox_sun_mode(
         self, enabled: bool, wallbox_index: int

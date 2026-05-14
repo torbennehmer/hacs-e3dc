@@ -76,6 +76,9 @@ class _DiagnosticsDumper:
             "get_power_settings": self._query_data_for_dump(
                 self.e3dc.get_power_settings
             ),
+            "get_wallbox_ems_settings": self._query_data_for_dump(
+                self.proxy.get_wallbox_ems_settings
+            ),
             "is_farm_controller": self.coordinator.is_farm_controller(),
             "EMS_REQ_GET_MANUAL_CHARGE": self._query_data_for_dump(
                 lambda: self.e3dc.sendRequestTag(
