@@ -4,4 +4,5 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-python3 -m pip install --requirement requirements.txt
+/usr/local/bin/python -m pip install --requirement requirements.txt
+/usr/local/bin/python -m pip install --requirement requirements-dev.txt
