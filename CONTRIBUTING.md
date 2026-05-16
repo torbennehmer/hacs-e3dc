@@ -28,7 +28,7 @@ checked-in VS Code/devcontainer settings. Please use the same setup locally so
 formatting, import cleanup, and whitespace handling behave the same for
 everyone.
 
-- Use `scripts/ruff` to apply the repository formatter and ruff bast practice fixes before committing.
+- Use `scripts/ruff` to apply the repository formatter and ruff best practice fixes before committing.
 - Use `scripts/lint` to run the repo checks locally before opening a pull
   request.
 - Use `scripts/setup` after cloning or after updating developer dependencies.
