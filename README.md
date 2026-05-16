@@ -86,19 +86,33 @@ control, use the manual installation method.
 
 ## Configuration
 
-Once you add the integration, you'll be asked to authenticate yourself for a
-local connection to your E3DC.
+When you add the integration, you first choose the authentication type:
+
+- **Portal-User:** Use your E3DC portal account (email address + portal password).
+- **Local user:** Use the offline RSCP account on the device. The username is fixed to **local.user** and is filled in automatically by the integration.
+
+For a manual setup, the integration asks for:
+
+- **Hostname:** The hostname or IP address of the E3/DC system
+- **Password:**
+  - for **Portal-User**: your E3DC portal password
+  - for **Local user**: the password configured on the device under *Main Page -> Personalize -> User profile -> Password for offline RSCP user*
+- **RSCP Password:** This is the encryption key used in RSCP communications. You
+  have to set it on the device under *Main Page -> Personalize -> User profile ->
+  RSCP password.*
+
+If you choose **Portal-User**, you also need:
+
+- **Username:** Your E3DC portal user name / email address
 
 E3DC can be auto-discovered by Home Assistant. If an instance was found, it
 will be shown as discovered. You can then set it up right away. In that case no
 hostname has to be provided.
 
-- **Username:** Your E3DC portal user name
-- **Password:** Your E3DC portal password
-- **Hostname:** The Hostname or IP address of the E3/DC system
-- **RSCP Password:** This is the encryption key used in RSCP communications. You
-  have to set on the device under *Main Page -> Personalize -> User profile ->
-  RSCP password.*
+Please note: the discovery flow currently uses the portal credentials flow.
+
+Existing installations can update or switch their authentication method later
+via the integration's reconfigure flow in Home Assistant.
 
 If you have multiple E3DC instances configured as a farm, the integration will detect
 the farming controller after configuring the first child of the farm and add it to the
@@ -172,7 +186,6 @@ tcp:
 Currently, the following features of pye3dc are not supported:
 
 - Web Connections
-- Local connections when offline, using the backup user.
 
 ## Actions
 

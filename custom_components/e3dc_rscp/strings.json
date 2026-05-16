@@ -1,21 +1,82 @@
 {
   "config": {
     "step": {
-      "reauth_confirm": {
-        "title": "Updating E3DC credentials",
+      "user": {
+        "title": "E3DC authentication type",
+        "description": "Choose how to authenticate with your E3DC device.",
         "data": {
-          "host": "[%key:common::config_flow::data::host%]",
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]",
-          "rscpkey": "RSCP encryption key"
+          "auth_type": "Authentication type"
+        },
+        "data_description": {
+          "auth_type": "Portal-User: Use your E3DC portal account (email + password). Local user: Use the offline RSCP user (username is fixed to 'local.user', password configured on the device under Personalize \u2192 User profile \u2192 Password for offline RSCP user)."
         }
       },
-      "user": {
+      "credentials": {
+        "title": "E3DC credentials",
+        "description": "Enter the connection details.\n\nFor local user: the username will be set automatically to **local.user**.",
         "data": {
-          "host": "[%key:common::config_flow::data::host%]",
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]",
+          "host": "Host or IP address",
+          "username": "Username (E3DC portal email)",
+          "password": "Password",
           "rscpkey": "RSCP encryption key"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the E3DC device on your local network (e.g. 192.168.1.100).",
+          "username": "Your E3DC portal email address (only for Portal-User).",
+          "password": "Portal-User: your E3DC portal password.\nLocal user: the offline RSCP user password set on the device (Personalize \u2192 User profile \u2192 Password for offline RSCP user).",
+          "rscpkey": "The RSCP encryption key configured on the device (Personalize \u2192 User profile \u2192 RSCP password). This is the encryption key, not a login password."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Updating E3DC credentials",
+        "description": "Choose how to authenticate with your E3DC device.",
+        "data": {
+          "auth_type": "Authentication type"
+        },
+        "data_description": {
+          "auth_type": "Portal-User: Use your E3DC portal account. Local user: offline RSCP user (username: local.user)."
+        }
+      },
+      "reauth_credentials": {
+        "title": "Updating E3DC credentials",
+        "description": "Enter the connection details.\n\nFor local user: the username will be set automatically to **local.user**.",
+        "data": {
+          "host": "Host or IP address",
+          "username": "Username (E3DC portal email)",
+          "password": "Password",
+          "rscpkey": "RSCP encryption key"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the E3DC device on your local network (e.g. 192.168.1.100).",
+          "username": "Your E3DC portal email address (only for Portal-User).",
+          "password": "Portal-User: your E3DC portal password.\nLocal user: the offline RSCP user password set on the device.",
+          "rscpkey": "The RSCP encryption key configured on the device (Personalize \u2192 User profile \u2192 RSCP password)."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure E3DC",
+        "description": "Change authentication method or update credentials.",
+        "data": {
+          "auth_type": "Authentication type"
+        },
+        "data_description": {
+          "auth_type": "Portal-User: Use your E3DC portal account. Local user: offline RSCP user (username: local.user)."
+        }
+      },
+      "reconfigure_credentials": {
+        "title": "Reconfigure E3DC credentials",
+        "description": "Update the connection details.\n\nFor local user: the username will be set automatically to **local.user**.",
+        "data": {
+          "host": "Host or IP address",
+          "username": "Username (E3DC portal email)",
+          "password": "Password",
+          "rscpkey": "RSCP encryption key"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the E3DC device on your local network (e.g. 192.168.1.100).",
+          "username": "Your E3DC portal email address (only for Portal-User).",
+          "password": "Portal-User: your E3DC portal password.\nLocal user: the offline RSCP user password set on the device.",
+          "rscpkey": "The RSCP encryption key configured on the device (Personalize \u2192 User profile \u2192 RSCP password)."
         }
       },
       "discovery_confirm": {
@@ -34,7 +95,16 @@
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
+    }
+  },
+  "selector": {
+    "auth_type": {
+      "options": {
+        "cloud": "Portal-User",
+        "local": "Local user (local.user)"
+      }
     }
   },
   "options": {
