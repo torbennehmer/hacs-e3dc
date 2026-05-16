@@ -1,4 +1,5 @@
 """E3DC sensor platform."""
+
 import logging
 from dataclasses import dataclass
 from typing import Any, Final
@@ -38,11 +39,13 @@ from .coordinator import E3DCCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+
 @dataclass(frozen=True)
 class E3DCSensorEntityDescription(SensorEntityDescription):
     """Class describing E3DC Sensor entities."""
 
     icons: dict[str, str] = None
+
 
 SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
     # DIAGNOSTIC SENSORS
@@ -397,7 +400,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         translation_key="pset-powermode",
         icon="mdi:flash",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default = True,
+        entity_registry_enabled_default=True,
     ),
     E3DCSensorEntityDescription(
         key="set-power-value",
@@ -406,8 +409,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         name="Max Charge Power",
         entity_category=EntityCategory.DIAGNOSTIC,
         native_unit_of_measurement="W",
-
-        entity_registry_enabled_default = True,
+        entity_registry_enabled_default=True,
     ),
 )
 
@@ -970,7 +972,9 @@ async def async_setup_entry(
         # Create raw sensors
         for _, slug in BATTERY_MODULE_RAW_SENSORS:
             # Skip soh-reported sensor if device doesn't provide it
-            if slug == "soh-reported" and not battery.get("hasDeviceReportedSoh", False):
+            if slug == "soh-reported" and not battery.get(
+                "hasDeviceReportedSoh", False
+            ):
                 continue
 
             template = BATTERY_SENSOR_DESCRIPTION_TEMPLATES.get(slug)
@@ -1022,9 +1026,16 @@ async def async_setup_entry(
             icon="mdi:information-outline",
             device_class=None,
             entity_registry_enabled_default=False,
-            entity_category=EntityCategory.DIAGNOSTIC
+            entity_category=EntityCategory.DIAGNOSTIC,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_app_software_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                wallbox_app_software_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_consumption_net_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-consumption-net",
@@ -1035,7 +1046,14 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.POWER,
             state_class=SensorStateClass.MEASUREMENT,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_consumption_net_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                wallbox_consumption_net_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_consumption_sun_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-consumption-sun",
@@ -1046,7 +1064,14 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.POWER,
             state_class=SensorStateClass.MEASUREMENT,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_consumption_sun_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                wallbox_consumption_sun_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_energy_all_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-energy-all",
@@ -1058,7 +1083,14 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL_INCREASING,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_energy_all_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                wallbox_energy_all_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_energy_net_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-energy-net",
@@ -1070,7 +1102,14 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL_INCREASING,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_energy_net_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                wallbox_energy_net_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_energy_sun_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-energy-sun",
@@ -1082,7 +1121,14 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL_INCREASING,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_energy_sun_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                wallbox_energy_sun_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_index_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-index",
@@ -1090,9 +1136,13 @@ async def async_setup_entry(
             icon="mdi:numeric",
             device_class=None,
             entity_registry_enabled_default=False,
-            entity_category=EntityCategory.DIAGNOSTIC
+            entity_category=EntityCategory.DIAGNOSTIC,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_index_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator, wallbox_index_description, unique_id, wallbox["deviceInfo"]
+            )
+        )
 
         wallbox_max_charge_current_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-max-charge-current",
@@ -1102,7 +1152,14 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.CURRENT,
             state_class=SensorStateClass.MEASUREMENT,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_max_charge_current_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                wallbox_max_charge_current_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_phases_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-phases",
@@ -1110,7 +1167,14 @@ async def async_setup_entry(
             icon="mdi:sine-wave",
             device_class=None,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_phases_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                wallbox_phases_description,
+                unique_id,
+                wallbox["deviceInfo"],
+            )
+        )
 
         wallbox_soc_description = E3DCSensorEntityDescription(
             key=f"{wallbox_key}-soc",
@@ -1122,7 +1186,11 @@ async def async_setup_entry(
             state_class=SensorStateClass.MEASUREMENT,
             entity_registry_enabled_default=False,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_soc_description, unique_id, wallbox["deviceInfo"]))
+        entities.append(
+            E3DCSensor(
+                coordinator, wallbox_soc_description, unique_id, wallbox["deviceInfo"]
+            )
+        )
 
     if len(coordinator.wallboxes) > 0:
         wallbox_consumption_description = E3DCSensorEntityDescription(
@@ -1135,7 +1203,9 @@ async def async_setup_entry(
             device_class=SensorDeviceClass.POWER,
             state_class=SensorStateClass.MEASUREMENT,
         )
-        entities.append(E3DCSensor(coordinator, wallbox_consumption_description, entry.unique_id))
+        entities.append(
+            E3DCSensor(coordinator, wallbox_consumption_description, entry.unique_id)
+        )
 
     async_add_entities(entities)
 
@@ -1150,16 +1220,14 @@ class E3DCSensor(CoordinatorEntity, SensorEntity):
         coordinator: E3DCCoordinator,
         description: E3DCSensorEntityDescription,
         uid: str,
-        device_info: DeviceInfo | None = None
+        device_info: DeviceInfo | None = None,
     ) -> None:
         """Initialize the Sensor."""
         super().__init__(coordinator)
         self.coordinator: E3DCCoordinator = coordinator
         self.entity_description: E3DCSensorEntityDescription = description
         self._attr_unique_id = f"{uid}_{description.key}"
-        self._has_custom_icons: bool = (
-                self.entity_description.icons is not None
-        )
+        self._has_custom_icons: bool = self.entity_description.icons is not None
         if device_info is not None:
             self._deviceInfo = device_info
         else:
@@ -1174,9 +1242,7 @@ class E3DCSensor(CoordinatorEntity, SensorEntity):
     def icon(self) -> str | None:
         """Return the icon for the sensor."""
         return (
-            self.get_icon()
-            if self._has_custom_icons
-            else self.entity_description.icon
+            self.get_icon() if self._has_custom_icons else self.entity_description.icon
         )
 
     @property

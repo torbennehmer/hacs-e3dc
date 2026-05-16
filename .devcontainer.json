@@ -2,6 +2,14 @@
     "name": "torbennehmer/hacs-e3dc",
     "image": "mcr.microsoft.com/devcontainers/python:3.13",
     "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && scripts/setup",
+    // Optional local SSH agent forwarding (JSONC comments are supported in devcontainer.json):
+    // uncomment locally when needed and do not commit the change.
+    // "runArgs": [
+    //     "-v", "${localEnv:SSH_AUTH_SOCK}:/ssh-agent"
+    // ],
+    // "containerEnv": {
+    //     "SSH_AUTH_SOCK": "/ssh-agent"
+    // },
     "forwardPorts": [
         8124
     ],
@@ -16,7 +24,7 @@
             "extensions": [
                 "DavidAnson.vscode-markdownlint",
                 "github.vscode-pull-request-github",
-                "ms-python.black-formatter",
+                "charliermarsh.ruff",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "ryanluker.vscode-coverage-gutters",
@@ -25,22 +33,15 @@
                 "yzhang.markdown-all-in-one"
             ],
             "settings": {
-                "editor.formatOnPaste": false,
                 "editor.formatOnSave": true,
-                "editor.formatOnType": true,
-                "editor.tabSize": 4,
+                "editor.formatOnType": false,
+                "editor.insertFinalNewline": true,
                 "files.eol": "\n",
                 "files.trimTrailingWhitespace": true,
                 "markdown.extension.toc.levels": "2..6",
                 "python.analysis.autoSearchPaths": false,
-                "python.editor.codeActionsOnSave": {
-                    "source.organizeImports": true
-                },
-                "python.editor.defaultFormatter": "ms-python.black-formatter",
-                "python.editor.formatOnSave": true,
-                "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
-                "python.formatting.provider": "black",
-                "python.pythonPath": "/usr/bin/python3",
+                "python.analysis.typeCheckingMode": "basic",
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
                 "terminal.integrated.defaultProfile.linux": "zsh",
                 "terminal.integrated.profiles.linux": {
                     "zsh": {

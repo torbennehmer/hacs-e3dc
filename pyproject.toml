@@ -1,8 +1,9 @@
-# The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
-
+[tool.ruff]
 target-version = "py311"
+line-length = 88
 
-lint.select = [
+[tool.ruff.lint]
+select = [
     "B007",    # Loop control variable {name} not used within loop body
     "B014",    # Exception handler with duplicate exception
     "C",       # complexity
@@ -26,7 +27,7 @@ lint.select = [
     "W",       # pycodestyle
 ]
 
-lint.ignore = [
+ignore = [
     "D202",  # No blank lines allowed after function docstring
     "D203",  # 1 blank line required before class docstring
     "D213",  # Multi-line docstring summary should start at the second line
@@ -40,8 +41,16 @@ lint.ignore = [
     "UP007", # replaces keep-runtime-typing = true
 ]
 
-[lint.flake8-pytest-style]
+[tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 
-[lint.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 25
+
+[tool.pyright]
+include = ["custom_components/e3dc_rscp"]
+exclude = ["config", ".venv", ".ruff_cache", ".pytest_cache", "build", "dist", "**/node_modules", "**/__pycache__", "**/.*"]
+typeCheckingMode = "basic"
+pythonVersion = "3.11"
+reportMissingTypeStubs = false
+useLibraryCodeForTypes = true

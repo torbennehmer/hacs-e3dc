@@ -94,12 +94,12 @@ async def async_setup_entry(
             on_icon="mdi:weather-sunny",
             off_icon="mdi:weather-sunny-off",
             device_class=SwitchDeviceClass.SWITCH,
-            async_turn_on_action=lambda coordinator, index=wallbox[
-                "index"
-            ]: coordinator.async_set_wallbox_sun_mode(True, index),
-            async_turn_off_action=lambda coordinator, index=wallbox[
-                "index"
-            ]: coordinator.async_set_wallbox_sun_mode(False, index),
+            async_turn_on_action=lambda coordinator,
+            index=wallbox["index"]: coordinator.async_set_wallbox_sun_mode(True, index),
+            async_turn_off_action=lambda coordinator,
+            index=wallbox["index"]: coordinator.async_set_wallbox_sun_mode(
+                False, index
+            ),
         )
         entities.append(
             E3DCSwitch(
@@ -117,12 +117,10 @@ async def async_setup_entry(
             on_icon="mdi:power-plug",
             off_icon="mdi:power-plug-off",
             device_class=SwitchDeviceClass.OUTLET,
-            async_turn_on_action=lambda coordinator, index=wallbox[
-                "index"
-            ]: coordinator.async_set_wallbox_schuko(True, index),
-            async_turn_off_action=lambda coordinator, index=wallbox[
-                "index"
-            ]: coordinator.async_set_wallbox_schuko(False, index),
+            async_turn_on_action=lambda coordinator,
+            index=wallbox["index"]: coordinator.async_set_wallbox_schuko(True, index),
+            async_turn_off_action=lambda coordinator,
+            index=wallbox["index"]: coordinator.async_set_wallbox_schuko(False, index),
             entity_registry_enabled_default=False,  # Disabled per default as only Wallbox multi connect I provides this feature
         )
         entities.append(

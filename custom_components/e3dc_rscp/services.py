@@ -18,7 +18,7 @@ from .const import (
     SERVICE_MANUAL_CHARGE,
     SERVICE_SET_WALLBOX_MAX_CHARGE_CURRENT,
     SERVICE_SET_POWER_MODE,
-    SetPowerMode
+    SetPowerMode,
 )
 from .coordinator import E3DCCoordinator
 
@@ -70,6 +70,7 @@ SCHEMA_SET_POWER_MODE = vol.Schema(
     }
 )
 
+
 async def async_setup_services(hass: HomeAssistant) -> None:
     """Central hook to register all services, called by component setup."""
 
@@ -113,7 +114,6 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         service_func=async_call_set_wallbox_max_charge_current,
         schema=SCHEMA_SET_WALLBOX_MAX_CHARGE_CURRENT,
     )
-
 
     # hass.services.register(DOMAIN, "servicename", lambda, schema)
     async def async_call_set_power_mode(call: ServiceCall) -> None:
@@ -267,19 +267,15 @@ async def _async_set_power_mode(hass: HomeAssistant, call: ServiceCall) -> None:
             f"{SERVICE_SET_POWER_MODE}: Need to set at least one mode"
         )
     if (
-        power_mode_enum == SetPowerMode.CHARGE or
-        power_mode_enum == SetPowerMode.CHARGE_GRID or
-        power_mode_enum == SetPowerMode.DISCHARGE
+        power_mode_enum == SetPowerMode.CHARGE
+        or power_mode_enum == SetPowerMode.CHARGE_GRID
+        or power_mode_enum == SetPowerMode.DISCHARGE
     ) and (power_value is None or power_value <= 0):
         raise ServiceValidationError(
             f"{SERVICE_SET_POWER_MODE}: must be called with a value above zero for {power_mode}."
         )
 
-    if (
-        power_mode_enum == SetPowerMode.NORMAL or
-        power_mode_enum == SetPowerMode.IDLE):
+    if power_mode_enum == SetPowerMode.NORMAL or power_mode_enum == SetPowerMode.IDLE:
         power_value = None
 
-    await coordinator.async_set_power_mode(
-        mode=power_mode_enum, value=power_value
-    )
+    await coordinator.async_set_power_mode(mode=power_mode_enum, value=power_value)
