@@ -28,10 +28,12 @@ checked-in VS Code/devcontainer settings. Please use the same setup locally so
 formatting, import cleanup, and whitespace handling behave the same for
 everyone.
 
-- Use `scripts/format` to apply the repository formatter before committing.
+- Use `scripts/ruff` to apply the repository formatter and ruff bast practice fixes before committing.
 - Use `scripts/lint` to run the repo checks locally before opening a pull
   request.
 - Use `scripts/setup` after cloning or after updating developer dependencies.
+- SSH agent forwarding is optional. Uncomment the block in
+  `.devcontainer.json` locally when needed and keep that change uncommitted.
 - The workspace expects Python to resolve to `/usr/local/bin/python`.
 - VS Code is configured for format-on-save with Ruff for Python files.
 - Trailing whitespace and final newlines are cleaned automatically by the
@@ -72,7 +74,7 @@ People *love* thorough bug reports. I'm not even kidding.
 Use Ruff for formatting and linting. The repository config is in
 [pyproject.toml](pyproject.toml), and the expected local commands are:
 
-- `scripts/format` for formatting changes
+- `scripts/ruff` for formatting changes
 - `scripts/lint` for validation before review
 
 Please avoid rewrapping or whitespace-only changes that are not required by
@@ -98,7 +100,7 @@ other HA environments.
 
 When you touch Python code, please make sure the following still pass:
 
-- Ruff formatting: `scripts/format`
+- Ruff formatting and best practice fixes: `scripts/ruff`
 - Ruff linting: `scripts/lint`
 - Home Assistant startup in the devcontainer or via `scripts/develop`
 

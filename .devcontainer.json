@@ -2,12 +2,14 @@
     "name": "torbennehmer/hacs-e3dc",
     "image": "mcr.microsoft.com/devcontainers/python:3.13",
     "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && scripts/setup",
-    "runArgs": [
-        "-v", "${localEnv:SSH_AUTH_SOCK}:/ssh-agent"
-    ],
-    "containerEnv": {
-        "SSH_AUTH_SOCK": "/ssh-agent"
-    },
+    // Optional local SSH agent forwarding (JSONC comments are supported in devcontainer.json):
+    // uncomment locally when needed and do not commit the change.
+    // "runArgs": [
+    //     "-v", "${localEnv:SSH_AUTH_SOCK}:/ssh-agent"
+    // ],
+    // "containerEnv": {
+    //     "SSH_AUTH_SOCK": "/ssh-agent"
+    // },
     "forwardPorts": [
         8124
     ],
