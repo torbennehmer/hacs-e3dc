@@ -71,7 +71,7 @@ Additional rules:
 ### Dev Container specifics
 - The HA dev Container uses /usr/local/bin/python
 - All packages are installed systemwide using /usr/local/bin/pip
-- /usr/local/bin is priorized in the path env
+- /usr/local/bin is prioritized in the path env
 - no venv is in use
 
 ## When Adding New Sensors/Features
