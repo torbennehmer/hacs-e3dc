@@ -11,7 +11,7 @@ from homeassistant.components.button import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -47,7 +47,9 @@ async def async_setup_entry(
 
     for wallbox in coordinator.wallboxes:
         # Get the UID & Key for the given wallbox
-        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        device_info = wallbox["deviceInfo"]
+        assert "identifiers" in device_info and device_info["identifiers"]
+        unique_id = list(device_info["identifiers"])[0][1]
         wallbox_key = wallbox["key"]
 
         wallbox_toggle_wallbox_phases_description = E3DCButtonEntityDescription(
@@ -62,7 +64,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_toggle_wallbox_phases_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
@@ -78,7 +80,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_toggle_wallbox_charging_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
