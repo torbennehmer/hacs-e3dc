@@ -350,15 +350,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Getting SG Ready status information")
         await self._load_and_process_sgready_state()
 
+        _LOGGER.debug("Polling additional powermeters")
+        await self._load_and_process_powermeters_data()
+
         if self._update_guard_wallboxsettings is False:
-            _LOGGER.debug("Polling additional powermeters")
-            await self._load_and_process_powermeters_data()
+            if len(self.wallboxes) > 0:
+                _LOGGER.debug("Polling wallbox")
+            await self._load_and_process_wallbox_data()
         else:
             _LOGGER.debug("Not polling wallbox, they are updating right now")
-
-        if len(self.wallboxes) > 0:
-            _LOGGER.debug("Polling wallbox")
-            await self._load_and_process_wallbox_data()
 
         if self.create_battery_devices:
             _LOGGER.debug("Polling battery data")
