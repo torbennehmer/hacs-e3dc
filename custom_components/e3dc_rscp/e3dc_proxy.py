@@ -186,6 +186,29 @@ class E3DCProxy:
         return self.e3dc.get_powermeters(keepAlive=True)
 
     @e3dc_call
+    def get_wallbox_ems_settings(self) -> dict[str, Any]:
+        """Load wallbox EMS settings."""
+        beforeCarMode: int = self.e3dc.sendRequestTag(
+            RscpTag.EMS_REQ_BATTERY_BEFORE_CAR_MODE
+        )
+        batToCarMode: int = self.e3dc.sendRequestTag(
+            RscpTag.EMS_REQ_BATTERY_TO_CAR_MODE
+        )
+        batWBDischargeLimit: int = self.e3dc.sendRequestTag(
+            RscpTag.EMS_REQ_GET_WB_DISCHARGE_BAT_UNTIL
+        )
+        wbEnforcePowerAssignement: bool = self.e3dc.sendRequestTag(
+            RscpTag.EMS_REQ_GET_WALLBOX_ENFORCE_POWER_ASSIGNMENT
+        )
+
+        result: dict[str, Any] = {}
+        result["battery-before-car-mode"] = False if beforeCarMode == 0 else True
+        result["battery-to-car-mode"] = False if batToCarMode == 0 else True
+        result["battery-wallbox-discharge-limit"] = batWBDischargeLimit
+        result["wallbox-enforce-power-assignment"] = wbEnforcePowerAssignement
+        return result
+
+    @e3dc_call
     def get_wallbox_data(self, wallbox_index: int) -> dict[str, Any]:
         """Poll current wallbox readings."""
         return self.e3dc.get_wallbox_data(wbIndex=wallbox_index, keepAlive=True)
@@ -467,6 +490,71 @@ class E3DCProxy:
         return self.e3dc.set_wallbox_max_charge_current(
             max_charge_current=max_charge_current, wbIndex=wallbox_index, keepAlive=True
         )
+
+    @e3dc_call
+    def set_battery_before_car_mode(self, mode: bool) -> bool:
+        """Set the battery before car mode."""
+        _LOGGER.debug("Setting battery before car mode to %s", mode)
+        if mode == True:
+            _LOGGER.debug("Charging priority is battery, so we need to disable battery to car mode.")
+            battocar = self.set_battery_to_car_mode(False)
+            if battocar is True:
+                raise HomeAssistantError("Failed to disable battery to car mode: Cannot set battery before car mode")
+
+        result = self.e3dc.sendRequest(
+            (
+                RscpTag.EMS_REQ_SET_BATTERY_BEFORE_CAR_MODE,
+                RscpType.UChar8,
+                1 if mode else 0,
+            ),
+            keepAlive=True,
+        )
+        if result[2] == 255:
+            raise HomeAssistantError("Failed to set battery before car mode, invalid operation.")
+        return False if result[2] == 0 else True
+
+    @e3dc_call
+    def set_battery_to_car_mode(self, mode: bool) -> bool:
+        """Set the battery to car mode."""
+        _LOGGER.debug("Setting battery to car mode to %s", mode)
+        result = self.e3dc.sendRequest(
+            (
+                RscpTag.EMS_REQ_SET_BATTERY_TO_CAR_MODE,
+                RscpType.UChar8,
+                1 if mode else 0,
+            ),
+            keepAlive=True,
+        )
+        if result[2] == 255:
+            raise HomeAssistantError("Failed to set battery to car mode, invalid operation.")
+        return False if result[2] == 0 else True
+
+    @e3dc_call
+    def set_battery_wallbox_discharge_limit(self, limit: int) -> None:
+        """Set the battery wallbox discharge limit."""
+        # We don't get a sensible result here, E3DC returns the value
+        # EMS_SET_BATTERY_BEFORE_CAR_MODE instead, which does not help us.
+        # Thus, we need to query it afterwards.
+        _LOGGER.debug("Setting battery wallbox discharge limit to %s", limit)
+        self.e3dc.sendRequest(
+            (RscpTag.EMS_REQ_SET_WB_DISCHARGE_BAT_UNTIL, RscpType.Uint32, limit),
+            keepAlive=True,
+        )
+        return self.e3dc.sendRequestTag(RscpTag.EMS_REQ_GET_WB_DISCHARGE_BAT_UNTIL)
+
+    @e3dc_call
+    def set_wallbox_enforce_power_assignment(self, enforce: bool) -> bool:
+        """Set the wallbox enforce power assignment mode."""
+        _LOGGER.debug("Setting wallbox enforce power assignment to %s", enforce)
+        result = self.e3dc.sendRequest(
+            (
+                RscpTag.EMS_REQ_SET_WALLBOX_ENFORCE_POWER_ASSIGNMENT,
+                RscpType.Bool,
+                enforce,
+            ),
+            keepAlive=True,
+        )
+        return result[2]
 
     @e3dc_call
     def set_power_limits(
