@@ -495,7 +495,7 @@ class E3DCProxy:
     def set_battery_before_car_mode(self, mode: bool) -> bool:
         """Set the battery before car mode."""
         _LOGGER.debug("Setting battery before car mode to %s", mode)
-        if mode == True:
+        if mode:
             _LOGGER.debug("Charging priority is battery, so we need to disable battery to car mode.")
             battocar = self.set_battery_to_car_mode(False)
             if battocar is True:
