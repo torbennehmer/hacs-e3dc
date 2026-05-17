@@ -30,9 +30,7 @@ class E3DCSwitchEntityDescription(SwitchEntityDescription):
     on_icon: str | None = None
     off_icon: str | None = None
     enabling_depends_on_wallbox: bool = False
-    available_fn: (
-        Callable[[E3DCCoordinator], bool] | None
-    ) = None
+    available_fn: Callable[[E3DCCoordinator], bool] | None = None
     async_turn_on_action: (
         Callable[[E3DCCoordinator], Coroutine[Any, Any, bool]] | None
     ) = None
@@ -134,7 +132,9 @@ async def async_setup_entry(
         # If enabling_depends_on_wallbox, set entity_registry_enabled_default accordingly
         if getattr(description, "enabling_depends_on_wallbox", False):
             # Create a new instance with the correct flag
-            desc = replace(description, entity_registry_enabled_default=wallboxes_present)
+            desc = replace(
+                description, entity_registry_enabled_default=wallboxes_present
+            )
             entities.append(E3DCSwitch(coordinator, desc, entry.unique_id))
         else:
             entities.append(E3DCSwitch(coordinator, description, entry.unique_id))

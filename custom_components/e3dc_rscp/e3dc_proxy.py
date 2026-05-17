@@ -496,10 +496,14 @@ class E3DCProxy:
         """Set the battery before car mode."""
         _LOGGER.debug("Setting battery before car mode to %s", mode)
         if mode:
-            _LOGGER.debug("Charging priority is battery, so we need to disable battery to car mode.")
+            _LOGGER.debug(
+                "Charging priority is battery, so we need to disable battery to car mode."
+            )
             battocar = self.set_battery_to_car_mode(False)
             if battocar is True:
-                raise HomeAssistantError("Failed to disable battery to car mode: Cannot set battery before car mode")
+                raise HomeAssistantError(
+                    "Failed to disable battery to car mode: Cannot set battery before car mode"
+                )
 
         result = self.e3dc.sendRequest(
             (
@@ -510,7 +514,9 @@ class E3DCProxy:
             keepAlive=True,
         )
         if result[2] == 255:
-            raise HomeAssistantError("Failed to set battery before car mode, invalid operation.")
+            raise HomeAssistantError(
+                "Failed to set battery before car mode, invalid operation."
+            )
         return False if result[2] == 0 else True
 
     @e3dc_call
@@ -526,7 +532,9 @@ class E3DCProxy:
             keepAlive=True,
         )
         if result[2] == 255:
-            raise HomeAssistantError("Failed to set battery to car mode, invalid operation.")
+            raise HomeAssistantError(
+                "Failed to set battery to car mode, invalid operation."
+            )
         return False if result[2] == 0 else True
 
     @e3dc_call

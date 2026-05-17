@@ -64,7 +64,9 @@ async def async_setup_entry(
 
     for description in NUMBER_DESCRIPTIONS:
         if getattr(description, "enabling_depends_on_wallbox", False):
-            desc = replace(description, entity_registry_enabled_default=wallboxes_present)
+            desc = replace(
+                description, entity_registry_enabled_default=wallboxes_present
+            )
             entities.append(E3DCNumber(coordinator, desc, entry.unique_id))
         else:
             entities.append(E3DCNumber(coordinator, description, entry.unique_id))
