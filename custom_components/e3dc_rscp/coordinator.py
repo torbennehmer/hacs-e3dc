@@ -337,6 +337,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling general status information")
         await self._load_and_process_poll()
 
+        _LOGGER.debug("Polling system status information")
+        await self._load_and_process_system_status()
+
         # TODO: Check if we need to replace this with a safe IPC sync
         if self._update_guard_powersettings is False:
             _LOGGER.debug("Poll power settings")
@@ -400,6 +403,24 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["pset-weatherregulationenabled"] = power_settings[
             "weatherRegulatedChargeEnabled"
         ]
+
+    async def _load_and_process_system_status(self) -> None:
+        """Load and process E3DC system status flags."""
+        try:
+            system_status: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_system_status
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load system status, not updating data: %s", ex)
+            return
+
+        if "pvDerated" not in system_status:
+            _LOGGER.debug(
+                "System status did not include pvDerated, keeping previous PV derated state"
+            )
+            return
+
+        self._mydata["system-pv-derated"] = bool(system_status["pvDerated"])
 
     async def _load_and_process_poll(self):
         """Load and process standard poll data."""
