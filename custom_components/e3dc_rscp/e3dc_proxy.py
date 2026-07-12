@@ -181,6 +181,11 @@ class E3DCProxy:
         return self.e3dc.get_power_settings(keepAlive=True)
 
     @e3dc_call
+    def get_system_status(self) -> dict[str, Any]:
+        """Load E3DC system status flags."""
+        return self.e3dc.get_system_status(keepAlive=True)
+
+    @e3dc_call
     def get_powermeters(self) -> dict[str, Any]:
         """Load available powermeters from E3DC."""
         return self.e3dc.get_powermeters(keepAlive=True)

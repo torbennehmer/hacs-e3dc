@@ -56,6 +56,13 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         off_icon="mdi:electric-switch",
     ),
     E3DCBinarySensorEntityDescription(
+        key="system-pv-derated",
+        translation_key="system-pv-derated",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        on_icon="mdi:solar-power-variant-outline",
+        off_icon="mdi:solar-power-variant",
+    ),
+    E3DCBinarySensorEntityDescription(
         key="sgready-active",
         translation_key="sgready-active",
         device_class=BinarySensorDeviceClass.RUNNING,
