@@ -11,7 +11,7 @@ from homeassistant.components.button import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -47,22 +47,32 @@ async def async_setup_entry(
 
     for wallbox in coordinator.wallboxes:
         # Get the UID & Key for the given wallbox
-        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        device_info = wallbox["deviceInfo"]
+        identifiers = device_info.get("identifiers")
+        if not identifiers:
+            _LOGGER.warning(
+                "Wallbox deviceInfo has no identifiers, skipping wallbox %s (key: %s)",
+                wallbox["index"],
+                wallbox["key"],
+            )
+            continue
+        unique_id = next(iter(identifiers))[1]
         wallbox_key = wallbox["key"]
 
         wallbox_toggle_wallbox_phases_description = E3DCButtonEntityDescription(
             key=f"{wallbox_key}-toggle-wallbox-phases",
             translation_key="wallbox-toggle-wallbox-phases",
             icon="mdi:sine-wave",
-            async_press_action=lambda coordinator,
-            index=wallbox["index"]: coordinator.async_toggle_wallbox_phases(index),
+            async_press_action=lambda coordinator, index=wallbox["index"]: (
+                coordinator.async_toggle_wallbox_phases(index)
+            ),
         )
         entities.append(
             E3DCButton(
                 coordinator,
                 wallbox_toggle_wallbox_phases_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
@@ -70,15 +80,16 @@ async def async_setup_entry(
             key=f"{wallbox_key}-toggle-wallbox-charging",
             translation_key="wallbox-toggle-wallbox-charging",
             icon="mdi:car-electric",
-            async_press_action=lambda coordinator,
-            index=wallbox["index"]: coordinator.async_toggle_wallbox_charging(index),
+            async_press_action=lambda coordinator, index=wallbox["index"]: (
+                coordinator.async_toggle_wallbox_charging(index)
+            ),
         )
         entities.append(
             E3DCButton(
                 coordinator,
                 wallbox_toggle_wallbox_charging_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 

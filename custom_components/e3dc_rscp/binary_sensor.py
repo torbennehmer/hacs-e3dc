@@ -12,7 +12,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -80,7 +80,16 @@ async def async_setup_entry(
 
     for wallbox in coordinator.wallboxes:
         # Get the UID & Key for the given wallbox
-        unique_id = list(wallbox["deviceInfo"]["identifiers"])[0][1]
+        device_info = wallbox["deviceInfo"]
+        identifiers = device_info.get("identifiers")
+        if not identifiers:
+            _LOGGER.warning(
+                "Wallbox deviceInfo has no identifiers, skipping wallbox %s (key: %s)",
+                wallbox["index"],
+                wallbox["key"],
+            )
+            continue
+        unique_id = next(iter(identifiers))[1]
         wallbox_key = wallbox["key"]
 
         wallbox_sun_mode_description = E3DCBinarySensorEntityDescription(
@@ -95,7 +104,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_sun_mode_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
@@ -112,7 +121,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_plug_lock_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
@@ -125,7 +134,7 @@ async def async_setup_entry(
         )
         entities.append(
             E3DCBinarySensor(
-                coordinator, wallbox_plug_description, unique_id, wallbox["deviceInfo"]
+                coordinator, wallbox_plug_description, unique_id, device_info
             )
         )
 
@@ -142,7 +151,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_schuko_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
@@ -158,7 +167,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_charging_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
@@ -174,7 +183,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_charging_canceled_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
@@ -191,7 +200,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_battery_to_car_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 
@@ -208,7 +217,7 @@ async def async_setup_entry(
                 coordinator,
                 wallbox_key_state_description,
                 unique_id,
-                wallbox["deviceInfo"],
+                device_info,
             )
         )
 

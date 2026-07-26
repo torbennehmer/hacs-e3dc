@@ -1,6 +1,7 @@
 """Battery management for E3DC integration."""
 
 import asyncio
+from collections.abc import Callable
 from datetime import date
 import logging
 from typing import Any, TypedDict
@@ -8,9 +9,10 @@ from typing import Any, TypedDict
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .e3dc_proxy import E3DCProxy
+from .utils import as_float_or_none, as_int_or_none
 
 from .const import (
     DOMAIN,
@@ -52,7 +54,7 @@ class E3DCBatteryManager:
         uid: str,
         proxy: E3DCProxy,
         mydata: dict[str, Any],
-        create_battery_devices_callback: callable,
+        create_battery_devices_callback: Callable[[], bool],
     ) -> None:
         """Initialize the battery manager.
 
@@ -188,7 +190,7 @@ class E3DCBatteryManager:
 
                 pack_key = f"battery-pack-{pack_index}"
                 pack_unique_id = f"{self.uid}-{pack_key}"
-                pack_entry = pack_entries.get(pack_index)
+                pack_entry: E3DCBatteryPack | None = pack_entries.get(pack_index)
                 if pack_entry is None:
                     pack_manufacturer = _normalize(pack_details.get("manufactureName"))
                     pack_model = _normalize(pack_details.get("deviceName"))
@@ -202,13 +204,13 @@ class E3DCBatteryManager:
                         model=pack_model,
                     )
 
-                    pack_entry = {
-                        "index": pack_index,
-                        "key": pack_key,
-                        "uniqueId": pack_unique_id,
-                        "name": pack_name,
-                        "deviceInfo": deviceInfo,
-                    }
+                    pack_entry = E3DCBatteryPack(
+                        index=pack_index,
+                        key=pack_key,
+                        uniqueId=pack_unique_id,
+                        name=pack_name,
+                        deviceInfo=deviceInfo,
+                    )
                     pack_entries[pack_index] = pack_entry
 
                 for dcb_index in range(dcb_count):
@@ -381,10 +383,7 @@ class E3DCBatteryManager:
                 return len(dcbs)
 
         raw_count = pack.get("dcbCount")
-        try:
-            return int(raw_count)
-        except (TypeError, ValueError):
-            return None
+        return as_int_or_none(raw_count)
 
     def _get_dcb_design_voltage(self, pack: dict[str, Any]) -> Any:
         """Get the design voltage from the first DCB module in a pack.
@@ -410,13 +409,9 @@ class E3DCBatteryManager:
         if dcb_count is None or dcb_count <= 0:
             return None
 
-        design_capacity_raw = pack.get("designCapacity")
-        design_voltage_raw = self._get_dcb_design_voltage(pack)
-
-        try:
-            design_capacity = float(design_capacity_raw)
-            design_voltage = float(design_voltage_raw)
-        except (TypeError, ValueError):
+        design_capacity = as_float_or_none(pack.get("designCapacity"))
+        design_voltage = as_float_or_none(self._get_dcb_design_voltage(pack))
+        if design_capacity is None or design_voltage is None:
             return None
 
         return (design_capacity * (dcb_count * design_voltage)) / 1000
@@ -427,25 +422,18 @@ class E3DCBatteryManager:
         if dcb_count is None or dcb_count <= 0:
             return None
 
-        full_charge_capacity_raw = pack.get("fcc")
-        design_voltage_raw = self._get_dcb_design_voltage(pack)
-
-        try:
-            full_charge_capacity = float(full_charge_capacity_raw)
-            design_voltage = float(design_voltage_raw)
-        except (TypeError, ValueError):
+        full_charge_capacity = as_float_or_none(pack.get("fcc"))
+        design_voltage = as_float_or_none(self._get_dcb_design_voltage(pack))
+        if full_charge_capacity is None or design_voltage is None:
             return None
 
         return (full_charge_capacity * (dcb_count * design_voltage)) / 1000
 
     def _calculate_battery_remaining_energy(self, pack: dict[str, Any]) -> float | None:
         """Calculate battery pack remaining energy in kWh."""
-        remaining_capacity_raw = pack.get("rc")
-        module_voltage_raw = pack.get("moduleVoltage")
-        try:
-            remaining_capacity = float(remaining_capacity_raw)
-            module_voltage = float(module_voltage_raw)
-        except (TypeError, ValueError):
+        remaining_capacity = as_float_or_none(pack.get("rc"))
+        module_voltage = as_float_or_none(pack.get("moduleVoltage"))
+        if remaining_capacity is None or module_voltage is None:
             return None
 
         return (remaining_capacity * module_voltage) / 1000
@@ -454,24 +442,20 @@ class E3DCBatteryManager:
         self, pack: dict[str, Any]
     ) -> float | None:
         """Calculate battery pack usable remaining energy in kWh."""
-        usable_remaining_capacity_raw = pack.get("usuableRemainingCapacity")
-        module_voltage_raw = pack.get("moduleVoltage")
-        try:
-            usable_remaining_capacity = float(usable_remaining_capacity_raw)
-            module_voltage = float(module_voltage_raw)
-        except (TypeError, ValueError):
+        usable_remaining_capacity = as_float_or_none(
+            pack.get("usuableRemainingCapacity")
+        )
+        module_voltage = as_float_or_none(pack.get("moduleVoltage"))
+        if usable_remaining_capacity is None or module_voltage is None:
             return None
 
         return (usable_remaining_capacity * module_voltage) / 1000
 
     def _calculate_battery_state_of_health(self, pack: dict[str, Any]) -> float | None:
         """Calculate battery pack state of health as percentage."""
-        design_capacity = pack.get("designCapacity")
-        full_charge_capacity = pack.get("fcc")
-        try:
-            design_capacity_float = float(design_capacity)
-            full_charge_capacity_float = float(full_charge_capacity)
-        except (TypeError, ValueError):
+        design_capacity_float = as_float_or_none(pack.get("designCapacity"))
+        full_charge_capacity_float = as_float_or_none(pack.get("fcc"))
+        if design_capacity_float is None or full_charge_capacity_float is None:
             return None
 
         if design_capacity_float <= 0:
@@ -496,23 +480,17 @@ class E3DCBatteryManager:
 
     def _calculate_battery_soc_from_capacity(self, dcb: dict[str, Any]) -> float | None:
         """Calculate SOC from remaining capacity and voltage if not directly available."""
-        remaining_capacity_raw = dcb.get("remainingCapacity")
-        voltage_raw = dcb.get("voltage")
-        try:
-            remaining_capacity = float(remaining_capacity_raw)
-            voltage = float(voltage_raw)
-        except (TypeError, ValueError):
+        remaining_capacity = as_float_or_none(dcb.get("remainingCapacity"))
+        voltage = as_float_or_none(dcb.get("voltage"))
+        if remaining_capacity is None or voltage is None:
             return None
         return (remaining_capacity * voltage) / 1000
 
     def _calculate_battery_soh_from_capacity(self, dcb: dict[str, Any]) -> float | None:
         """Calculate SOH from full charge capacity and design capacity if not directly available."""
-        full_charge_capacity_raw = dcb.get("fullChargeCapacity")
-        design_capacity_raw = dcb.get("designCapacity")
-        try:
-            full_charge_capacity = float(full_charge_capacity_raw)
-            design_capacity = float(design_capacity_raw)
-        except (TypeError, ValueError):
+        full_charge_capacity = as_float_or_none(dcb.get("fullChargeCapacity"))
+        design_capacity = as_float_or_none(dcb.get("designCapacity"))
+        if full_charge_capacity is None or design_capacity is None:
             return None
 
         if design_capacity <= 0:
@@ -522,9 +500,8 @@ class E3DCBatteryManager:
 
     def _parse_battery_manufacture_date(self, value: Any) -> str | None:
         """Parse battery manufacture date from numeric format to ISO date string."""
-        try:
-            value_int: int = int(value)
-        except (TypeError, ValueError):
+        value_int = as_int_or_none(value)
+        if value_int is None:
             return None
 
         value_str: str = f"{value_int:06d}"

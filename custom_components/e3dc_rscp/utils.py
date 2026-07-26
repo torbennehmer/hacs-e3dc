@@ -1,6 +1,8 @@
 """Utility functions for E3DC RSCP integration."""
 
 import logging
+from typing import Any
+
 from .const import CONF_RSCPKEY, DOMAIN
 
 from .e3dc_proxy import E3DCProxy
@@ -13,6 +15,28 @@ from homeassistant.const import (
 from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def as_int_or_none(value: Any | None) -> int | None:
+    """Convert value to int if possible, otherwise return None."""
+    if value is None:
+        return None
+
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def as_float_or_none(value: Any | None) -> float | None:
+    """Convert value to float if possible, otherwise return None."""
+    if value is None:
+        return None
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 async def initialize_farm_controller_flow_if_needed(
