@@ -50,7 +50,9 @@ async def async_setup_entry(
         device_info = wallbox["deviceInfo"]
         identifiers = device_info.get("identifiers")
         if not identifiers:
-            _LOGGER.warning("Wallbox deviceInfo has no identifiers, skipping wallbox: %s", wallbox)
+            _LOGGER.warning(
+                "Wallbox deviceInfo has no identifiers, skipping wallbox: %s", wallbox
+            )
             continue
         unique_id = next(iter(identifiers))[1]
         wallbox_key = wallbox["key"]
