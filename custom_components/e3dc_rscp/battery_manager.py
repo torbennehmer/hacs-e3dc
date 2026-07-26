@@ -190,7 +190,7 @@ class E3DCBatteryManager:
 
                 pack_key = f"battery-pack-{pack_index}"
                 pack_unique_id = f"{self.uid}-{pack_key}"
-                pack_entry : E3DCBatteryPack | None = pack_entries.get(pack_index)
+                pack_entry: E3DCBatteryPack | None = pack_entries.get(pack_index)
                 if pack_entry is None:
                     pack_manufacturer = _normalize(pack_details.get("manufactureName"))
                     pack_model = _normalize(pack_details.get("deviceName"))
