@@ -81,8 +81,11 @@ async def async_setup_entry(
     for wallbox in coordinator.wallboxes:
         # Get the UID & Key for the given wallbox
         device_info = wallbox["deviceInfo"]
-        assert "identifiers" in device_info and device_info["identifiers"]
-        unique_id = list(device_info["identifiers"])[0][1]
+        identifiers = device_info.get("identifiers")
+        if not identifiers:
+            _LOGGER.warning("Wallbox deviceInfo has no identifiers, skipping wallbox: %s", wallbox)
+            continue
+        unique_id = next(iter(identifiers))[1]
         wallbox_key = wallbox["key"]
 
         wallbox_sun_mode_description = E3DCBinarySensorEntityDescription(
