@@ -181,23 +181,23 @@ class E3DCProxy:
     def get_wallbox_ems_settings(self) -> dict[str, Any]:
         """Load wallbox EMS settings."""
         beforeCarMode: int = self.e3dc.sendRequestTag(
-            RscpTag.EMS_REQ_BATTERY_BEFORE_CAR_MODE
+            RscpTag.EMS_REQ_BATTERY_BEFORE_CAR_MODE, keepAlive=True
         )
         batToCarMode: int = self.e3dc.sendRequestTag(
-            RscpTag.EMS_REQ_BATTERY_TO_CAR_MODE
+            RscpTag.EMS_REQ_BATTERY_TO_CAR_MODE, keepAlive=True
         )
         batWBDischargeLimit: int = self.e3dc.sendRequestTag(
-            RscpTag.EMS_REQ_GET_WB_DISCHARGE_BAT_UNTIL
+            RscpTag.EMS_REQ_GET_WB_DISCHARGE_BAT_UNTIL, keepAlive=True
         )
-        wbEnforcePowerAssignement: bool = self.e3dc.sendRequestTag(
-            RscpTag.EMS_REQ_GET_WALLBOX_ENFORCE_POWER_ASSIGNMENT
+        wbEnforcePowerAssignment: bool = self.e3dc.sendRequestTag(
+            RscpTag.EMS_REQ_GET_WALLBOX_ENFORCE_POWER_ASSIGNMENT, keepAlive=True
         )
 
         result: dict[str, Any] = {}
         result["battery-before-car-mode"] = False if beforeCarMode == 0 else True
         result["battery-to-car-mode"] = False if batToCarMode == 0 else True
         result["battery-wallbox-discharge-limit"] = batWBDischargeLimit
-        result["wallbox-enforce-power-assignment"] = wbEnforcePowerAssignement
+        result["wallbox-enforce-power-assignment"] = wbEnforcePowerAssignment
         return result
 
     @e3dc_call
@@ -530,8 +530,8 @@ class E3DCProxy:
         return False if result[2] == 0 else True
 
     @e3dc_call
-    def set_battery_wallbox_discharge_limit(self, limit: int) -> None:
-        """Set the battery wallbox discharge limit."""
+    def set_battery_wallbox_discharge_limit(self, limit: int) -> int:
+        """Set the battery wallbox discharge limit, returns the value E3DC reports back."""
         # We don't get a sensible result here, E3DC returns the value
         # EMS_SET_BATTERY_BEFORE_CAR_MODE instead, which does not help us.
         # Thus, we need to query it afterwards.
@@ -540,7 +540,9 @@ class E3DCProxy:
             (RscpTag.EMS_REQ_SET_WB_DISCHARGE_BAT_UNTIL, RscpType.Uint32, limit),
             keepAlive=True,
         )
-        return self.e3dc.sendRequestTag(RscpTag.EMS_REQ_GET_WB_DISCHARGE_BAT_UNTIL)
+        return self.e3dc.sendRequestTag(
+            RscpTag.EMS_REQ_GET_WB_DISCHARGE_BAT_UNTIL, keepAlive=True
+        )
 
     @e3dc_call
     def set_wallbox_enforce_power_assignment(self, enforce: bool) -> bool:

@@ -562,24 +562,24 @@
                 "name": "Schuko"
             },
             "battery-before-car-mode": {
-                "name": "Wallbox charging priorization",
+                "name": "Wallbox charging prioritization",
                 "state": {
-                    "on": "Battery first",
-                    "off": "Wallbox first"
+                    "on": "Battery First",
+                    "off": "Wallbox First"
                 }
             },
             "battery-to-car-mode": {
                 "name": "Battery discharge by wallbox in sun mode",
                 "state": {
                     "on": "Allowed",
-                    "off": "Disallowed"
+                    "off": "Blocked"
                 }
             },
             "wallbox-enforce-power-assignment": {
-                "name": "Battery discharge by wallbox in special modes",
+                "name": "Enforce power assignment when discharging battery by wallbox",
                 "state": {
-                    "on": "Suspended",
-                    "off": "Allow in mix mode, during hold time and time function"
+                    "on": "Disallowed",
+                    "off": "Allowed in mixed mode and during hold and timers"
                 }
             }
         },
