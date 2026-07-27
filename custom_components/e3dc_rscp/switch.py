@@ -61,11 +61,11 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         off_icon="mdi:weather-sunny-off",
         device_class=SwitchDeviceClass.SWITCH,
         entity_category=EntityCategory.CONFIG,
-        async_turn_on_action=lambda coordinator: coordinator.async_set_weather_regulated_charge(
-            True
+        async_turn_on_action=lambda coordinator: (
+            coordinator.async_set_weather_regulated_charge(True)
         ),
-        async_turn_off_action=lambda coordinator: coordinator.async_set_weather_regulated_charge(
-            False
+        async_turn_off_action=lambda coordinator: (
+            coordinator.async_set_weather_regulated_charge(False)
         ),
     ),
     # EMS WALLBOX SWITCHES
@@ -77,11 +77,11 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         device_class=SwitchDeviceClass.SWITCH,
         entity_category=EntityCategory.CONFIG,
         enabling_depends_on_wallbox=True,
-        async_turn_on_action=lambda coordinator: coordinator.async_set_battery_before_car_mode(
-            True
+        async_turn_on_action=lambda coordinator: (
+            coordinator.async_set_battery_before_car_mode(True)
         ),
-        async_turn_off_action=lambda coordinator: coordinator.async_set_battery_before_car_mode(
-            False
+        async_turn_off_action=lambda coordinator: (
+            coordinator.async_set_battery_before_car_mode(False)
         ),
     ),
     E3DCSwitchEntityDescription(
@@ -92,14 +92,14 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         device_class=SwitchDeviceClass.SWITCH,
         entity_category=EntityCategory.CONFIG,
         enabling_depends_on_wallbox=True,
-        available_fn=lambda coordinator: not coordinator.data.get(
-            "battery-before-car-mode"
+        available_fn=lambda coordinator: (
+            not coordinator.data.get("battery-before-car-mode")
         ),
-        async_turn_on_action=lambda coordinator: coordinator.async_set_battery_to_car_mode(
-            True
+        async_turn_on_action=lambda coordinator: (
+            coordinator.async_set_battery_to_car_mode(True)
         ),
-        async_turn_off_action=lambda coordinator: coordinator.async_set_battery_to_car_mode(
-            False
+        async_turn_off_action=lambda coordinator: (
+            coordinator.async_set_battery_to_car_mode(False)
         ),
     ),
     E3DCSwitchEntityDescription(
@@ -110,11 +110,11 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         device_class=SwitchDeviceClass.SWITCH,
         entity_category=EntityCategory.CONFIG,
         enabling_depends_on_wallbox=True,
-        async_turn_on_action=lambda coordinator: coordinator.async_set_wallbox_enforce_power_assignment(
-            True
+        async_turn_on_action=lambda coordinator: (
+            coordinator.async_set_wallbox_enforce_power_assignment(True)
         ),
-        async_turn_off_action=lambda coordinator: coordinator.async_set_wallbox_enforce_power_assignment(
-            False
+        async_turn_off_action=lambda coordinator: (
+            coordinator.async_set_wallbox_enforce_power_assignment(False)
         ),
     ),
 )
@@ -152,11 +152,11 @@ async def async_setup_entry(
             on_icon="mdi:weather-sunny",
             off_icon="mdi:weather-sunny-off",
             device_class=SwitchDeviceClass.SWITCH,
-            async_turn_on_action=lambda coordinator,
-            index=wallbox["index"]: coordinator.async_set_wallbox_sun_mode(True, index),
-            async_turn_off_action=lambda coordinator,
-            index=wallbox["index"]: coordinator.async_set_wallbox_sun_mode(
-                False, index
+            async_turn_on_action=lambda coordinator, index=wallbox["index"]: (
+                coordinator.async_set_wallbox_sun_mode(True, index)
+            ),
+            async_turn_off_action=lambda coordinator, index=wallbox["index"]: (
+                coordinator.async_set_wallbox_sun_mode(False, index)
             ),
         )
         entities.append(
@@ -175,10 +175,12 @@ async def async_setup_entry(
             on_icon="mdi:power-plug",
             off_icon="mdi:power-plug-off",
             device_class=SwitchDeviceClass.OUTLET,
-            async_turn_on_action=lambda coordinator,
-            index=wallbox["index"]: coordinator.async_set_wallbox_schuko(True, index),
-            async_turn_off_action=lambda coordinator,
-            index=wallbox["index"]: coordinator.async_set_wallbox_schuko(False, index),
+            async_turn_on_action=lambda coordinator, index=wallbox["index"]: (
+                coordinator.async_set_wallbox_schuko(True, index)
+            ),
+            async_turn_off_action=lambda coordinator, index=wallbox["index"]: (
+                coordinator.async_set_wallbox_schuko(False, index)
+            ),
             entity_registry_enabled_default=False,  # Disabled per default as only Wallbox multi connect I provides this feature
         )
         entities.append(
@@ -223,9 +225,11 @@ class E3DCSwitch(CoordinatorEntity, SwitchEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        if self.entity_description.available_fn is not None:
-            return self.entity_description.available_fn(self.coordinator)
-        return True
+        return super().available and (
+            self.entity_description.available_fn(self.coordinator)
+            if self.entity_description.available_fn is not None
+            else True
+        )
 
     @property
     def icon(self) -> str | None:

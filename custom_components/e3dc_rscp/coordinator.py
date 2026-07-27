@@ -354,9 +354,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._load_and_process_powermeters_data()
 
         if self._update_guard_wallboxsettings is False:
-            if len(self.wallboxes) > 0:
+            if self.wallboxes:
                 _LOGGER.debug("Polling wallbox")
-            await self._load_and_process_wallbox_data()
+                await self._load_and_process_wallbox_data()
+            else:
+                _LOGGER.debug("Skipping wallbox poll, no wallboxes configured")
         else:
             _LOGGER.debug("Not polling wallbox, they are updating right now")
 
@@ -652,7 +654,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Updated powersaving to %s", enabled)
         return True
 
-    async def async_set_battery_before_car_mode(self, enabled: bool) -> None:
+    async def async_set_battery_before_car_mode(self, enabled: bool) -> bool:
         """Enable or disable battery charge before car mode."""
         _LOGGER.debug("Updating battery before car mode to %s", enabled)
 
@@ -666,8 +668,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._update_guard_wallboxsettings = False
 
         _LOGGER.debug("Successfully updated battery before car mode to %s", enabled)
+        return True
 
-    async def async_set_battery_to_car_mode(self, enabled: bool) -> None:
+    async def async_set_battery_to_car_mode(self, enabled: bool) -> bool:
         """Enable or disable battery charge car with battery mode."""
         _LOGGER.debug("Updating battery to car mode to %s", enabled)
 
@@ -681,8 +684,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._update_guard_wallboxsettings = False
 
         _LOGGER.debug("Successfully updated battery to car mode to %s", enabled)
+        return True
 
-    async def async_set_battery_wallbox_discharge_limit(self, limit: int) -> None:
+    async def async_set_battery_wallbox_discharge_limit(self, limit: int) -> bool:
         """Set the battery wallbox discharge limit (SoC limit)."""
         _LOGGER.debug("Updating battery wallbox discharge limit to %s%%", limit)
 
@@ -698,8 +702,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug(
             "Successfully updated battery wallbox discharge limit to %s%%", limit
         )
+        return True
 
-    async def async_set_wallbox_enforce_power_assignment(self, enforce: bool) -> None:
+    async def async_set_wallbox_enforce_power_assignment(self, enforce: bool) -> bool:
         """Enable or disable wallbox enforce power assignment mode."""
         _LOGGER.debug("Updating wallbox enforce power assignment to %s", enforce)
 
@@ -715,6 +720,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug(
             "Successfully updated wallbox enforce power assignment to %s", enforce
         )
+        return True
 
     async def async_set_wallbox_sun_mode(
         self, enabled: bool, wallbox_index: int

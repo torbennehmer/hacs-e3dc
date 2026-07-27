@@ -56,8 +56,9 @@ async def async_setup_entry(
             entity_category=EntityCategory.CONFIG,
             native_unit_of_measurement="%",
             enabling_depends_on_wallbox=True,
-            async_set_native_value_action=lambda coordinator,
-            value: coordinator.async_set_battery_wallbox_discharge_limit(int(value)),
+            async_set_native_value_action=lambda coordinator, value: (
+                coordinator.async_set_battery_wallbox_discharge_limit(int(value))
+            ),
         ),
         # Wallbox-specific numbers are still added per wallbox below
     )
@@ -87,10 +88,8 @@ async def async_setup_entry(
             device_class=NumberDeviceClass.CURRENT,
             entity_category=EntityCategory.CONFIG,
             native_unit_of_measurement="A",
-            async_set_native_value_action=lambda coordinator,
-            value,
-            index=wallbox["index"]: coordinator.async_set_wallbox_max_charge_current(
-                int(value), index
+            async_set_native_value_action=lambda coordinator, value, index=wallbox["index"]: (
+                coordinator.async_set_wallbox_max_charge_current(int(value), index)
             ),
         )
         entities.append(
