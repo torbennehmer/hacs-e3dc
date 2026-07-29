@@ -58,7 +58,6 @@ class _DiagnosticsDumper:
         """Collect the individual dumped data successivley."""
         self.result: dict[str, Any] = {
             "current_data": self.coordinator.data,
-            "current_system_pv_derated": self.coordinator.data.get("system-pv-derated"),
             "get_system_info": self._query_data_for_dump(self.e3dc.get_system_info),
             "get_system_status": self._query_data_for_dump(self.e3dc.get_system_status),
             "get_powermeters": self._query_data_for_dump(self.e3dc.get_powermeters),
