@@ -5,6 +5,11 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 1
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
     assignees:
@@ -14,6 +19,11 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 1
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
     assignees:
