@@ -128,6 +128,66 @@
             "manual-charge-active": {
                 "name": "Manual charge"
             },
+            "system-pv-derated": {
+                "name": "PV derated"
+            },
+            "system-emergency-power-started": {
+                "name": "Emergency power active"
+            },
+            "system-emergency-reserve-reached": {
+                "name": "Emergency reserve reached"
+            },
+            "system-wait-for-weather-breakthrough": {
+                "name": "Waiting for weather breakthrough"
+            },
+            "system-dcdc-alive": {
+                "name": "DC/DC converter connected"
+            },
+            "system-power-meter-alive": {
+                "name": "Power meter connected"
+            },
+            "system-battery-module-alive": {
+                "name": "Battery module connected"
+            },
+            "system-pv-module-alive": {
+                "name": "PV module connected"
+            },
+            "system-ems-alive": {
+                "name": "Energy management connected"
+            },
+            "system-wallbox-alive": {
+                "name": "Wallbox connected"
+            },
+            "system-server-connection-alive": {
+                "name": "Portal connection"
+            },
+            "system-pv-inverter-inited": {
+                "name": "PV inverter initialized"
+            },
+            "system-ac-mode-blocked": {
+                "name": "AC mode blocked"
+            },
+            "system-configuration-checked": {
+                "name": "System configuration checked"
+            },
+            "system-emergency-power-override": {
+                "name": "Emergency power override"
+            },
+            "system-rescue-battery-enabled": {
+                "name": "Emergency reserve enabled"
+            },
+            "system-power-save-active": {
+                "name": "Power saving active"
+            },
+            "system-charge-idle-period-active": {
+                "name": "Charge idle period active"
+            },
+            "system-discharge-idle-period-active": {
+                "name": "Discharge idle period active"
+            },
+            "system-soc-sync-requested": {
+                "name": "SOC synchronization requested"
+            },
             "sgready-active": {
                 "name": "SG Ready active"
             },

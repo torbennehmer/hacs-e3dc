@@ -3,7 +3,7 @@
 from datetime import timedelta, datetime
 import logging
 from time import time
-from typing import Any, TypedDict
+from typing import Any, Final, TypedDict
 import pytz
 import re
 
@@ -42,6 +42,32 @@ from .battery_manager import E3DCBatteryManager, E3DCBattery, E3DCBatteryPack
 
 _LOGGER = logging.getLogger(__name__)
 _STAT_REFRESH_INTERVAL = 60
+
+# Maps the system status flags as delivered by get_system_status() onto our
+# coordinator data keys. All of them are booleans describing the current state of
+# the E3/DC energy management unit.
+_SYSTEM_STATUS_FLAGS: Final[dict[str, str]] = {
+    "acModeBlocked": "system-ac-mode-blocked",
+    "batteryModuleAlive": "system-battery-module-alive",
+    "chargeIdlePeriodActive": "system-charge-idle-period-active",
+    "dcdcAlive": "system-dcdc-alive",
+    "dischargeIdlePeriodActive": "system-discharge-idle-period-active",
+    "emergencyPowerOverride": "system-emergency-power-override",
+    "emergencyPowerStarted": "system-emergency-power-started",
+    "emergencyReserveReached": "system-emergency-reserve-reached",
+    "emsAlive": "system-ems-alive",
+    "powerMeterAlive": "system-power-meter-alive",
+    "powerSaveEnabled": "system-power-save-active",
+    "pvDerated": "system-pv-derated",
+    "pvInverterInited": "system-pv-inverter-inited",
+    "pvModuleAlive": "system-pv-module-alive",
+    "rescueBatteryEnabled": "system-rescue-battery-enabled",
+    "serverConnectionAlive": "system-server-connection-alive",
+    "socSyncRequested": "system-soc-sync-requested",
+    "sysConfChecked": "system-configuration-checked",
+    "waitForWeatherBreakthrough": "system-wait-for-weather-breakthrough",
+    "wallBoxAlive": "system-wallbox-alive",
+}
 
 
 class E3DCWallbox(TypedDict):
@@ -337,6 +363,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling general status information")
         await self._load_and_process_poll()
 
+        _LOGGER.debug("Polling system status information")
+        await self._load_and_process_system_status()
+
         # TODO: Check if we need to replace this with a safe IPC sync
         if self._update_guard_powersettings is False:
             _LOGGER.debug("Poll power settings")
@@ -400,6 +429,25 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["pset-weatherregulationenabled"] = power_settings[
             "weatherRegulatedChargeEnabled"
         ]
+
+    async def _load_and_process_system_status(self) -> None:
+        """Load and process E3DC system status flags."""
+        try:
+            system_status: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_system_status
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load system status, not updating data: %s", ex)
+            return
+
+        for flag, key in _SYSTEM_STATUS_FLAGS.items():
+            if flag not in system_status:
+                _LOGGER.debug(
+                    "System status did not include %s, keeping previous state", flag
+                )
+                continue
+
+            self._mydata[key] = bool(system_status[flag])
 
     async def _load_and_process_poll(self):
         """Load and process standard poll data."""
