@@ -22,6 +22,6 @@
       "deviceType": "urn:schemas-upnp-org:device:HVAC_System:1"
     }
   ],
-  "version": "3.11.1",
+  "version": "4.0.0-beta.1",
   "zeroconf": []
 }
