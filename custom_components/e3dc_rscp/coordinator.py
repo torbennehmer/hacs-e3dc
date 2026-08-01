@@ -548,22 +548,34 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             4: "start_up",
         }
         raw_state = request_data["sgready-state"]
-        self._mydata["sgready-state"] = sgready_state_map.get(raw_state, str(raw_state))
+        mapped_state = sgready_state_map.get(raw_state)
+        if mapped_state is None:
+            # The sensor is an ENUM sensor, values outside of its options list
+            # would be rejected by HA, so keep the previous state instead.
+            _LOGGER.warning(
+                "Unknown SG Ready state %s, keeping previous state", raw_state
+            )
+        else:
+            self._mydata["sgready-state"] = mapped_state
         self._mydata["sgready-numeric-state"] = request_data["sgready-numeric-state"]
         self._mydata["sgready-active"] = bool(request_data["sgready-active"])
         self._sgready_available = bool(request_data["sgready-active"])
 
-    async def _load_and_process_wallbox_data(self) -> None:
-        """Load and process wallbox data to existing data."""
+    async def _load_and_process_wallbox_ems_settings(self) -> None:
+        """Load and process EMS-level wallbox settings.
 
-        # Load EMS general settings:
-
+        These are independent of the per-wallbox readings, so a failure here
+        (e.g. firmware without support for these RSCP tags) must not prevent
+        the regular wallbox polling.
+        """
         try:
             ems_wb_state: dict[str, Any] = await self.hass.async_add_executor_job(
                 self.proxy.get_wallbox_ems_settings
             )
         except HomeAssistantError as ex:
-            _LOGGER.warning("Failed to load EMS wallbox settings: %s", ex)
+            _LOGGER.warning(
+                "Failed to load EMS wallbox settings, not updating them: %s", ex
+            )
             return
 
         self._mydata["battery-before-car-mode"] = ems_wb_state[
@@ -577,14 +589,22 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "wallbox-enforce-power-assignment"
         ]
 
+    async def _load_and_process_wallbox_data(self) -> None:
+        """Load and process wallbox data to existing data."""
+        await self._load_and_process_wallbox_ems_settings()
+
         for wallbox in self.wallboxes:
             try:
                 request_data: dict[str, Any] = await self.hass.async_add_executor_job(
                     self.proxy.get_wallbox_data, wallbox["index"]
                 )
             except HomeAssistantError as ex:
-                _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
-                return
+                _LOGGER.warning(
+                    "Failed to load wallbox %s, not updating its data: %s",
+                    wallbox["index"],
+                    ex,
+                )
+                continue
 
             for key, value in request_data.items():
                 formatted_key = re.sub(
