@@ -198,11 +198,18 @@ class E3DCProxy:
             RscpTag.EMS_REQ_GET_WALLBOX_ENFORCE_POWER_ASSIGNMENT, keepAlive=True
         )
 
+        # sendRequestTag may return None if the response could not be parsed,
+        # treat this as an error instead of silently reporting wrong states.
+        if beforeCarMode is None or batToCarMode is None:
+            raise HomeAssistantError(
+                "Failed to load wallbox EMS settings, got no data from E3DC"
+            )
+
         result: dict[str, Any] = {}
-        result["battery-before-car-mode"] = False if beforeCarMode == 0 else True
-        result["battery-to-car-mode"] = False if batToCarMode == 0 else True
+        result["battery-before-car-mode"] = beforeCarMode != 0
+        result["battery-to-car-mode"] = batToCarMode != 0
         result["battery-wallbox-discharge-limit"] = batWBDischargeLimit
-        result["wallbox-enforce-power-assignment"] = wbEnforcePowerAssignment
+        result["wallbox-enforce-power-assignment"] = bool(wbEnforcePowerAssignment)
         return result
 
     @e3dc_call
