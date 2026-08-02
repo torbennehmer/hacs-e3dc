@@ -96,6 +96,30 @@
                     "password": "[%key:common::config_flow::data::password%]",
                     "rscpkey": "RSCP encryption key"
                 }
+            },
+            "ssdp_auth_type": {
+                "title": "Discovered E3DC device",
+                "description": "E3DC device {name} has been discovered at IP address {host}.\n\nChoose how to authenticate with it.",
+                "data": {
+                    "auth_type": "Authentication type"
+                },
+                "data_description": {
+                    "auth_type": "Portal-User: Use your E3DC portal account (email + password). Local user: Use the offline RSCP user (username is fixed to 'local.user', password configured on the device under Personalize \u2192 User profile \u2192 Password for offline RSCP user)."
+                }
+            },
+            "ssdp_confirm": {
+                "title": "Discovered E3DC device",
+                "description": "E3DC device {name} has been discovered at IP address {host}.\n\nPlease provide your E3DC credentials to complete the setup.\n\nFor local user: the username will be set automatically to **local.user**.",
+                "data": {
+                    "username": "Username (E3DC portal email)",
+                    "password": "Password",
+                    "rscpkey": "RSCP encryption key"
+                },
+                "data_description": {
+                    "username": "Your E3DC portal email address (only for Portal-User).",
+                    "password": "Portal-User: your E3DC portal password.\nLocal user: the offline RSCP user password set on the device (Personalize \u2192 User profile \u2192 Password for offline RSCP user).",
+                    "rscpkey": "The RSCP encryption key configured on the device (Personalize \u2192 User profile \u2192 RSCP password). This is the encryption key, not a login password."
+                }
             }
         }
     },
