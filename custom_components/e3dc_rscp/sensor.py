@@ -1,5 +1,6 @@
 """E3DC sensor platform."""
 
+from datetime import UTC, datetime
 import logging
 from dataclasses import dataclass
 from typing import Any, Final
@@ -45,10 +46,20 @@ class E3DCSensorEntityDescription(SensorEntityDescription):
     """Class describing E3DC Sensor entities."""
 
     icons: dict[str, str] = None
+    attributes_key: str | None = None
 
 
 SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
     # DIAGNOSTIC SENSORS
+    E3DCSensorEntityDescription(
+        key="system-saved-errors",
+        translation_key="system-saved-errors",
+        icon="mdi:alert-circle-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        attributes_key="system-saved-errors-list",
+        entity_registry_enabled_default=False,
+    ),
     E3DCSensorEntityDescription(
         key="system-derate-percent",
         translation_key="system-derate-percent",
@@ -1210,6 +1221,59 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+def _format_error_time(raw: Any) -> str:
+    """Format EH timestamps (unix ms/s) for display."""
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return str(raw) if raw is not None else ""
+    # E3DC EH times are typically unix milliseconds.
+    if value > 1e12:
+        value /= 1000.0
+    try:
+        return datetime.fromtimestamp(value, tz=UTC).astimezone().strftime(
+            "%Y-%m-%d %H:%M"
+        )
+    except (OverflowError, OSError, ValueError):
+        return str(raw)
+
+
+def _clean_error_message(msg: str) -> str:
+    """Strip E3DC hex prefixes like ``0x40000000: Netz L3Min``."""
+    if msg.startswith("0x") and ": " in msg:
+        return msg.split(": ", 1)[1]
+    return msg
+
+
+def _saved_error_attributes(items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Build user-friendly attributes for the saved-error history sensor."""
+    ordered = sorted(
+        items,
+        key=lambda item: item.get("time") or 0,
+        reverse=True,
+    )
+    lines: list[str] = []
+    messages: list[str] = []
+    for item in ordered:
+        msg = _clean_error_message(str(item.get("msg") or ""))
+        source = item.get("source") or "?"
+        when = _format_error_time(item.get("time"))
+        cleared = " · behoben" if item.get("cleared") else ""
+        lines.append(f"- **{when}** — {msg} ({source}){cleared}")
+        if msg:
+            messages.append(msg)
+
+    latest = ordered[0] if ordered else None
+    return {
+        "items": ordered,
+        "messages": messages,
+        "latest_message": messages[0] if messages else None,
+        "latest_source": latest.get("source") if latest else None,
+        "latest_time": _format_error_time(latest.get("time")) if latest else None,
+        "summary": "\n".join(lines),
+    }
+
+
 class E3DCSensor(CoordinatorEntity, SensorEntity):
     """Custom E3DC Sensor implementation."""
 
@@ -1237,6 +1301,19 @@ class E3DCSensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> StateType:
         """Return the reported sensor value."""
         return self.coordinator.data.get(self.entity_description.key)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return optional attributes referenced by ``attributes_key``."""
+        key = self.entity_description.attributes_key
+        if key is None:
+            return None
+        data = self.coordinator.data.get(key)
+        if data is None:
+            return None
+        if key != "system-saved-errors-list":
+            return {"items": data}
+        return _saved_error_attributes(data)
 
     @property
     def icon(self) -> str | None:

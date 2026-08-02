@@ -44,6 +44,7 @@ code.
   - [Set maximum wallbox charging current](#set-maximum-wallbox-charging-current)
   - [Set power mode](#set-power-mode)
 - [Optional Battery Pack and Module Devices](#optional-battery-pack-and-module-devices)
+- [Saved error history](#saved-error-history)
 - [Upstream source](#upstream-source)
 
 ## Disclaimer
@@ -282,6 +283,70 @@ Notes:
 - **Battery Module State of Health (SoH)**: The integration always calculates SoH from capacities using the formula `(full charge capacity / design capacity) × 100`. Some E3DC systems also report their own SoH value, which may differ from the calculated value. If your E3DC system provides device-reported SoH values, an additional diagnostic sensor "State of health (device-reported)" will be created (disabled by default) for comparison and debugging purposes. This sensor is only created for battery modules where the E3DC system actually provides a SoH value. The calculated SoH is used as the primary sensor for consistency and accuracy across all E3DC systems.
 
 - due to the various possible configurations of batteries (different E3DC devices, different amount of battery packs and modules, farming setups, etc.), not all scenarios couldn't be tested. In case your setup is not represented correctly, open an issue including a diagnostic dump.
+
+## Saved error history
+
+The integration exposes a diagnostic sensor **Saved error history**
+(`system-saved-errors`) that reads the E3DC EH (error history) block via
+`EH_REQ_GET_SAVED_ERRORS`.
+
+| | |
+|---|---|
+| **State** | Number of stored history entries |
+| **Update interval** | Every 5 minutes |
+| **Default** | Disabled — enable it under the E3DC device entities |
+
+### Attributes
+
+| Attribute | Description |
+|---|---|
+| `latest_message` | Latest error text (hex prefixes like `0x40000000:` stripped) |
+| `latest_time` | Local timestamp of the latest entry |
+| `latest_source` | Source code of the latest entry (e.g. `E12`) |
+| `messages` | List of cleaned message strings, newest first |
+| `summary` | Markdown-ready multi-line summary, newest first |
+| `items` | Raw list (`msg`, `code`, `time`, `source`, `type`, `cleared`) |
+
+Active diagnostic issues (DIAG) are **not** exposed: E3DC returns
+`RSCP_ERR_ACCESS_DENIED` for typical user levels.
+
+### Lovelace example (Markdown card)
+
+Replace the entity id with your sensor
+(e.g. `sensor.<device>_saved_error_history`):
+
+```yaml
+type: markdown
+title: E3DC error history
+content: |
+  {% set e = 'sensor.YOUR_DEVICE_saved_error_history' %}
+  **{{ states(e) }} entries** · latest {{ state_attr(e, 'latest_time') }}
+
+  {{ state_attr(e, 'summary') }}
+```
+
+A compact header card:
+
+```yaml
+type: entities
+title: E3DC error history
+entities:
+  - entity: sensor.YOUR_DEVICE_saved_error_history
+    name: Entries
+    secondary_info: last-updated
+  - type: attribute
+    entity: sensor.YOUR_DEVICE_saved_error_history
+    attribute: latest_message
+    name: Latest error
+  - type: attribute
+    entity: sensor.YOUR_DEVICE_saved_error_history
+    attribute: latest_time
+    name: Time
+  - type: attribute
+    entity: sensor.YOUR_DEVICE_saved_error_history
+    attribute: latest_source
+    name: Source
+```
 
 ## Upstream source
 

@@ -24,6 +24,46 @@ _LOGGER = logging.getLogger(__name__)
 FARM_PARAM_SERIALNO = "FARM_PARAM_SERIALNO"
 
 
+def _safe_tag_value(msg: Any, tag: RscpTag) -> Any:
+    """Return the value of a nested RSCP tag, or None if missing."""
+    found = rscpFindTag(msg, tag)
+    if found is None:
+        return None
+    return found[2]
+
+
+def _iter_tagged_children(msg: Any, tag: RscpTag):
+    """Yield direct child messages matching ``tag`` from a container."""
+    if msg is None or not isinstance(msg[2], list):
+        return
+    tag_name = tag.name
+    for child in msg[2]:
+        if child[0] == tag_name:
+            yield child
+
+
+def _normalize_rscp_value(value: Any) -> Any:
+    """Make RSCP values JSON-/HA-attribute friendly."""
+    if hasattr(value, "isoformat"):
+        try:
+            return value.isoformat()
+        except (TypeError, ValueError):
+            return str(value)
+    return value
+
+
+def _rscp_error_message(data: Any) -> str | None:
+    """Return RSCP error name if ``data`` is an Error response, else None."""
+    if not isinstance(data, tuple) or len(data) < 3:
+        return None
+    type_name = data[1]
+    if type_name in ("Error", RscpType.Error, "Error8", "Error32"):
+        return str(data[2])
+    if isinstance(type_name, str) and type_name.lower().startswith("error"):
+        return str(data[2])
+    return None
+
+
 class ThreadSafeE3DC(E3DC):
     """Thread-safe version of E3DC."""
 
@@ -176,6 +216,56 @@ class E3DCProxy:
     def get_system_status(self) -> dict[str, Any]:
         """Load E3DC system status flags."""
         return self.e3dc.get_system_status(keepAlive=True)
+
+    @e3dc_call
+    def get_saved_errors(self) -> dict[str, Any]:
+        """Load saved error history from E3DC (EH block).
+
+        Returns:
+            Dict with ``count`` and ``errors`` list. Each error contains
+            ``msg``, ``code``, ``time``, ``source``, ``type`` and ``cleared``.
+
+        """
+        data = self.e3dc.sendRequest(
+            (RscpTag.EH_REQ_GET_SAVED_ERRORS, RscpType.NoneType, None),
+            retries=1,
+            keepAlive=True,
+        )
+
+        if error := _rscp_error_message(data):
+            _LOGGER.warning(
+                "EH_REQ_GET_SAVED_ERRORS rejected by E3DC: %s "
+                "(user level may be insufficient)",
+                error,
+            )
+            return {"count": 0, "errors": [], "error": error}
+
+        errors: list[dict[str, Any]] = []
+        for row in _iter_tagged_children(data, RscpTag.EH_PARAM_ROW):
+            errors.append(
+                {
+                    "msg": _normalize_rscp_value(
+                        _safe_tag_value(row, RscpTag.EH_PARAM_ROW_MSG)
+                    ),
+                    "code": _normalize_rscp_value(
+                        _safe_tag_value(row, RscpTag.EH_PARAM_ROW_CODE)
+                    ),
+                    "time": _normalize_rscp_value(
+                        _safe_tag_value(row, RscpTag.EH_PARAM_ROW_TIME)
+                    ),
+                    "source": _normalize_rscp_value(
+                        _safe_tag_value(row, RscpTag.EH_PARAM_ROW_ERR_SRC)
+                    ),
+                    "type": _normalize_rscp_value(
+                        _safe_tag_value(row, RscpTag.EH_PARAM_ROW_TYPE)
+                    ),
+                    "cleared": _normalize_rscp_value(
+                        _safe_tag_value(row, RscpTag.EH_PARAM_ROW_CLEARED)
+                    ),
+                }
+            )
+
+        return {"count": len(errors), "errors": errors}
 
     @e3dc_call
     def get_powermeters(self) -> dict[str, Any]:

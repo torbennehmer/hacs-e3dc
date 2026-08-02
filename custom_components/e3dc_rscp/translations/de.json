@@ -1,0 +1,9 @@
+{
+    "entity": {
+        "sensor": {
+            "system-saved-errors": {
+                "name": "Fehlerhistorie"
+            }
+        }
+    }
+}
