@@ -1231,8 +1231,10 @@ def _format_error_time(raw: Any) -> str:
     if value > 1e12:
         value /= 1000.0
     try:
-        return datetime.fromtimestamp(value, tz=UTC).astimezone().strftime(
-            "%Y-%m-%d %H:%M"
+        return (
+            datetime.fromtimestamp(value, tz=UTC)
+            .astimezone()
+            .strftime("%Y-%m-%d %H:%M")
         )
     except (OverflowError, OSError, ValueError):
         return str(raw)
