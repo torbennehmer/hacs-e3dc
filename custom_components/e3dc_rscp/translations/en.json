@@ -217,6 +217,9 @@
             }
         },
         "sensor": {
+            "system-saved-errors": {
+                "name": "Saved error history"
+            },
             "system-derate-percent": {
                 "name": "Derate feed above %"
             },

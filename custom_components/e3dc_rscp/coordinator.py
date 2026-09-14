@@ -42,6 +42,7 @@ from .battery_manager import E3DCBatteryManager, E3DCBattery, E3DCBatteryPack
 
 _LOGGER = logging.getLogger(__name__)
 _STAT_REFRESH_INTERVAL = 60
+_EH_REFRESH_INTERVAL = 300
 
 # Maps the system status flags as delivered by get_system_status() onto our
 # coordinator data keys. All of them are booleans describing the current state of
@@ -97,6 +98,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._sgready_available: bool = False
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
+        self._next_eh_update: float = 0
         self._isFarmController: bool = config_entry.data.get("farmcontroller", False)
 
         # Initialize battery manager
@@ -395,7 +397,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("Polling battery data")
             await self.battery_manager.async_load_and_process_battery_data()
 
-        # Only poll power statstics once per minute. E3DC updates it only once per 15
+        # Only poll power statistics once per minute. E3DC updates it only once per 15
         # minutes anyway, this should be a good compromise to get the metrics shortly
         # before the end of the day.
         if self._next_stat_update < time():
@@ -406,6 +408,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # end of day reading of the metric.
         else:
             _LOGGER.debug("Skipping power metrics poll.")
+
+        # Saved error history changes rarely; poll at most every five minutes.
+        # DIAG current issues are intentionally not polled: E3DC returns
+        # RSCP_ERR_ACCESS_DENIED for DIAG_REQ_CURRENT_ISSUES at normal user level.
+        if self._next_eh_update < time():
+            _LOGGER.debug("Polling saved error history")
+            await self._load_and_process_saved_errors()
+            self._next_eh_update = time() + _EH_REFRESH_INTERVAL
+        else:
+            _LOGGER.debug("Skipping saved error history poll.")
 
         return self._mydata
 
@@ -517,6 +529,23 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         self._mydata["manual-charge-active"] = request_data["active"]
         self._mydata["manual-charge-energy"] = request_data["energy"]
+
+    async def _load_and_process_saved_errors(self) -> None:
+        """Load and process saved error history."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_saved_errors
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to load saved error history, not updating data: %s",
+                ex,
+                exc_info=True,
+            )
+            return
+
+        self._mydata["system-saved-errors"] = request_data["count"]
+        self._mydata["system-saved-errors-list"] = request_data["errors"]
 
     async def _load_and_process_powermeters_data(self) -> None:
         """Load and process additional sources to existing data."""
