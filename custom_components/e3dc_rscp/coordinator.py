@@ -269,6 +269,26 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Get the list of battery packs for the configured batteries."""
         return self.battery_manager.battery_packs
 
+    @property
+    def additional_production_available(self) -> bool:
+        """Return True if an additional production source is present.
+
+        Used to enable the aggregated ``additional-production`` sensor by
+        default when an external inverter / additional source exists. Checks
+        both the E3DC ``externalSourceAvailable`` flag and concrete powermeter
+        types discovered at connect time.
+        """
+        if self._mydata.get("system-additional-source-available"):
+            return True
+
+        for powermeter in self.proxy.e3dc_config.get("powermeters", []):
+            if powermeter["type"] in (
+                PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value,
+                PowermeterType.PM_TYPE_ADDITIONAL.value,
+            ):
+                return True
+        return False
+
     async def async_identify_batteries(self, hass: HomeAssistant) -> None:
         """Identify installed battery modules if enabled via options (delegates to battery manager)."""
         await self.battery_manager.async_identify_batteries()

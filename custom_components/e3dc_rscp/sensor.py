@@ -1,7 +1,7 @@
 """E3DC sensor platform."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Final
 
 from e3dc._rscpTags import PowermeterType
@@ -855,10 +855,18 @@ async def async_setup_entry(
     """Initialize Sensor Platform."""
     assert isinstance(entry.unique_id, str)
     coordinator: E3DCCoordinator = hass.data[DOMAIN][entry.unique_id]
-    entities: list[E3DCSensor] = [
-        E3DCSensor(coordinator, description, entry.unique_id)
-        for description in SENSOR_DESCRIPTIONS
-    ]
+    additional_production_available = coordinator.additional_production_available
+    entities: list[E3DCSensor] = []
+    for description in SENSOR_DESCRIPTIONS:
+        # Enable the aggregated additional-production sensor only when an
+        # external source is present (see issue #43). Keep it disabled by
+        # default otherwise so installs without an extra inverter stay clean.
+        if description.key == "additional-production":
+            description = replace(
+                description,
+                entity_registry_enabled_default=additional_production_available,
+            )
+        entities.append(E3DCSensor(coordinator, description, entry.unique_id))
 
     # Add SG Ready sensors if SG Ready is enabled
     if coordinator.sgready_available:
