@@ -29,7 +29,7 @@ from .services import async_setup_services
 from e3dc._e3dc_rscp_local import DEFAULT_PORT as RSCP_PORT
 
 
-async def async_migrate_entry(hass, config_entry: ConfigEntry):
+async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     """Migrate config entry to new format."""
     if config_entry.version < 2:
         # Migration durchführen

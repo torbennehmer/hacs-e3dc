@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
 import logging
 from typing import Any
@@ -27,18 +28,18 @@ FARM_PARAM_SERIALNO = "FARM_PARAM_SERIALNO"
 class ThreadSafeE3DC(E3DC):
     """Thread-safe version of E3DC."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize the thread-safe E3DC."""
         self._lock = Lock()
         super().__init__(*args, **kwargs)
 
-    def sendRequest(self, *args, **kwargs):
+    def sendRequest(self, *args, **kwargs) -> Any:
         """Thread-safe sendRequest."""
         with self._lock:
             return super().sendRequest(*args, **kwargs)
 
 
-def e3dc_call(func):
+def e3dc_call(func) -> Callable[..., Any]:
     """Wrap e3dc call in boilerplate exception handling."""
 
     @wraps(func)
@@ -80,7 +81,7 @@ class E3DCProxy:
 
     def __init__(
         self, _hass: HomeAssistant, _config: ConfigEntry | dict[str, str | int]
-    ):
+    ) -> None:
         """Initialize E3DC Proxy and connect."""
         # TODO: move to readonly properties
         self.e3dc: E3DC = None
@@ -107,7 +108,7 @@ class E3DCProxy:
             self._port = _config.get(CONF_PORT, RSCP_PORT)
 
     @e3dc_call
-    def connect(self, config: dict[str, Any] | None = None):
+    def connect(self, config: dict[str, Any] | None = None) -> None:
         """Connect to E3DC with an optional device setup."""
         if config is None:
             config = {}
@@ -125,7 +126,7 @@ class E3DCProxy:
         self.e3dc_config = config
 
     @e3dc_call
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Disconnect from E3DC if connected."""
         if self.e3dc is None:
             return
@@ -399,7 +400,7 @@ class E3DCProxy:
             _LOGGER.warning("Manual charging could not be activated")
 
     @e3dc_call
-    def set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int):
+    def set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int) -> None:
         """Set wallbox charging mode to sun mode on/off.
 
         Args:
@@ -417,7 +418,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to set wallbox to sun mode %s", enabled)
 
     @e3dc_call
-    def set_wallbox_schuko(self, enabled: bool, wallbox_index: int):
+    def set_wallbox_schuko(self, enabled: bool, wallbox_index: int) -> None:
         """Set wallbox power outlet (schuko) to on/off.
 
         Args:
@@ -435,7 +436,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
 
     @e3dc_call
-    def toggle_wallbox_charging(self, wallbox_index: int):
+    def toggle_wallbox_charging(self, wallbox_index: int) -> None:
         """Toggle charging of the wallbox.
 
         Args:
@@ -452,7 +453,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to toggle wallbox charging")
 
     @e3dc_call
-    def toggle_wallbox_phases(self, wallbox_index: int):
+    def toggle_wallbox_phases(self, wallbox_index: int) -> None:
         """Toggle the phases of wallbox charging between 1 and 3 phases.
 
            Only works if "Phasen" in the portal/device is not set to Auto.
@@ -624,7 +625,7 @@ class E3DCProxy:
             _LOGGER.warning("The given power limits are not optimal, continuing anyway")
 
     @e3dc_call
-    def set_powersave(self, enabled: bool):
+    def set_powersave(self, enabled: bool) -> None:
         """Set powersaving flag."""
         # The call would normally return the new state, however, various e3dc's
         # react differently here, my E3DC does not work as the way e3dc lib is
@@ -635,7 +636,7 @@ class E3DCProxy:
         self.e3dc.set_powersave(enabled, True)
 
     @e3dc_call
-    def set_weather_regulated_charge(self, enabled: bool):
+    def set_weather_regulated_charge(self, enabled: bool) -> None:
         """Set weather regulated charging flag."""
         # The call would normally return the new state, however, various e3dc's
         # react differently here, my E3DC does not work as the way e3dc lib is

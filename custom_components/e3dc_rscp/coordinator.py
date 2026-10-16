@@ -122,7 +122,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=10)
         )
 
-    async def async_connect(self):
+    async def async_connect(self) -> None:
         """Establish connection to E3DC."""
 
         # TODO: Beautify this, make the code flow with the connects/disconnects more natural.
@@ -159,7 +159,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         await self._load_timezone_settings()
 
-    async def async_identify_farm(self, hass: HomeAssistant):
+    async def async_identify_farm(self, hass: HomeAssistant) -> None:
         """Identify if device is part of a farm and initiate farm controller configuration if so."""
 
         await initialize_farm_controller_flow_if_needed(
@@ -170,7 +170,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.config_entry.data.get(CONF_RSCPKEY, None),
         )
 
-    async def async_identify_wallboxes(self, hass: HomeAssistant):
+    async def async_identify_wallboxes(self, hass: HomeAssistant) -> None:
         """Identify availability of Wallboxes if get_wallbox_identification_data() returns meaningful data."""
         if self._isFarmController:
             """Farm Controller does not support wallboxes. They are handled by child."""
@@ -298,7 +298,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     raise KeyError(f"Key {key} not found in wallbox with index {index}")
         raise ValueError(f"Wallbox with index {index} not found")
 
-    async def _async_connect_additional_powermeters(self):
+    async def _async_connect_additional_powermeters(self) -> None:
         """Identify the installed powermeters and reconnect to E3DC with this config."""
         # TODO: Restructure config so that we are indexed by powemeter ID.
         self.proxy.e3dc_config["powermeters"] = await self.hass.async_add_executor_job(
@@ -409,7 +409,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return self._mydata
 
-    async def _load_and_process_power_settings(self):
+    async def _load_and_process_power_settings(self) -> None:
         """Load and process power settings."""
         try:
             power_settings: dict[str, Any] = await self.hass.async_add_executor_job(
@@ -449,7 +449,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             self._mydata[key] = bool(system_status[flag])
 
-    async def _load_and_process_poll(self):
+    async def _load_and_process_poll(self) -> None:
         """Load and process standard poll data."""
         try:
             poll_data: dict[str, Any] = await self.hass.async_add_executor_job(
@@ -626,7 +626,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wallbox_key = wallbox["key"]
                 self._mydata[f"{wallbox_key}-{formatted_key}"] = value
 
-    async def _load_timezone_settings(self):
+    async def _load_timezone_settings(self) -> None:
         """Load the current timezone offset from the E3DC, using its local timezone data.
 
         Required to correctly retrieve power statistics for today.

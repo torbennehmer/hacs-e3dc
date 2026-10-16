@@ -36,7 +36,7 @@ async def async_get_config_entry_diagnostics(
 class _DiagnosticsDumper:
     """Helper class to collect a diagnostic dump in a failsafe way."""
 
-    def __init__(self, _hass: HomeAssistant, _entry: ConfigEntry):
+    def __init__(self, _hass: HomeAssistant, _entry: ConfigEntry) -> None:
         """Initialize the dumper and set up a few references."""
         self.hass: HomeAssistant = _hass
         self.entry: ConfigEntry = _entry
@@ -45,7 +45,7 @@ class _DiagnosticsDumper:
         self.e3dc: E3DC = self.proxy.e3dc
         self.result: dict[str, Any] = {}
 
-    def create_dump(self):
+    def create_dump(self) -> None:
         """Create the dump data and redact pricate data, central call-in point."""
         self._collect_data()
         self._redact_private_information(self.result)
@@ -54,7 +54,7 @@ class _DiagnosticsDumper:
         """Get the collected data."""
         return self.result
 
-    def _collect_data(self):
+    def _collect_data(self) -> None:
         """Collect the individual dumped data successivley."""
         self.result: dict[str, Any] = {
             "current_data": self.coordinator.data,
@@ -120,7 +120,7 @@ class _DiagnosticsDumper:
         except Exception as ex:  # pylint: disable=broad-exception-caught
             return {"exception": format_exception(ex)}
 
-    def _redact_private_information(self, data: Any):
+    def _redact_private_information(self, data: Any) -> None:
         """Redact data recursively so that it can be shared."""
 
         if isinstance(data, dict | list):

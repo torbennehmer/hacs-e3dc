@@ -41,7 +41,7 @@ def as_float_or_none(value: Any | None) -> float | None:
 
 async def initialize_farm_controller_flow_if_needed(
     hass, proxy: E3DCProxy, username: str | None, password: str | None, rscp: str | None
-):
+) -> None:
     """Check if farm controller flow needs to be initiated and do so if needed."""
     remote_control_ip: str | None = proxy.get_remote_control_ip()
     _LOGGER.debug(f"Found remote control IP: {remote_control_ip}")

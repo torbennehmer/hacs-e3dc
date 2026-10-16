@@ -128,7 +128,7 @@ class E3DCNumber(CoordinatorEntity, NumberEntity):
             self._deviceInfo = self.coordinator.device_info()
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | None:
         """Return the current value."""
         return self._attr_value
 

@@ -1,6 +1,7 @@
 """Constants for the E3DC Remote Storage Control Protocol integration."""
 
 from enum import Enum
+from typing import cast
 
 from homeassistant.const import Platform
 
@@ -114,14 +115,14 @@ class PowerMode(Enum):
     CHARGE = "2"
 
     @classmethod
-    def has_value(self, value):
+    def has_value(self, value) -> bool:
         """Check if a value is a valid PowerMode."""
         return value in self._value2member_map_
 
     @classmethod
-    def get_enum(self, value):
+    def get_enum(self, value) -> "PowerMode | None":
         """Get the PowerMode member by value."""
-        return self._value2member_map_.get(value, None)
+        return cast("PowerMode | None", self._value2member_map_.get(value, None))
 
 
 class SetPowerMode(Enum):
@@ -134,14 +135,14 @@ class SetPowerMode(Enum):
     CHARGE_GRID = "4"
 
     @classmethod
-    def has_value(self, value):
+    def has_value(self, value) -> bool:
         """Check if a value is a valid SetPowerMode."""
         return value in self._value2member_map_
 
     @classmethod
-    def get_enum(self, value):
+    def get_enum(self, value) -> "SetPowerMode | None":
         """Get the SetPowerMode member by value."""
-        return self._value2member_map_.get(value, None)
+        return cast("SetPowerMode | None", self._value2member_map_.get(value, None))
 
 
 class EntryType(Enum):
