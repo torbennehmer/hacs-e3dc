@@ -85,7 +85,7 @@ scripts/develop      # Run Home Assistant dev server on port 8124 (HA web UI at 
 ```
 
 ### CI/CD Pipeline
-- **lint.yml**: Runs `ruff` linter on Python 3.13 (all commits)
+- **lint.yml**: Runs `ruff` linter on Python 3.14 (all commits)
 - **validate.yml**: Additional validation checks (all commits)
 - **release.yml** / **release-drafter.yml**: Automated release on tag
 
