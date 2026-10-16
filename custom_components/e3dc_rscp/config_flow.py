@@ -66,26 +66,43 @@ STEP_AUTH_TYPE_SCHEMA = vol.Schema(
     }
 )
 
-STEP_CREDENTIALS_CLOUD_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_HOST): str,
-        vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str,
-        vol.Required(CONF_RSCPKEY): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-        ),
-    }
-)
 
-STEP_CREDENTIALS_LOCAL_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_HOST): str,
-        vol.Required(CONF_PASSWORD): str,
-        vol.Required(CONF_RSCPKEY): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-        ),
-    }
-)
+def _credentials_schema(
+    auth_type: str,
+    *,
+    include_host: bool = True,
+    defaults: dict[str, Any] | None = None,
+) -> vol.Schema:
+    """Build a credentials schema for the given auth type.
+
+    ``include_host`` controls whether a host field is included (SSDP-
+    discovered flows already know the host and skip it). ``defaults``
+    optionally pre-fills field values, used by the reconfigure flow.
+    """
+    defaults = defaults or {}
+
+    def _field(key: str):
+        if key in defaults:
+            return vol.Required(key, default=defaults[key])
+        return vol.Required(key)
+
+    fields: dict[Any, Any] = {}
+    if include_host:
+        fields[_field(CONF_HOST)] = str
+    if auth_type != AUTH_TYPE_LOCAL:
+        fields[_field(CONF_USERNAME)] = str
+    fields[_field(CONF_PASSWORD)] = str
+    fields[_field(CONF_RSCPKEY)] = TextSelector(
+        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+    )
+    return vol.Schema(fields)
+
+
+def _resolve_username(auth_type: str, user_input: dict[str, Any]) -> str:
+    """Return the RSCP username to store, resolving local auth automatically."""
+    if auth_type == AUTH_TYPE_LOCAL:
+        return LOCAL_USERNAME
+    return user_input[CONF_USERNAME]
 
 
 class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
@@ -151,11 +168,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Step 2 of initial setup: collect credentials for the chosen auth type."""
-        schema = (
-            STEP_CREDENTIALS_LOCAL_SCHEMA
-            if self._auth_type == AUTH_TYPE_LOCAL
-            else STEP_CREDENTIALS_CLOUD_SCHEMA
-        )
+        schema = _credentials_schema(self._auth_type)
 
         if user_input is None:
             return self._show_credentials_form(schema)
@@ -164,10 +177,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self._password = user_input[CONF_PASSWORD]
         self._rscpkey = user_input[CONF_RSCPKEY]
         self._port = user_input.get(CONF_PORT, None)
-        if self._auth_type == AUTH_TYPE_LOCAL:
-            self._username = LOCAL_USERNAME
-        else:
-            self._username = user_input[CONF_USERNAME]
+        self._username = _resolve_username(self._auth_type, user_input)
 
         if error := await self.validate_input():
             return self._show_credentials_form(schema, {"base": error})
@@ -236,11 +246,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Step 2 of reauth: collect credentials."""
-        schema = (
-            STEP_CREDENTIALS_LOCAL_SCHEMA
-            if self._auth_type == AUTH_TYPE_LOCAL
-            else STEP_CREDENTIALS_CLOUD_SCHEMA
-        )
+        schema = _credentials_schema(self._auth_type)
 
         if user_input is None:
             return self._show_reauth_credentials_form(schema)
@@ -248,10 +254,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self._host = user_input[CONF_HOST]
         self._password = user_input[CONF_PASSWORD]
         self._rscpkey = user_input[CONF_RSCPKEY]
-        if self._auth_type == AUTH_TYPE_LOCAL:
-            self._username = LOCAL_USERNAME
-        else:
-            self._username = user_input[CONF_USERNAME]
+        self._username = _resolve_username(self._auth_type, user_input)
 
         if error := await self.validate_input():
             return self._show_reauth_credentials_form(schema, {"base": error})
@@ -345,27 +348,15 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Step 2 of reconfigure: collect credentials, pre-filled."""
-        if self._auth_type == AUTH_TYPE_LOCAL:
-            schema = vol.Schema(
-                {
-                    vol.Required(CONF_HOST, default=self._host or ""): str,
-                    vol.Required(CONF_PASSWORD, default=self._password or ""): str,
-                    vol.Required(
-                        CONF_RSCPKEY, default=self._rscpkey or ""
-                    ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
-                }
-            )
-        else:
-            schema = vol.Schema(
-                {
-                    vol.Required(CONF_HOST, default=self._host or ""): str,
-                    vol.Required(CONF_USERNAME, default=self._username or ""): str,
-                    vol.Required(CONF_PASSWORD, default=self._password or ""): str,
-                    vol.Required(
-                        CONF_RSCPKEY, default=self._rscpkey or ""
-                    ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
-                }
-            )
+        schema = _credentials_schema(
+            self._auth_type,
+            defaults={
+                CONF_HOST: self._host or "",
+                CONF_USERNAME: self._username or "",
+                CONF_PASSWORD: self._password or "",
+                CONF_RSCPKEY: self._rscpkey or "",
+            },
+        )
 
         if user_input is None:
             return self._show_reconfigure_credentials_form(schema)
@@ -373,10 +364,7 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         self._host = user_input[CONF_HOST]
         self._password = user_input[CONF_PASSWORD]
         self._rscpkey = user_input[CONF_RSCPKEY]
-        if self._auth_type == AUTH_TYPE_LOCAL:
-            self._username = LOCAL_USERNAME
-        else:
-            self._username = user_input[CONF_USERNAME]
+        self._username = _resolve_username(self._auth_type, user_input)
 
         if error := await self.validate_input():
             return self._show_reconfigure_credentials_form(schema, {"base": error})
@@ -447,51 +435,16 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         friendly_name = self._discovered_info.get("friendly_name")
         self.context["title_placeholders"] = {"name": friendly_name}
 
-        return await self.async_step_ssdp_confirm()
+        return await self.async_step_ssdp_auth_type()
 
-    async def async_step_ssdp_confirm(
+    async def async_step_ssdp_auth_type(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Confirm ssdp discovery and ask for credentials."""
+        """Step 1 of SSDP discovery confirmation: choose authentication type."""
         if user_input is None:
-            friendly_name = self._discovered_info.get(
-                "friendly_name", f"E3DC at {self._host}"
-            )
             return self.async_show_form(
-                step_id="ssdp_confirm",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(CONF_USERNAME): str,
-                        vol.Required(CONF_PASSWORD): str,
-                        vol.Required(CONF_RSCPKEY): TextSelector(
-                            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                        ),
-                    }
-                ),
-                description_placeholders={
-                    "name": friendly_name,
-                    "host": self._host,
-                },
-            )
-
-        # User provided credentials, validate them
-        self._username = user_input[CONF_USERNAME]
-        self._password = user_input[CONF_PASSWORD]
-        self._rscpkey = user_input[CONF_RSCPKEY]
-
-        if error := await self.validate_input():
-            return self.async_show_form(
-                step_id="ssdp_confirm",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(CONF_USERNAME): str,
-                        vol.Required(CONF_PASSWORD): str,
-                        vol.Required(CONF_RSCPKEY): TextSelector(
-                            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                        ),
-                    }
-                ),
-                errors={"base": error},
+                step_id="ssdp_auth_type",
+                data_schema=STEP_AUTH_TYPE_SCHEMA,
                 description_placeholders={
                     "name": self._discovered_info.get(
                         "friendly_name", f"E3DC at {self._host}"
@@ -500,16 +453,53 @@ class E3DCConfigFlowHandler(ConfigFlow, domain=DOMAIN):
                 },
             )
 
+        self._auth_type = user_input.get(CONF_AUTH_TYPE, AUTH_TYPE_CLOUD)
+        return await self.async_step_ssdp_confirm()
+
+    async def async_step_ssdp_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Step 2 of SSDP discovery confirmation: collect credentials."""
+        schema = _credentials_schema(self._auth_type, include_host=False)
+
+        if user_input is None:
+            return self._show_ssdp_confirm_form(schema)
+
+        self._password = user_input[CONF_PASSWORD]
+        self._rscpkey = user_input[CONF_RSCPKEY]
+        self._username = _resolve_username(self._auth_type, user_input)
+
+        if error := await self.validate_input():
+            return self._show_ssdp_confirm_form(schema, {"base": error})
+
         # Create the entry
         final_data = {
             CONF_HOST: self._host,
             CONF_USERNAME: self._username,
             CONF_PASSWORD: self._password,
             CONF_RSCPKEY: self._rscpkey,
+            CONF_AUTH_TYPE: self._auth_type,
             CONF_API_VERSION: CONF_VERSION,
         }
 
         return await self.async_step_check_is_farm(final_data)
+
+    def _show_ssdp_confirm_form(
+        self, schema, errors: dict[str, str] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Show the SSDP credentials form, with the local user hint if applicable."""
+        placeholders = {
+            "name": self._discovered_info.get("friendly_name", f"E3DC at {self._host}"),
+            "host": self._host,
+        }
+        if self._auth_type == AUTH_TYPE_LOCAL:
+            placeholders["username"] = LOCAL_USERNAME
+        return self.async_show_form(
+            step_id="ssdp_confirm",
+            data_schema=schema,
+            errors=errors or {},
+            description_placeholders=placeholders,
+        )
 
     async def async_step_check_is_farm(
         self, data: dict[str, Any] | None = None
