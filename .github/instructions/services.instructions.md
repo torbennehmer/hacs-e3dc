@@ -26,7 +26,8 @@ async def async_setup_services(hass: HomeAssistant) -> None:
 
 - Service names (e.g., `SERVICE_SET_POWER_LIMITS`) match `services.yaml` keys
 - Each service gets a wrapper async function and a handler function (e.g., `_async_set_power_limits`)
-- Schema validates input parameters (voluptuous)
+- Schema validates input parameters (`vol.Schema`; validated by Probatio since HA 2026.9, keep
+  `import voluptuous as vol`)
 - Register once per integration startup (not per entry if only one instance)
 
 ## Service YAML Definition
