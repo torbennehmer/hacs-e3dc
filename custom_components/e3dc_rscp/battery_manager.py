@@ -16,7 +16,6 @@ from .utils import (
     as_float_or_none,
     as_int_or_none,
     async_register_device,
-    via_device_link,
 )
 
 from .const import (
@@ -224,9 +223,7 @@ class E3DCBatteryManager:
                         "name": pack_name,
                         "model": pack_model,
                     }
-                    raw_pack_device_info.update(
-                        via_device_link(self.hass, hub_device_id, (DOMAIN, self.uid))
-                    )
+                    raw_pack_device_info["via_device_id"] = hub_device_id
                     deviceInfo: DeviceInfo = cast(DeviceInfo, raw_pack_device_info)
 
                     # Register the pack explicitly so its registry id is
@@ -267,13 +264,7 @@ class E3DCBatteryManager:
                         "name": name,
                         "model": model,
                     }
-                    raw_module_device_info.update(
-                        via_device_link(
-                            self.hass,
-                            pack_entry["deviceId"],
-                            (DOMAIN, pack_entry["uniqueId"]),
-                        )
-                    )
+                    raw_module_device_info["via_device_id"] = pack_entry["deviceId"]
 
                     if serial_no is not None:
                         raw_module_device_info["serial_number"] = str(serial_no)
