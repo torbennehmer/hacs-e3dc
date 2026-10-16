@@ -12,7 +12,7 @@ from homeassistant.components.number import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, UnitOfRatio
 
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -54,7 +54,7 @@ async def async_setup_entry(
             native_step=1,
             device_class=NumberDeviceClass.BATTERY,
             entity_category=EntityCategory.CONFIG,
-            native_unit_of_measurement="%",
+            native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
             enabling_depends_on_wallbox=True,
             async_set_native_value_action=lambda coordinator, value: (
                 coordinator.async_set_battery_wallbox_discharge_limit(int(value))
