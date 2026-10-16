@@ -4,7 +4,7 @@ import asyncio
 from collections.abc import Callable
 from datetime import date
 import logging
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -12,7 +12,12 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .e3dc_proxy import E3DCProxy
-from .utils import as_float_or_none, as_int_or_none
+from .utils import (
+    as_float_or_none,
+    as_int_or_none,
+    async_register_device,
+    via_device_link,
+)
 
 from .const import (
     DOMAIN,
@@ -41,6 +46,7 @@ class E3DCBatteryPack(TypedDict):
     index: int
     key: str
     uniqueId: str
+    deviceId: str
     name: str
     deviceInfo: DeviceInfo
 
@@ -54,6 +60,8 @@ class E3DCBatteryManager:
         uid: str,
         proxy: E3DCProxy,
         mydata: dict[str, Any],
+        config_entry_id: str,
+        hub_device_id_callback: Callable[[], str | None],
         create_battery_devices_callback: Callable[[], bool],
     ) -> None:
         """Initialize the battery manager.
@@ -63,6 +71,8 @@ class E3DCBatteryManager:
             uid: Unique identifier for the E3DC system
             proxy: E3DC proxy for communication
             mydata: Shared data dictionary for sensor values
+            config_entry_id: Config entry id, used to explicitly register battery pack devices
+            hub_device_id_callback: Function returning the registry id of the main E3DC hub device
             create_battery_devices_callback: Function that returns whether battery devices should be created
 
         """
@@ -70,6 +80,8 @@ class E3DCBatteryManager:
         self.uid = uid
         self.proxy = proxy
         self._mydata = mydata
+        self._config_entry_id = config_entry_id
+        self._hub_device_id_callback = hub_device_id_callback
         self._create_battery_devices_callback = create_battery_devices_callback
         self._batteries: list[E3DCBattery] = []
         self._battery_packs: list[E3DCBatteryPack] = []
@@ -204,18 +216,30 @@ class E3DCBatteryManager:
                     pack_model = _normalize(pack_details.get("deviceName"))
                     pack_name = f"Battery Pack {pack_index + 1}"
 
-                    deviceInfo: DeviceInfo = DeviceInfo(
-                        identifiers={(DOMAIN, pack_unique_id)},
-                        via_device=(DOMAIN, self.uid),
-                        manufacturer=pack_manufacturer,
-                        name=pack_name,
-                        model=pack_model,
+                    hub_device_id = self._hub_device_id_callback()
+                    assert isinstance(hub_device_id, str)
+                    raw_pack_device_info: dict[str, Any] = {
+                        "identifiers": {(DOMAIN, pack_unique_id)},
+                        "manufacturer": pack_manufacturer,
+                        "name": pack_name,
+                        "model": pack_model,
+                    }
+                    raw_pack_device_info.update(
+                        via_device_link(self.hass, hub_device_id, (DOMAIN, self.uid))
+                    )
+                    deviceInfo: DeviceInfo = cast(DeviceInfo, raw_pack_device_info)
+
+                    # Register the pack explicitly so its registry id is
+                    # available for the modules' via_device_id link below.
+                    pack_device_id = async_register_device(
+                        self.hass, self._config_entry_id, raw_pack_device_info
                     )
 
                     pack_entry = E3DCBatteryPack(
                         index=pack_index,
                         key=pack_key,
                         uniqueId=pack_unique_id,
+                        deviceId=pack_device_id,
                         name=pack_name,
                         deviceInfo=deviceInfo,
                     )
@@ -237,20 +261,28 @@ class E3DCBatteryManager:
                     fw_version = _normalize(dcb_detail.get("fwVersion"))
                     pcb_version = _normalize(dcb_detail.get("pcbVersion"))
 
-                    deviceInfo = DeviceInfo(
-                        identifiers={(DOMAIN, unique_id)},
-                        via_device=(DOMAIN, pack_entry["uniqueId"]),
-                        manufacturer=manufacturer,
-                        name=name,
-                        model=model,
+                    raw_module_device_info: dict[str, Any] = {
+                        "identifiers": {(DOMAIN, unique_id)},
+                        "manufacturer": manufacturer,
+                        "name": name,
+                        "model": model,
+                    }
+                    raw_module_device_info.update(
+                        via_device_link(
+                            self.hass,
+                            pack_entry["deviceId"],
+                            (DOMAIN, pack_entry["uniqueId"]),
+                        )
                     )
 
                     if serial_no is not None:
-                        deviceInfo["serial_number"] = str(serial_no)
+                        raw_module_device_info["serial_number"] = str(serial_no)
                     if fw_version is not None:
-                        deviceInfo["sw_version"] = str(fw_version)
+                        raw_module_device_info["sw_version"] = str(fw_version)
                     if pcb_version is not None:
-                        deviceInfo["hw_version"] = str(pcb_version)
+                        raw_module_device_info["hw_version"] = str(pcb_version)
+
+                    deviceInfo = cast(DeviceInfo, raw_module_device_info)
 
                     # Check if device reports SoH for this module
                     has_device_soh = dcb_detail.get("soh") is not None

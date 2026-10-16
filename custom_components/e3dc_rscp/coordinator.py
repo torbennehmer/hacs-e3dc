@@ -3,7 +3,7 @@
 from datetime import timedelta, datetime
 import logging
 from time import time
-from typing import Any, Final, TypedDict
+from typing import Any, Final, TypedDict, cast
 import pytz
 import re
 
@@ -25,7 +25,11 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 
-from custom_components.e3dc_rscp.utils import initialize_farm_controller_flow_if_needed
+from custom_components.e3dc_rscp.utils import (
+    initialize_farm_controller_flow_if_needed,
+    async_register_device,
+    via_device_link,
+)
 
 from .const import (
     CONF_RSCPKEY,
@@ -102,6 +106,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
         self._isFarmController: bool = config_entry.data.get("farmcontroller", False)
+        self._hub_device_id: str | None = None
 
         # Initialize battery manager
         self.battery_manager = E3DCBatteryManager(
@@ -109,6 +114,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             uid=self.uid,
             proxy=self.proxy,
             mydata=self._mydata,
+            config_entry_id=config_entry.entry_id,
+            hub_device_id_callback=lambda: self.hub_device_id,
             create_battery_devices_callback=lambda: self.config_entry.options.get(
                 CONF_CREATE_BATTERY_DEVICES, DEFAULT_CREATE_BATTERY_DEVICES
             ),
@@ -169,6 +176,15 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.proxy.get_software_version
         )
 
+        # Register the hub device explicitly so its registry id is available
+        # for via_device_id links on child devices (wallboxes, battery
+        # packs/modules) created during identification below.
+        self._hub_device_id = async_register_device(
+            self.hass,
+            self.config_entry.entry_id,
+            cast(dict[str, Any], self.device_info()),
+        )
+
         await self._load_timezone_settings()
 
     async def async_identify_farm(self, hass: HomeAssistant) -> None:
@@ -208,22 +224,26 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wallboxType = request_data["wallboxType"]
                 model = f"Wallbox Type {wallboxType}"
 
-                deviceInfo = DeviceInfo(
-                    identifiers={(DOMAIN, unique_id)},
-                    via_device=(DOMAIN, self.uid),
-                    manufacturer="E3DC",
-                    name=request_data["deviceName"],
-                    model=model,
-                    sw_version=request_data["firmwareVersion"],
-                    serial_number=request_data["wallboxSerial"],
-                    connections={
+                raw_device_info: dict[str, Any] = {
+                    "identifiers": {(DOMAIN, unique_id)},
+                    "manufacturer": "E3DC",
+                    "name": request_data["deviceName"],
+                    "model": model,
+                    "sw_version": request_data["firmwareVersion"],
+                    "serial_number": request_data["wallboxSerial"],
+                    "connections": {
                         (
                             dr.CONNECTION_NETWORK_MAC,
                             dr.format_mac(request_data["macAddress"]),
                         )
                     },
-                    configuration_url="https://my.e3dc.com/",
+                    "configuration_url": "https://my.e3dc.com/",
+                }
+                assert isinstance(self.hub_device_id, str)
+                raw_device_info.update(
+                    via_device_link(hass, self.hub_device_id, (DOMAIN, self.uid))
                 )
+                deviceInfo = cast(DeviceInfo, raw_device_info)
 
                 wallbox: E3DCWallbox = {
                     "index": wallbox_index,
@@ -254,6 +274,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("SG Ready support detected")
         else:
             _LOGGER.debug("SG Ready support not active")
+
+    @property
+    def hub_device_id(self) -> str | None:
+        """Return the device registry id of the main E3DC hub device."""
+        return self._hub_device_id
 
     # Getter for _wallboxes
     @property

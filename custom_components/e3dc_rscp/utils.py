@@ -1,6 +1,8 @@
 """Utility functions for E3DC RSCP integration."""
 
+import inspect
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 from .const import CONF_RSCPKEY, DOMAIN
@@ -13,6 +15,8 @@ from homeassistant.const import (
     CONF_PORT,
 )
 from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +41,42 @@ def as_float_or_none(value: Any | None) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def async_register_device(
+    hass: HomeAssistant, config_entry_id: str, device_info: Mapping[str, Any]
+) -> str:
+    """Explicitly register a device and return its device registry id.
+
+    Used to resolve the registry id of "via" devices (the E3DC hub for
+    wallboxes and battery packs, a battery pack for its modules) before the
+    entity platform would otherwise create them implicitly.
+    """
+    device_registry = dr.async_get(hass)
+    entry = device_registry.async_get_or_create(
+        config_entry_id=config_entry_id, **device_info
+    )
+    return entry.id
+
+
+def via_device_link(
+    hass: HomeAssistant, via_device_id: str, via_device_identifier: tuple[str, str]
+) -> dict[str, Any]:
+    """Return the device-info key linking a child device to its parent device.
+
+    Prefers the modern ``via_device_id`` (registry id) introduced in Home
+    Assistant 2026.8 over the deprecated ``via_device`` (identifier tuple),
+    depending on what the running core's device registry supports. This
+    avoids the ``via_device`` deprecation warning on newer cores while
+    staying compatible with the integration's minimum supported version.
+    """
+    device_registry = dr.async_get(hass)
+    if (
+        "via_device_id"
+        in inspect.signature(device_registry.async_get_or_create).parameters
+    ):
+        return {"via_device_id": via_device_id}
+    return {"via_device": via_device_identifier}
 
 
 async def initialize_farm_controller_flow_if_needed(
