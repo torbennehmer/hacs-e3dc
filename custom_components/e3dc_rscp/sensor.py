@@ -14,12 +14,12 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    PERCENTAGE,
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
     UnitOfPower,
+    UnitOfRatio,
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
@@ -54,7 +54,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         translation_key="system-derate-percent",
         icon="mdi:transmission-tower-off",
         entity_category=EntityCategory.DIAGNOSTIC,
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
     ),
@@ -162,7 +162,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         key="autarky",
         translation_key="autarky",
         icon="mdi:home-percent-outline",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
@@ -264,7 +264,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         key="selfconsumption",
         translation_key="selfconsumption",
         icon="mdi:cloud-percent-outline",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
@@ -272,7 +272,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
     E3DCSensorEntityDescription(
         key="soc",
         translation_key="soc",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
@@ -311,7 +311,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         key="db-day-autarky",
         translation_key="db-day-autarky",
         icon="mdi:cloud-percent-outline",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
@@ -380,7 +380,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         key="db-day-selfconsumption",
         translation_key="db-day-selfconsumption",
         icon="mdi:cloud-percent-outline",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
@@ -544,7 +544,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "soc": {
         "translation_key": "battery-module-soc",
         "icon": "mdi:battery-charging-80",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
@@ -553,7 +553,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "soh": {
         "translation_key": "battery-module-soh",
         "icon": "mdi:battery-heart",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "suggested_display_precision": 0,
@@ -562,7 +562,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "soh-reported": {
         "translation_key": "battery-module-soh-reported",
         "icon": "mdi:battery-heart-outline",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "suggested_display_precision": 0,
@@ -608,7 +608,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "asoc": {
         "translation_key": "battery-pack-asoc",
         "icon": "mdi:battery",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "suggested_display_precision": 0,
@@ -768,7 +768,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "rsoc": {
         "translation_key": "battery-pack-rsoc",
         "icon": "mdi:battery",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
@@ -777,7 +777,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "rsoc-real": {
         "translation_key": "battery-pack-rsoc-real",
         "icon": "mdi:battery",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
@@ -840,7 +840,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "state-of-health": {
         "translation_key": "battery-pack-state-of-health",
         "icon": "mdi:heart-pulse",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
@@ -1188,7 +1188,7 @@ async def async_setup_entry(
             key=f"{wallbox_key}-soc",
             translation_key="wallbox-soc",
             icon="mdi:battery-charging",
-            native_unit_of_measurement=PERCENTAGE,
+            native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
             suggested_display_precision=0,
             device_class=SensorDeviceClass.BATTERY,
             state_class=SensorStateClass.MEASUREMENT,
