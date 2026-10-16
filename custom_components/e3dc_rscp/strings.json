@@ -135,7 +135,11 @@
     "step": {
       "init": {
         "data": {
-          "create_battery_devices": "Create battery devices"
+          "create_battery_devices": "Create battery devices",
+          "scan_interval": "Update interval"
+        },
+        "data_description": {
+          "scan_interval": "How often power and status values are polled from the E3DC (5–60 seconds). Daily statistics stay on their own schedule."
         },
         "title": "E3DC RSCP options"
       }

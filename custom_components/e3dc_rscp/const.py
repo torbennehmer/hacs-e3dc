@@ -17,6 +17,10 @@ ERROR_AUTH_INVALID = "invalid_auth"
 ERROR_CANNOT_CONNECT = "cannot_connect"
 CONF_CREATE_BATTERY_DEVICES = "create_battery_devices"
 DEFAULT_CREATE_BATTERY_DEVICES = False
+CONF_SCAN_INTERVAL = "scan_interval"
+DEFAULT_SCAN_INTERVAL = 10
+MIN_SCAN_INTERVAL = 5
+MAX_SCAN_INTERVAL = 60
 
 # Battery module sensors (all are raw sensors with data_key)
 BATTERY_MODULE_RAW_SENSORS: tuple[tuple[str, str], ...] = (

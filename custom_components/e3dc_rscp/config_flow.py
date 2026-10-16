@@ -17,11 +17,15 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_USERNAME,
     CONF_PORT,
+    UnitOfTime,
 )
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError, ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -39,7 +43,11 @@ from homeassistant.helpers.service_info import ssdp as SSDP
 from .const import (
     CONF_CREATE_BATTERY_DEVICES,
     CONF_FARMCONTROLLER,
+    CONF_SCAN_INTERVAL,
     DEFAULT_CREATE_BATTERY_DEVICES,
+    DEFAULT_SCAN_INTERVAL,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
     CONF_RSCPKEY,
     CONF_VERSION,
     DOMAIN,
@@ -582,6 +590,21 @@ class E3DCOptionsFlowHandler(config_entries.OptionsFlowWithReload):
                             DEFAULT_CREATE_BATTERY_DEVICES,
                         ),
                     ): cv.boolean,
+                    vol.Required(
+                        CONF_SCAN_INTERVAL,
+                        default=self.config_entry.options.get(
+                            CONF_SCAN_INTERVAL,
+                            DEFAULT_SCAN_INTERVAL,
+                        ),
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=MIN_SCAN_INTERVAL,
+                            max=MAX_SCAN_INTERVAL,
+                            step=1,
+                            unit_of_measurement=UnitOfTime.SECONDS,
+                            mode=NumberSelectorMode.BOX,
+                        )
+                    ),
                 }
             ),
         )

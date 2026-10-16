@@ -30,9 +30,13 @@ from custom_components.e3dc_rscp.utils import initialize_farm_controller_flow_if
 from .const import (
     CONF_RSCPKEY,
     CONF_CREATE_BATTERY_DEVICES,
+    CONF_SCAN_INTERVAL,
     DEFAULT_CREATE_BATTERY_DEVICES,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MAX_SCAN_INTERVAL,
     MAX_WALLBOXES_POSSIBLE,
+    MIN_SCAN_INTERVAL,
     PowerMode,
     SetPowerMode,
 )
@@ -118,8 +122,16 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["set-power-mode"] = SetPowerMode.NORMAL.value
         self._mydata["set-power-value"] = None
 
+        scan_interval = int(
+            config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        )
+        scan_interval = max(MIN_SCAN_INTERVAL, min(MAX_SCAN_INTERVAL, scan_interval))
+
         super().__init__(
-            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=10)
+            hass,
+            _LOGGER,
+            name=DOMAIN,
+            update_interval=timedelta(seconds=scan_interval),
         )
 
     async def async_connect(self) -> None:
