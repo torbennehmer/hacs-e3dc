@@ -98,8 +98,16 @@ class E3DCBatteryManager:
             f"{self.uid}-battery-pack-",
         )
         devices_to_remove: list[str] = []
+        config_entry = self.hass.config_entries.async_entry_for_domain_unique_id(
+            DOMAIN, self.uid
+        )
+        devices = (
+            dr.async_entries_for_config_entry(device_registry, config_entry.entry_id)
+            if config_entry is not None
+            else []
+        )
 
-        for entry in device_registry.devices.values():
+        for entry in devices:
             if any(
                 identifier[0] == DOMAIN
                 and any(identifier[1].startswith(prefix) for prefix in battery_prefixes)
