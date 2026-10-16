@@ -26,7 +26,10 @@ All four of these flows exist in the file — when you touch validation logic, u
 
 ## Form Validation & Error Handling
 
-- Use `voluptuous.Schema` with selectors (`TextSelector`, `NumberSelector`, etc.)
+- Use `vol.Schema` (`import voluptuous as vol`) with selectors (`TextSelector`, `NumberSelector`, etc.).
+  Since Home Assistant 2026.9 schemas are validated by [Probatio](https://probatio.frenck.dev/), a
+  voluptuous-compatible engine; `import voluptuous as vol` is aliased to it, so keep using that import
+  and only the voluptuous API surface. Don't import `probatio` directly (its extras are not needed here).
 - **Validation**: build an `E3DCProxy` and call `self._proxy.connect()` inside an executor job. There is no
   `E3DCProxy.try_connect()` helper — `connect()` is the entry point and it raises on failure.
   - `ConfigEntryAuthFailed` or auth error → set error key `ERROR_AUTH_INVALID`, re-show form

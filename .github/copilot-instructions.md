@@ -196,6 +196,10 @@ hass.services.async_register(
 )
 ```
 
+Schemas use `import voluptuous as vol`. Since HA 2026.9 this name is aliased to Probatio, a voluptuous-
+compatible validation engine ([docs](https://probatio.frenck.dev/), [llms.txt](https://probatio.frenck.dev/llms.txt)).
+Stay on the voluptuous API surface; do not import `probatio` directly.
+
 The handler resolves the device id to a coordinator through the device registry (following `via_device_id`
 for wallbox/battery child devices), then delegates to a coordinator method.
 
