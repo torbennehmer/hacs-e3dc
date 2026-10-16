@@ -28,7 +28,6 @@ from homeassistant.const import (
 from custom_components.e3dc_rscp.utils import (
     initialize_farm_controller_flow_if_needed,
     async_register_device,
-    via_device_link,
 )
 
 from .const import (
@@ -240,9 +239,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "configuration_url": "https://my.e3dc.com/",
                 }
                 assert isinstance(self.hub_device_id, str)
-                raw_device_info.update(
-                    via_device_link(hass, self.hub_device_id, (DOMAIN, self.uid))
-                )
+                raw_device_info["via_device_id"] = self.hub_device_id
                 deviceInfo = cast(DeviceInfo, raw_device_info)
 
                 wallbox: E3DCWallbox = {

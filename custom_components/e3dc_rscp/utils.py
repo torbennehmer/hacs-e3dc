@@ -1,6 +1,5 @@
 """Utility functions for E3DC RSCP integration."""
 
-import inspect
 import logging
 from collections.abc import Mapping
 from typing import Any
@@ -57,26 +56,6 @@ def async_register_device(
         config_entry_id=config_entry_id, **device_info
     )
     return entry.id
-
-
-def via_device_link(
-    hass: HomeAssistant, via_device_id: str, via_device_identifier: tuple[str, str]
-) -> dict[str, Any]:
-    """Return the device-info key linking a child device to its parent device.
-
-    Prefers the modern ``via_device_id`` (registry id) introduced in Home
-    Assistant 2026.8 over the deprecated ``via_device`` (identifier tuple),
-    depending on what the running core's device registry supports. This
-    avoids the ``via_device`` deprecation warning on newer cores while
-    staying compatible with the integration's minimum supported version.
-    """
-    device_registry = dr.async_get(hass)
-    if (
-        "via_device_id"
-        in inspect.signature(device_registry.async_get_or_create).parameters
-    ):
-        return {"via_device_id": via_device_id}
-    return {"via_device": via_device_identifier}
 
 
 async def initialize_farm_controller_flow_if_needed(

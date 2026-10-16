@@ -925,7 +925,7 @@ async def async_setup_entry(
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
 
     # Create battery pack sensors first, before module sensors
-    # This ensures pack devices are registered before modules reference them via via_device
+    # This ensures pack devices are registered before modules reference them via via_device_id
     if coordinator.create_battery_devices:
         for pack in coordinator.battery_packs:
             pack_unique_id = pack.get("uniqueId", entry.unique_id)
@@ -972,7 +972,7 @@ async def async_setup_entry(
                 )
 
     # Create battery module sensors after pack sensors
-    # This ensures pack devices exist before modules reference them via via_device
+    # This ensures pack devices exist before modules reference them via via_device_id
     for battery in coordinator.batteries:
         unique_id = list(battery["deviceInfo"]["identifiers"])[0][1]
         battery_key = battery["key"]
