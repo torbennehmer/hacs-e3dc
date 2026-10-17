@@ -208,6 +208,25 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    # Per-phase power. House is calculated as inverter + grid + additional
+    # powermeters, so its three phases add up to house-consumption.
+    *(
+        E3DCSensorEntityDescription(
+            key=f"{source}-{phase}",
+            translation_key=f"{source}-{phase}",
+            icon=icon,
+            native_unit_of_measurement=UnitOfPower.WATT,
+            suggested_display_precision=0,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        for source, icon in (
+            ("house", "mdi:sine-wave"),
+            ("grid", "mdi:transmission-tower"),
+            ("pvi", "mdi:solar-power"),
+        )
+        for phase in ("l1", "l2", "l3")
+    ),
     E3DCSensorEntityDescription(
         key="grid-netchange",
         translation_key="grid-netchange",
