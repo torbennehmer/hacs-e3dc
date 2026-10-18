@@ -303,37 +303,62 @@ class E3DCProxy:
 
         return battery_data_list
 
+    def _pvi_phase_power(self, phase_index: int) -> float:
+        """Return the AC power of the E3DC inverter for one phase (0 = L1)."""
+        req = self.e3dc.sendRequest(
+            (
+                RscpTag.PVI_REQ_DATA,
+                RscpType.Container,
+                [
+                    (RscpTag.PVI_INDEX, RscpType.Uint16, 0),
+                    (RscpTag.PVI_REQ_AC_POWER, RscpType.Uint16, phase_index),
+                ],
+            ),
+            keepAlive=True,
+        )
+        found = rscpFindTag(req, RscpTag.PVI_AC_POWER)
+        if found is None:
+            return 0.0
+        value = rscpFindTagIndex(found, RscpTag.PVI_VALUE)
+        return 0.0 if value is None else float(value)
+
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:
-        """Poll all powermeters for their current readings."""
+        """Poll all powermeters and derive per-phase grid, inverter and house power."""
         data = self.e3dc.get_powermeters_data(keepAlive=True)
         result: dict[str, Any] = {}
+        phases = ("L1", "L2", "L3")
+        grid = dict.fromkeys(phases, 0.0)
+        additional = dict.fromkeys(phases, 0.0)
 
         # Process and aggregate the data for each found powermeter
         for meter in data:
-            # skip the root powermeter
-            if meter["type"] == PowermeterType.PM_TYPE_ROOT.value:
-                continue
-
             # TODO: Rewrite the config so that we can index into it.
             for config in self.e3dc_config["powermeters"]:
                 if meter["index"] != config["index"]:
                     continue
 
-                result[config["key"]] = (
-                    meter["power"]["L1"] + meter["power"]["L2"] + meter["power"]["L3"]
-                )
+                sign = -1 if config["negate-measure"] else 1
+                power = {phase: sign * meter["power"][phase] for phase in phases}
 
+                if meter["type"] == PowermeterType.PM_TYPE_ROOT.value:
+                    grid = power
+                    continue
+
+                result[config["key"]] = sum(power.values())
                 # TODO: Store the total key in the config as well.
-                result[config["key"] + "-total"] = (
-                    meter["energy"]["L1"]
-                    + meter["energy"]["L2"]
-                    + meter["energy"]["L3"]
+                result[config["key"] + "-total"] = sign * sum(
+                    meter["energy"][phase] for phase in phases
                 )
+                for phase in phases:
+                    additional[phase] += power[phase]
 
-                if config["negate-measure"]:
-                    result[config["key"]] *= -1
-                    result[config["key"] + "-total"] *= -1
+        for index, phase in enumerate(phases):
+            pvi = self._pvi_phase_power(index)
+            key = phase.lower()
+            result[f"grid-{key}"] = grid[phase]
+            result[f"pvi-{key}"] = pvi
+            result[f"house-{key}"] = pvi + grid[phase] + additional[phase]
 
         return result
 

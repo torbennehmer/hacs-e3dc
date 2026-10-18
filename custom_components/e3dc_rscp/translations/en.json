@@ -383,6 +383,33 @@
             "house-consumption": {
                 "name": "House consumption"
             },
+            "house-l1": {
+                "name": "House consumption L1"
+            },
+            "house-l2": {
+                "name": "House consumption L2"
+            },
+            "house-l3": {
+                "name": "House consumption L3"
+            },
+            "grid-l1": {
+                "name": "Grid L1"
+            },
+            "grid-l2": {
+                "name": "Grid L2"
+            },
+            "grid-l3": {
+                "name": "Grid L3"
+            },
+            "pvi-l1": {
+                "name": "Inverter L1"
+            },
+            "pvi-l2": {
+                "name": "Inverter L2"
+            },
+            "pvi-l3": {
+                "name": "Inverter L3"
+            },
             "wallbox-consumption": {
                 "name": "Wallbox consumption"
             },
