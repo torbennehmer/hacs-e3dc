@@ -410,6 +410,18 @@
             "pvi-l3": {
                 "name": "Inverter L3"
             },
+            "pvi-string-power": {
+                "name": "PV string {string} power"
+            },
+            "pvi-string-voltage": {
+                "name": "PV string {string} voltage"
+            },
+            "pvi-string-current": {
+                "name": "PV string {string} current"
+            },
+            "pvi-string-energy": {
+                "name": "PV string {string} energy"
+            },
             "wallbox-consumption": {
                 "name": "Wallbox consumption"
             },
