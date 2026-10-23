@@ -291,6 +291,19 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         )
         for phase in ("l1", "l2", "l3")
     ),
+    # Grid phase voltages from the root powermeter (PM_VOLTAGE_L1–L3).
+    *(
+        E3DCSensorEntityDescription(
+            key=f"grid-voltage-{phase}",
+            translation_key=f"grid-voltage-{phase}",
+            icon="mdi:sine-wave",
+            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+            suggested_display_precision=1,
+            device_class=SensorDeviceClass.VOLTAGE,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        for phase in ("l1", "l2", "l3")
+    ),
     E3DCSensorEntityDescription(
         key="grid-netchange",
         translation_key="grid-netchange",

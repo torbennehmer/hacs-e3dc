@@ -401,6 +401,15 @@
             "grid-l3": {
                 "name": "Grid L3"
             },
+            "grid-voltage-l1": {
+                "name": "Grid voltage L1"
+            },
+            "grid-voltage-l2": {
+                "name": "Grid voltage L2"
+            },
+            "grid-voltage-l3": {
+                "name": "Grid voltage L3"
+            },
             "pvi-l1": {
                 "name": "Inverter L1"
             },
