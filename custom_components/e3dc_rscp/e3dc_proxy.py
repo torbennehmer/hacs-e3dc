@@ -329,6 +329,7 @@ class E3DCProxy:
         result: dict[str, Any] = {}
         phases = ("L1", "L2", "L3")
         grid = dict.fromkeys(phases, 0.0)
+        grid_voltage: dict[str, float | None] = dict.fromkeys(phases)
         additional = dict.fromkeys(phases, 0.0)
 
         # Process and aggregate the data for each found powermeter
@@ -343,6 +344,10 @@ class E3DCProxy:
 
                 if meter["type"] == PowermeterType.PM_TYPE_ROOT.value:
                     grid = power
+                    voltage = meter.get("voltage") or {}
+                    for phase in phases:
+                        raw = voltage.get(phase)
+                        grid_voltage[phase] = None if raw is None else float(raw)
                     continue
 
                 result[config["key"]] = sum(power.values())
@@ -357,6 +362,7 @@ class E3DCProxy:
             pvi = self._pvi_phase_power(index)
             key = phase.lower()
             result[f"grid-{key}"] = grid[phase]
+            result[f"grid-voltage-{key}"] = grid_voltage[phase]
             result[f"pvi-{key}"] = pvi
             result[f"house-{key}"] = pvi + grid[phase] + additional[phase]
 
