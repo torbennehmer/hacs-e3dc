@@ -358,6 +358,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.proxy.e3dc_config["powermeters"] = await self.hass.async_add_executor_job(
             self.proxy.get_powermeters
         )
+        # Keep discovered PVIs (incl. string count) across reconnect, otherwise
+        # pye3dc falls back to [{"index": 0}] without a "strings" key.
+        self.proxy.e3dc_config["pvis"] = await self.hass.async_add_executor_job(
+            self.proxy.get_pvis
+        )
 
         for powermeter in self.proxy.e3dc_config["powermeters"]:
             if powermeter["type"] == PowermeterType.PM_TYPE_ROOT.value:
@@ -436,6 +441,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling additional powermeters")
         await self._load_and_process_powermeters_data()
 
+        _LOGGER.debug("Polling PVI string data")
+        await self._load_and_process_pvi_strings_data()
+
         if self._update_guard_wallboxsettings is False:
             if self.wallboxes:
                 _LOGGER.debug("Polling wallbox")
@@ -453,8 +461,10 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # minutes anyway, this should be a good compromise to get the metrics shortly
         # before the end of the day.
         if self._next_stat_update < time():
-            _LOGGER.debug("Polling today's power metrics")
+            _LOGGER.debug("Polling DB power metrics (day/month/year)")
             await self._load_and_process_db_data_today()
+            await self._load_and_process_db_data_timespan("MONTH", "db-month")
+            await self._load_and_process_db_data_timespan("YEAR", "db-year")
             self._next_stat_update = time() + _STAT_REFRESH_INTERVAL
             # TODO: Reduce interval further, but take start_ts into account to get an
             # end of day reading of the metric.
@@ -537,6 +547,24 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("Unknown power mode %s", power_mode)
             self._mydata["power-mode"] = f"Power mode {power_mode}"
 
+    def _apply_db_data(self, prefix: str, db_data: dict[str, Any]) -> None:
+        """Map E3DC DB statistics into coordinator data under the given prefix."""
+        self._mydata[f"{prefix}-autarky"] = db_data["autarky"]
+        self._mydata[f"{prefix}-battery-charge"] = db_data["bat_power_in"]
+        self._mydata[f"{prefix}-battery-discharge"] = db_data["bat_power_out"]
+        self._mydata[f"{prefix}-grid-consumption"] = db_data["grid_power_out"]
+        self._mydata[f"{prefix}-grid-production"] = db_data["grid_power_in"]
+        self._mydata[f"{prefix}-house-consumption"] = db_data["consumption"]
+        self._mydata[f"{prefix}-selfconsumption"] = db_data["consumed_production"]
+        self._mydata[f"{prefix}-solar-production"] = db_data["solarProduction"]
+
+        # Powermeter production can be signed depending on meter orientation.
+        pm0 = abs(float(db_data.get("pm0Production") or 0))
+        pm1 = abs(float(db_data.get("pm1Production") or 0))
+        self._mydata[f"{prefix}-pm0-production"] = pm0
+        self._mydata[f"{prefix}-pm1-production"] = pm1
+        self._mydata[f"{prefix}-additional-production"] = pm0 + pm1
+
     async def _load_and_process_db_data_today(self) -> None:
         """Load and process retrieved db data settings."""
         try:
@@ -547,15 +575,28 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.warning("Failed to load daily stats, not updating data: %s", ex)
             return
 
-        self._mydata["db-day-autarky"] = db_data["autarky"]
-        self._mydata["db-day-battery-charge"] = db_data["bat_power_in"]
-        self._mydata["db-day-battery-discharge"] = db_data["bat_power_out"]
-        self._mydata["db-day-grid-consumption"] = db_data["grid_power_out"]
-        self._mydata["db-day-grid-production"] = db_data["grid_power_in"]
-        self._mydata["db-day-house-consumption"] = db_data["consumption"]
-        self._mydata["db-day-selfconsumption"] = db_data["consumed_production"]
-        self._mydata["db-day-solar-production"] = db_data["solarProduction"]
+        self._apply_db_data("db-day", db_data)
         self._mydata["db-day-startts"] = db_data["startTimestamp"]
+
+    async def _load_and_process_db_data_timespan(
+        self, timespan: str, prefix: str
+    ) -> None:
+        """Load and process DB statistics for MONTH or YEAR."""
+        try:
+            db_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_db_data_timespan, timespan
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to load %s stats, not updating data: %s", timespan.lower(), ex
+            )
+            return
+
+        if not db_data:
+            _LOGGER.debug("Empty %s DB stats response, keeping previous data", timespan)
+            return
+
+        self._apply_db_data(prefix, db_data)
 
     async def _load_and_process_manual_charge(self) -> None:
         """Loand and process manual charge status."""
@@ -580,6 +621,19 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to load powermeters, not updating data: %s", ex)
+            return
+
+        for key, value in request_data.items():
+            self._mydata[key] = value
+
+    async def _load_and_process_pvi_strings_data(self) -> None:
+        """Load and process per-string PV DC metrics."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_pvi_strings_data
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load PVI string data, not updating data: %s", ex)
             return
 
         for key, value in request_data.items():

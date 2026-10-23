@@ -140,6 +140,11 @@ class E3DCProxy:
         return self.e3dc.get_db_data_timestamp(timestamp, timespan_seconds, True)
 
     @e3dc_call
+    def get_db_data_timespan(self, timespan: str) -> dict[str, Any]:
+        """Return DB statistics for DAY, MONTH or YEAR."""
+        return self.e3dc.get_db_data(timespan=timespan, keepAlive=True)
+
+    @e3dc_call
     def get_manual_charge(self) -> dict[str, Any]:
         """Poll manual charging state."""
         data = self.e3dc.sendRequest(
@@ -182,6 +187,11 @@ class E3DCProxy:
     def get_powermeters(self) -> dict[str, Any]:
         """Load available powermeters from E3DC."""
         return self.e3dc.get_powermeters(keepAlive=True)
+
+    @e3dc_call
+    def get_pvis(self) -> list[dict[str, Any]]:
+        """Load available PV inverters from E3DC."""
+        return self.e3dc.get_pvis(keepAlive=True)
 
     @e3dc_call
     def get_wallbox_ems_settings(self) -> dict[str, Any]:
@@ -321,6 +331,64 @@ class E3DCProxy:
             return 0.0
         value = rscpFindTagIndex(found, RscpTag.PVI_VALUE)
         return 0.0 if value is None else float(value)
+
+    def _pvi_string_metrics(self, string_index: int) -> dict[str, float | None]:
+        """Return DC power/voltage/current/energy for one PV string (0 = first)."""
+        req = self.e3dc.sendRequest(
+            (
+                RscpTag.PVI_REQ_DATA,
+                RscpType.Container,
+                [
+                    (RscpTag.PVI_INDEX, RscpType.Uint16, 0),
+                    (RscpTag.PVI_REQ_DC_POWER, RscpType.Uint16, string_index),
+                    (RscpTag.PVI_REQ_DC_VOLTAGE, RscpType.Uint16, string_index),
+                    (RscpTag.PVI_REQ_DC_CURRENT, RscpType.Uint16, string_index),
+                    (
+                        RscpTag.PVI_REQ_DC_STRING_ENERGY_ALL,
+                        RscpType.Uint16,
+                        string_index,
+                    ),
+                ],
+            ),
+            keepAlive=True,
+        )
+
+        def _value(tag: RscpTag, digits: int) -> float | None:
+            found = rscpFindTag(req, tag)
+            if found is None:
+                return None
+            value = rscpFindTagIndex(found, RscpTag.PVI_VALUE)
+            if value is None:
+                return None
+            # Round float32 RSCP noise so history/automations stay clean
+            # (UI already uses suggested_display_precision).
+            return round(float(value), digits)
+
+        return {
+            "power": _value(RscpTag.PVI_DC_POWER, 0),
+            "voltage": _value(RscpTag.PVI_DC_VOLTAGE, 1),
+            "current": _value(RscpTag.PVI_DC_CURRENT, 2),
+            "energy": _value(RscpTag.PVI_DC_STRING_ENERGY_ALL, 0),
+        }
+
+    def pvi_string_count(self) -> int:
+        """Return configured DC string count of the first PVI (0 if unknown)."""
+        pvis = getattr(self.e3dc, "pvis", None) or []
+        if not pvis:
+            return 0
+        return int(pvis[0].get("strings") or 0)
+
+    @e3dc_call
+    def get_pvi_strings_data(self) -> dict[str, Any]:
+        """Poll DC metrics for each PV string/tracker on the first PVI."""
+        result: dict[str, Any] = {}
+        for string_index in range(self.pvi_string_count()):
+            metrics = self._pvi_string_metrics(string_index)
+            # 1-based string numbers for entity keys (String 1 / String 2).
+            prefix = f"pvi-string-{string_index + 1}"
+            for metric, value in metrics.items():
+                result[f"{prefix}-{metric}"] = value
+        return result
 
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:

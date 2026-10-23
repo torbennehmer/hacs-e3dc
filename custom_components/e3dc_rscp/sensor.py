@@ -47,6 +47,70 @@ class E3DCSensorEntityDescription(SensorEntityDescription):
     icons: dict[str, str] = None
 
 
+def _db_energy_sensor(
+    key: str, icon: str, *, enabled_default: bool = True
+) -> E3DCSensorEntityDescription:
+    """Build a Wh TOTAL_INCREASING DB statistic sensor."""
+    return E3DCSensorEntityDescription(
+        key=key,
+        translation_key=key,
+        icon=icon,
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=enabled_default,
+    )
+
+
+def _db_percent_sensor(key: str) -> E3DCSensorEntityDescription:
+    """Build a percent MEASUREMENT DB statistic sensor."""
+    return E3DCSensorEntityDescription(
+        key=key,
+        translation_key=key,
+        icon="mdi:cloud-percent-outline",
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
+        suggested_display_precision=0,
+        device_class=SensorDeviceClass.POWER_FACTOR,
+        state_class=SensorStateClass.MEASUREMENT,
+    )
+
+
+def _db_span_sensors(prefix: str) -> tuple[E3DCSensorEntityDescription, ...]:
+    """Sensors for one DB timespan prefix (db-day / db-month / db-year)."""
+    return (
+        _db_percent_sensor(f"{prefix}-autarky"),
+        _db_energy_sensor(f"{prefix}-battery-charge", "mdi:battery-charging-outline"),
+        _db_energy_sensor(
+            f"{prefix}-battery-discharge", "mdi:battery-arrow-down-outline"
+        ),
+        _db_energy_sensor(
+            f"{prefix}-grid-consumption", "mdi:transmission-tower-export"
+        ),
+        _db_energy_sensor(f"{prefix}-house-consumption", "mdi:home-import-outline"),
+        _db_energy_sensor(f"{prefix}-grid-production", "mdi:transmission-tower-import"),
+        _db_energy_sensor(f"{prefix}-solar-production", "mdi:solar-power"),
+        _db_percent_sensor(f"{prefix}-selfconsumption"),
+        _db_energy_sensor(
+            f"{prefix}-pm0-production",
+            "mdi:meter-electric-outline",
+            enabled_default=False,
+        ),
+        _db_energy_sensor(
+            f"{prefix}-pm1-production",
+            "mdi:meter-electric-outline",
+            enabled_default=False,
+        ),
+        # Enabled in async_setup_entry when an additional source is present.
+        _db_energy_sensor(
+            f"{prefix}-additional-production",
+            "mdi:solar-power-variant-outline",
+            enabled_default=False,
+        ),
+    )
+
+
 SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
     # DIAGNOSTIC SENSORS
     E3DCSensorEntityDescription(
@@ -339,84 +403,9 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     # LONGTERM STATISTIC SENSORS
-    E3DCSensorEntityDescription(
-        key="db-day-autarky",
-        translation_key="db-day-autarky",
-        icon="mdi:cloud-percent-outline",
-        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
-        suggested_display_precision=0,
-        device_class=SensorDeviceClass.POWER_FACTOR,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
-    E3DCSensorEntityDescription(
-        key="db-day-battery-charge",
-        translation_key="db-day-battery-charge",
-        icon="mdi:battery-charging-outline",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        suggested_display_precision=2,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    E3DCSensorEntityDescription(
-        key="db-day-battery-discharge",
-        translation_key="db-day-battery-discharge",
-        icon="mdi:battery-arrow-down-outline",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        suggested_display_precision=2,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    E3DCSensorEntityDescription(
-        key="db-day-grid-consumption",
-        translation_key="db-day-grid-consumption",
-        icon="mdi:transmission-tower-export",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        suggested_display_precision=2,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    E3DCSensorEntityDescription(
-        key="db-day-house-consumption",
-        translation_key="db-day-house-consumption",
-        icon="mdi:home-import-outline",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        suggested_display_precision=2,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    E3DCSensorEntityDescription(
-        key="db-day-grid-production",
-        translation_key="db-day-grid-production",
-        icon="mdi:transmission-tower-import",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        suggested_display_precision=2,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    E3DCSensorEntityDescription(
-        key="db-day-solar-production",
-        translation_key="db-day-solar-production",
-        icon="mdi:solar-power",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        suggested_display_precision=2,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-    ),
-    E3DCSensorEntityDescription(
-        key="db-day-selfconsumption",
-        translation_key="db-day-selfconsumption",
-        icon="mdi:cloud-percent-outline",
-        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
-        suggested_display_precision=0,
-        device_class=SensorDeviceClass.POWER_FACTOR,
-        state_class=SensorStateClass.MEASUREMENT,
-    ),
+    *_db_span_sensors("db-day"),
+    *_db_span_sensors("db-month"),
+    *_db_span_sensors("db-year"),
     E3DCSensorEntityDescription(
         key="power-mode",
         translation_key="power-mode",
@@ -893,7 +882,13 @@ async def async_setup_entry(
         # Enable the aggregated additional-production sensor only when an
         # external source is present (see issue #43). Keep it disabled by
         # default otherwise so installs without an extra inverter stay clean.
-        if description.key == "additional-production":
+        # Same for DB day/month/year additional-production energy totals (#145).
+        if description.key in (
+            "additional-production",
+            "db-day-additional-production",
+            "db-month-additional-production",
+            "db-year-additional-production",
+        ):
             description = replace(
                 description,
                 entity_registry_enabled_default=additional_production_available,
@@ -955,6 +950,75 @@ async def async_setup_entry(
             state_class=SensorStateClass.MEASUREMENT,
         )
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
+
+    # Per-string PV DC metrics (MPP trackers) from the first PVI.
+    for string_num in range(1, coordinator.proxy.pvi_string_count() + 1):
+        prefix = f"pvi-string-{string_num}"
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"{prefix}-power",
+                    translation_key="pvi-string-power",
+                    translation_placeholders={"string": str(string_num)},
+                    icon="mdi:solar-power",
+                    native_unit_of_measurement=UnitOfPower.WATT,
+                    suggested_display_precision=0,
+                    device_class=SensorDeviceClass.POWER,
+                    state_class=SensorStateClass.MEASUREMENT,
+                ),
+                entry.unique_id,
+            )
+        )
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"{prefix}-voltage",
+                    translation_key="pvi-string-voltage",
+                    translation_placeholders={"string": str(string_num)},
+                    icon="mdi:sine-wave",
+                    native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+                    suggested_display_precision=1,
+                    device_class=SensorDeviceClass.VOLTAGE,
+                    state_class=SensorStateClass.MEASUREMENT,
+                ),
+                entry.unique_id,
+            )
+        )
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"{prefix}-current",
+                    translation_key="pvi-string-current",
+                    translation_placeholders={"string": str(string_num)},
+                    icon="mdi:current-dc",
+                    native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+                    suggested_display_precision=2,
+                    device_class=SensorDeviceClass.CURRENT,
+                    state_class=SensorStateClass.MEASUREMENT,
+                ),
+                entry.unique_id,
+            )
+        )
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"{prefix}-energy",
+                    translation_key="pvi-string-energy",
+                    translation_placeholders={"string": str(string_num)},
+                    icon="mdi:solar-power-variant",
+                    native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+                    suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+                    suggested_display_precision=2,
+                    device_class=SensorDeviceClass.ENERGY,
+                    state_class=SensorStateClass.TOTAL_INCREASING,
+                ),
+                entry.unique_id,
+            )
+        )
 
     # Create battery pack sensors first, before module sensors
     # This ensures pack devices are registered before modules reference them via via_device_id
