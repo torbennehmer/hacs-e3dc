@@ -407,6 +407,15 @@
       "grid-l3": {
         "name": "Grid L3"
       },
+      "grid-voltage-l1": {
+        "name": "Grid voltage L1"
+      },
+      "grid-voltage-l2": {
+        "name": "Grid voltage L2"
+      },
+      "grid-voltage-l3": {
+        "name": "Grid voltage L3"
+      },
       "pvi-l1": {
         "name": "Inverter L1"
       },
@@ -448,6 +457,18 @@
       },
       "grid-energy-l3": {
         "name": "Grid energy L3"
+      },
+      "pvi-string-power": {
+        "name": "PV string {string} power"
+      },
+      "pvi-string-voltage": {
+        "name": "PV string {string} voltage"
+      },
+      "pvi-string-current": {
+        "name": "PV string {string} current"
+      },
+      "pvi-string-energy": {
+        "name": "PV string {string} energy"
       },
       "wallbox-consumption": {
         "name": "Wallbox consumption"
@@ -502,6 +523,81 @@
       },
       "db-day-selfconsumption": {
         "name": "Self consumption - today"
+      },
+      "db-day-pm0-production": {
+        "name": "Powermeter 0 production - today"
+      },
+      "db-day-pm1-production": {
+        "name": "Powermeter 1 production - today"
+      },
+      "db-day-additional-production": {
+        "name": "Additional production - today"
+      },
+      "db-month-autarky": {
+        "name": "Autarky - this month"
+      },
+      "db-month-battery-charge": {
+        "name": "Battery charge - this month"
+      },
+      "db-month-battery-discharge": {
+        "name": "Battery discharge - this month"
+      },
+      "db-month-grid-consumption": {
+        "name": "Consumption from grid - this month"
+      },
+      "db-month-house-consumption": {
+        "name": "House consumption - this month"
+      },
+      "db-month-grid-production": {
+        "name": "Export to grid - this month"
+      },
+      "db-month-solar-production": {
+        "name": "Solar production - this month"
+      },
+      "db-month-selfconsumption": {
+        "name": "Self consumption - this month"
+      },
+      "db-month-pm0-production": {
+        "name": "Powermeter 0 production - this month"
+      },
+      "db-month-pm1-production": {
+        "name": "Powermeter 1 production - this month"
+      },
+      "db-month-additional-production": {
+        "name": "Additional production - this month"
+      },
+      "db-year-autarky": {
+        "name": "Autarky - this year"
+      },
+      "db-year-battery-charge": {
+        "name": "Battery charge - this year"
+      },
+      "db-year-battery-discharge": {
+        "name": "Battery discharge - this year"
+      },
+      "db-year-grid-consumption": {
+        "name": "Consumption from grid - this year"
+      },
+      "db-year-house-consumption": {
+        "name": "House consumption - this year"
+      },
+      "db-year-grid-production": {
+        "name": "Export to grid - this year"
+      },
+      "db-year-solar-production": {
+        "name": "Solar production - this year"
+      },
+      "db-year-selfconsumption": {
+        "name": "Self consumption - this year"
+      },
+      "db-year-pm0-production": {
+        "name": "Powermeter 0 production - this year"
+      },
+      "db-year-pm1-production": {
+        "name": "Powermeter 1 production - this year"
+      },
+      "db-year-additional-production": {
+        "name": "Additional production - this year"
       },
       "manual-charge-energy": {
         "name": "Energy charged from grid"
