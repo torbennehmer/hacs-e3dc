@@ -18,6 +18,7 @@ from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
+    UnitOfFrequency,
     UnitOfPower,
     UnitOfRatio,
     UnitOfTemperature,
@@ -303,6 +304,54 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
             state_class=SensorStateClass.MEASUREMENT,
         )
         for phase in ("l1", "l2", "l3")
+    ),
+    # Inverter AC voltage/current per phase.
+    *(
+        E3DCSensorEntityDescription(
+            key=f"pvi-voltage-{phase}",
+            translation_key=f"pvi-voltage-{phase}",
+            icon="mdi:sine-wave",
+            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+            suggested_display_precision=1,
+            device_class=SensorDeviceClass.VOLTAGE,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        for phase in ("l1", "l2", "l3")
+    ),
+    *(
+        E3DCSensorEntityDescription(
+            key=f"pvi-current-{phase}",
+            translation_key=f"pvi-current-{phase}",
+            icon="mdi:current-ac",
+            native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+            suggested_display_precision=2,
+            device_class=SensorDeviceClass.CURRENT,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        for phase in ("l1", "l2", "l3")
+    ),
+    # Root powermeter energy per phase (signed net energy → TOTAL).
+    *(
+        E3DCSensorEntityDescription(
+            key=f"grid-energy-{phase}",
+            translation_key=f"grid-energy-{phase}",
+            icon="mdi:transmission-tower",
+            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+            suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+            suggested_display_precision=2,
+            device_class=SensorDeviceClass.ENERGY,
+            state_class=SensorStateClass.TOTAL,
+        )
+        for phase in ("l1", "l2", "l3")
+    ),
+    E3DCSensorEntityDescription(
+        key="pvi-frequency",
+        translation_key="pvi-frequency",
+        icon="mdi:sine-wave",
+        native_unit_of_measurement=UnitOfFrequency.HERTZ,
+        suggested_display_precision=2,
+        device_class=SensorDeviceClass.FREQUENCY,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     E3DCSensorEntityDescription(
         key="grid-netchange",
@@ -950,6 +999,41 @@ async def async_setup_entry(
             state_class=SensorStateClass.MEASUREMENT,
         )
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
+
+        for phase in ("l1", "l2", "l3"):
+            phase_energy_description = E3DCSensorEntityDescription(
+                has_entity_name=True,
+                name=f"{powermeter_config['name']} L{phase[-1]} energy",
+                key=f"{powermeter_config['key']}-energy-{phase}",
+                icon="mdi:meter-electric",
+                native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+                suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+                suggested_display_precision=2,
+                device_class=SensorDeviceClass.ENERGY,
+                state_class=powermeter_config["total-state-class"],
+            )
+            entities.append(
+                E3DCSensor(coordinator, phase_energy_description, entry.unique_id)
+            )
+
+    # PVI temperature sensors (count discovered at connect).
+    for temp_num in range(1, coordinator.pvi_temperature_count + 1):
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"pvi-temperature-{temp_num}",
+                    translation_key="pvi-temperature",
+                    translation_placeholders={"sensor": str(temp_num)},
+                    icon="mdi:thermometer",
+                    native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+                    suggested_display_precision=1,
+                    device_class=SensorDeviceClass.TEMPERATURE,
+                    state_class=SensorStateClass.MEASUREMENT,
+                ),
+                entry.unique_id,
+            )
+        )
 
     # Per-string PV DC metrics (MPP trackers) from the first PVI.
     for string_num in range(1, coordinator.proxy.pvi_string_count() + 1):

@@ -313,8 +313,16 @@ class E3DCProxy:
 
         return battery_data_list
 
-    def _pvi_phase_power(self, phase_index: int) -> float:
-        """Return the AC power of the E3DC inverter for one phase (0 = L1)."""
+    def _pvi_value(self, req: Any, tag: RscpTag) -> float | None:
+        """Extract a PVI_VALUE float from a tagged response container."""
+        found = rscpFindTag(req, tag)
+        if found is None:
+            return None
+        value = rscpFindTagIndex(found, RscpTag.PVI_VALUE)
+        return None if value is None else float(value)
+
+    def _pvi_phase_metrics(self, phase_index: int) -> dict[str, float | None]:
+        """Return AC power/voltage/current for one inverter phase (0 = L1)."""
         req = self.e3dc.sendRequest(
             (
                 RscpTag.PVI_REQ_DATA,
@@ -322,15 +330,71 @@ class E3DCProxy:
                 [
                     (RscpTag.PVI_INDEX, RscpType.Uint16, 0),
                     (RscpTag.PVI_REQ_AC_POWER, RscpType.Uint16, phase_index),
+                    (RscpTag.PVI_REQ_AC_VOLTAGE, RscpType.Uint16, phase_index),
+                    (RscpTag.PVI_REQ_AC_CURRENT, RscpType.Uint16, phase_index),
                 ],
             ),
             keepAlive=True,
         )
-        found = rscpFindTag(req, RscpTag.PVI_AC_POWER)
-        if found is None:
-            return 0.0
-        value = rscpFindTagIndex(found, RscpTag.PVI_VALUE)
-        return 0.0 if value is None else float(value)
+        return {
+            "power": self._pvi_value(req, RscpTag.PVI_AC_POWER),
+            "voltage": self._pvi_value(req, RscpTag.PVI_AC_VOLTAGE),
+            "current": self._pvi_value(req, RscpTag.PVI_AC_CURRENT),
+        }
+
+    def _pvi_aux_metrics(self) -> dict[str, Any]:
+        """Return AC frequency and PVI temperature sensors for the first inverter."""
+        req = self.e3dc.sendRequest(
+            (
+                RscpTag.PVI_REQ_DATA,
+                RscpType.Container,
+                [
+                    (RscpTag.PVI_INDEX, RscpType.Uint16, 0),
+                    (RscpTag.PVI_REQ_AC_FREQUENCY, RscpType.NoneType, None),
+                    (RscpTag.PVI_REQ_TEMPERATURE_COUNT, RscpType.NoneType, None),
+                ],
+            ),
+            keepAlive=True,
+        )
+        result: dict[str, Any] = {
+            "pvi-frequency": self._pvi_value(req, RscpTag.PVI_AC_FREQUENCY),
+        }
+        temp_count = rscpFindTagIndex(req, RscpTag.PVI_TEMPERATURE_COUNT)
+        count = int(temp_count or 0)
+        for temp_index in range(count):
+            temp_req = self.e3dc.sendRequest(
+                (
+                    RscpTag.PVI_REQ_DATA,
+                    RscpType.Container,
+                    [
+                        (RscpTag.PVI_INDEX, RscpType.Uint16, 0),
+                        (RscpTag.PVI_REQ_TEMPERATURE, RscpType.Uint16, temp_index),
+                    ],
+                ),
+                keepAlive=True,
+            )
+            # 1-based sensor numbers for entity keys.
+            result[f"pvi-temperature-{temp_index + 1}"] = self._pvi_value(
+                temp_req, RscpTag.PVI_TEMPERATURE
+            )
+        return result
+
+    @e3dc_call
+    def get_pvi_temperature_count(self) -> int:
+        """Return number of PVI temperature sensors on the first inverter."""
+        req = self.e3dc.sendRequest(
+            (
+                RscpTag.PVI_REQ_DATA,
+                RscpType.Container,
+                [
+                    (RscpTag.PVI_INDEX, RscpType.Uint16, 0),
+                    (RscpTag.PVI_REQ_TEMPERATURE_COUNT, RscpType.NoneType, None),
+                ],
+            ),
+            keepAlive=True,
+        )
+        temp_count = rscpFindTagIndex(req, RscpTag.PVI_TEMPERATURE_COUNT)
+        return int(temp_count or 0)
 
     def _pvi_string_metrics(self, string_index: int) -> dict[str, float | None]:
         """Return DC power/voltage/current/energy for one PV string (0 = first)."""
@@ -392,11 +456,12 @@ class E3DCProxy:
 
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:
-        """Poll all powermeters and derive per-phase grid, inverter and house power."""
+        """Poll powermeters and derive per-phase grid/inverter/house metrics."""
         data = self.e3dc.get_powermeters_data(keepAlive=True)
         result: dict[str, Any] = {}
         phases = ("L1", "L2", "L3")
         grid = dict.fromkeys(phases, 0.0)
+        grid_energy: dict[str, float | None] = dict.fromkeys(phases)
         grid_voltage: dict[str, float | None] = dict.fromkeys(phases)
         additional = dict.fromkeys(phases, 0.0)
 
@@ -409,9 +474,13 @@ class E3DCProxy:
 
                 sign = -1 if config["negate-measure"] else 1
                 power = {phase: sign * meter["power"][phase] for phase in phases}
+                energy = meter.get("energy") or {}
 
                 if meter["type"] == PowermeterType.PM_TYPE_ROOT.value:
                     grid = power
+                    for phase in phases:
+                        raw = energy.get(phase)
+                        grid_energy[phase] = None if raw is None else float(raw)
                     voltage = meter.get("voltage") or {}
                     for phase in phases:
                         raw = voltage.get(phase)
@@ -421,19 +490,30 @@ class E3DCProxy:
                 result[config["key"]] = sum(power.values())
                 # TODO: Store the total key in the config as well.
                 result[config["key"] + "-total"] = sign * sum(
-                    meter["energy"][phase] for phase in phases
+                    float(energy.get(phase) or 0) for phase in phases
                 )
                 for phase in phases:
                     additional[phase] += power[phase]
+                    raw = energy.get(phase)
+                    key = phase.lower()
+                    result[f"{config['key']}-energy-{key}"] = (
+                        None if raw is None else sign * float(raw)
+                    )
 
         for index, phase in enumerate(phases):
-            pvi = self._pvi_phase_power(index)
+            metrics = self._pvi_phase_metrics(index)
             key = phase.lower()
+            power = metrics["power"]
+            pvi_power = 0.0 if power is None else power
             result[f"grid-{key}"] = grid[phase]
+            result[f"grid-energy-{key}"] = grid_energy[phase]
             result[f"grid-voltage-{key}"] = grid_voltage[phase]
-            result[f"pvi-{key}"] = pvi
-            result[f"house-{key}"] = pvi + grid[phase] + additional[phase]
+            result[f"pvi-{key}"] = pvi_power
+            result[f"pvi-voltage-{key}"] = metrics["voltage"]
+            result[f"pvi-current-{key}"] = metrics["current"]
+            result[f"house-{key}"] = pvi_power + grid[phase] + additional[phase]
 
+        result.update(self._pvi_aux_metrics())
         return result
 
     @e3dc_call
