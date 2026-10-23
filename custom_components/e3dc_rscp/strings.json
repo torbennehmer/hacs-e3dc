@@ -416,6 +416,39 @@
       "pvi-l3": {
         "name": "Inverter L3"
       },
+      "pvi-voltage-l1": {
+        "name": "Inverter voltage L1"
+      },
+      "pvi-voltage-l2": {
+        "name": "Inverter voltage L2"
+      },
+      "pvi-voltage-l3": {
+        "name": "Inverter voltage L3"
+      },
+      "pvi-current-l1": {
+        "name": "Inverter current L1"
+      },
+      "pvi-current-l2": {
+        "name": "Inverter current L2"
+      },
+      "pvi-current-l3": {
+        "name": "Inverter current L3"
+      },
+      "pvi-frequency": {
+        "name": "Inverter frequency"
+      },
+      "pvi-temperature": {
+        "name": "Inverter temperature {sensor}"
+      },
+      "grid-energy-l1": {
+        "name": "Grid energy L1"
+      },
+      "grid-energy-l2": {
+        "name": "Grid energy L2"
+      },
+      "grid-energy-l3": {
+        "name": "Grid energy L3"
+      },
       "wallbox-consumption": {
         "name": "Wallbox consumption"
       },
