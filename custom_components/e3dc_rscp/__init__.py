@@ -23,6 +23,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
 
 from .const import CONF_FARMCONTROLLER, DOMAIN, PLATFORMS
+from .rscp_frame_compat import patch_rscp_frame_reassembly
 
 from homeassistant.const import (
     CONF_API_VERSION,
@@ -31,6 +32,13 @@ from homeassistant.const import (
 from .coordinator import E3DCCoordinator
 from .services import async_setup_services
 from e3dc._e3dc_rscp_local import DEFAULT_PORT as RSCP_PORT
+
+# pye3dc's local RSCP transport assumes a single socket.recv() call
+# always returns a complete frame, which fails for larger responses
+# (e.g. an extensive EH_REQ_GET_SAVED_ERRORS history). Patch it to
+# reassemble frames split across multiple reads. Safe to drop once
+# fixed upstream in python-e3dc.
+patch_rscp_frame_reassembly()
 
 _LOGGER = logging.getLogger(__name__)
 
