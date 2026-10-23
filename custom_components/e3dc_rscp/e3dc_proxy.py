@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
 import logging
 from typing import Any
@@ -67,18 +68,18 @@ def _rscp_error_message(data: Any) -> str | None:
 class ThreadSafeE3DC(E3DC):
     """Thread-safe version of E3DC."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize the thread-safe E3DC."""
         self._lock = Lock()
         super().__init__(*args, **kwargs)
 
-    def sendRequest(self, *args, **kwargs):
+    def sendRequest(self, *args, **kwargs) -> Any:
         """Thread-safe sendRequest."""
         with self._lock:
             return super().sendRequest(*args, **kwargs)
 
 
-def e3dc_call(func):
+def e3dc_call(func) -> Callable[..., Any]:
     """Wrap e3dc call in boilerplate exception handling."""
 
     @wraps(func)
@@ -120,7 +121,7 @@ class E3DCProxy:
 
     def __init__(
         self, _hass: HomeAssistant, _config: ConfigEntry | dict[str, str | int]
-    ):
+    ) -> None:
         """Initialize E3DC Proxy and connect."""
         # TODO: move to readonly properties
         self.e3dc: E3DC = None
@@ -147,7 +148,7 @@ class E3DCProxy:
             self._port = _config.get(CONF_PORT, RSCP_PORT)
 
     @e3dc_call
-    def connect(self, config: dict[str, Any] | None = None):
+    def connect(self, config: dict[str, Any] | None = None) -> None:
         """Connect to E3DC with an optional device setup."""
         if config is None:
             config = {}
@@ -165,7 +166,7 @@ class E3DCProxy:
         self.e3dc_config = config
 
     @e3dc_call
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Disconnect from E3DC if connected."""
         if self.e3dc is None:
             return
@@ -288,11 +289,18 @@ class E3DCProxy:
             RscpTag.EMS_REQ_GET_WALLBOX_ENFORCE_POWER_ASSIGNMENT, keepAlive=True
         )
 
+        # sendRequestTag may return None if the response could not be parsed,
+        # treat this as an error instead of silently reporting wrong states.
+        if beforeCarMode is None or batToCarMode is None:
+            raise HomeAssistantError(
+                "Failed to load wallbox EMS settings, got no data from E3DC"
+            )
+
         result: dict[str, Any] = {}
-        result["battery-before-car-mode"] = False if beforeCarMode == 0 else True
-        result["battery-to-car-mode"] = False if batToCarMode == 0 else True
+        result["battery-before-car-mode"] = beforeCarMode != 0
+        result["battery-to-car-mode"] = batToCarMode != 0
         result["battery-wallbox-discharge-limit"] = batWBDischargeLimit
-        result["wallbox-enforce-power-assignment"] = wbEnforcePowerAssignment
+        result["wallbox-enforce-power-assignment"] = bool(wbEnforcePowerAssignment)
         return result
 
     @e3dc_call
@@ -385,37 +393,62 @@ class E3DCProxy:
 
         return battery_data_list
 
+    def _pvi_phase_power(self, phase_index: int) -> float:
+        """Return the AC power of the E3DC inverter for one phase (0 = L1)."""
+        req = self.e3dc.sendRequest(
+            (
+                RscpTag.PVI_REQ_DATA,
+                RscpType.Container,
+                [
+                    (RscpTag.PVI_INDEX, RscpType.Uint16, 0),
+                    (RscpTag.PVI_REQ_AC_POWER, RscpType.Uint16, phase_index),
+                ],
+            ),
+            keepAlive=True,
+        )
+        found = rscpFindTag(req, RscpTag.PVI_AC_POWER)
+        if found is None:
+            return 0.0
+        value = rscpFindTagIndex(found, RscpTag.PVI_VALUE)
+        return 0.0 if value is None else float(value)
+
     @e3dc_call
     def get_powermeters_data(self) -> dict[str, Any]:
-        """Poll all powermeters for their current readings."""
+        """Poll all powermeters and derive per-phase grid, inverter and house power."""
         data = self.e3dc.get_powermeters_data(keepAlive=True)
         result: dict[str, Any] = {}
+        phases = ("L1", "L2", "L3")
+        grid = dict.fromkeys(phases, 0.0)
+        additional = dict.fromkeys(phases, 0.0)
 
         # Process and aggregate the data for each found powermeter
         for meter in data:
-            # skip the root powermeter
-            if meter["type"] == PowermeterType.PM_TYPE_ROOT.value:
-                continue
-
             # TODO: Rewrite the config so that we can index into it.
             for config in self.e3dc_config["powermeters"]:
                 if meter["index"] != config["index"]:
                     continue
 
-                result[config["key"]] = (
-                    meter["power"]["L1"] + meter["power"]["L2"] + meter["power"]["L3"]
-                )
+                sign = -1 if config["negate-measure"] else 1
+                power = {phase: sign * meter["power"][phase] for phase in phases}
 
+                if meter["type"] == PowermeterType.PM_TYPE_ROOT.value:
+                    grid = power
+                    continue
+
+                result[config["key"]] = sum(power.values())
                 # TODO: Store the total key in the config as well.
-                result[config["key"] + "-total"] = (
-                    meter["energy"]["L1"]
-                    + meter["energy"]["L2"]
-                    + meter["energy"]["L3"]
+                result[config["key"] + "-total"] = sign * sum(
+                    meter["energy"][phase] for phase in phases
                 )
+                for phase in phases:
+                    additional[phase] += power[phase]
 
-                if config["negate-measure"]:
-                    result[config["key"]] *= -1
-                    result[config["key"] + "-total"] *= -1
+        for index, phase in enumerate(phases):
+            pvi = self._pvi_phase_power(index)
+            key = phase.lower()
+            result[f"grid-{key}"] = grid[phase]
+            result[f"pvi-{key}"] = pvi
+            result[f"house-{key}"] = pvi + grid[phase] + additional[phase]
 
         return result
 
@@ -482,7 +515,7 @@ class E3DCProxy:
             _LOGGER.warning("Manual charging could not be activated")
 
     @e3dc_call
-    def set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int):
+    def set_wallbox_sun_mode(self, enabled: bool, wallbox_index: int) -> None:
         """Set wallbox charging mode to sun mode on/off.
 
         Args:
@@ -500,7 +533,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to set wallbox to sun mode %s", enabled)
 
     @e3dc_call
-    def set_wallbox_schuko(self, enabled: bool, wallbox_index: int):
+    def set_wallbox_schuko(self, enabled: bool, wallbox_index: int) -> None:
         """Set wallbox power outlet (schuko) to on/off.
 
         Args:
@@ -518,7 +551,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to set wallbox schuko to %s", enabled)
 
     @e3dc_call
-    def toggle_wallbox_charging(self, wallbox_index: int):
+    def toggle_wallbox_charging(self, wallbox_index: int) -> None:
         """Toggle charging of the wallbox.
 
         Args:
@@ -535,7 +568,7 @@ class E3DCProxy:
             raise HomeAssistantError("Failed to toggle wallbox charging")
 
     @e3dc_call
-    def toggle_wallbox_phases(self, wallbox_index: int):
+    def toggle_wallbox_phases(self, wallbox_index: int) -> None:
         """Toggle the phases of wallbox charging between 1 and 3 phases.
 
            Only works if "Phasen" in the portal/device is not set to Auto.
@@ -707,7 +740,7 @@ class E3DCProxy:
             _LOGGER.warning("The given power limits are not optimal, continuing anyway")
 
     @e3dc_call
-    def set_powersave(self, enabled: bool):
+    def set_powersave(self, enabled: bool) -> None:
         """Set powersaving flag."""
         # The call would normally return the new state, however, various e3dc's
         # react differently here, my E3DC does not work as the way e3dc lib is
@@ -718,7 +751,7 @@ class E3DCProxy:
         self.e3dc.set_powersave(enabled, True)
 
     @e3dc_call
-    def set_weather_regulated_charge(self, enabled: bool):
+    def set_weather_regulated_charge(self, enabled: bool) -> None:
         """Set weather regulated charging flag."""
         # The call would normally return the new state, however, various e3dc's
         # react differently here, my E3DC does not work as the way e3dc lib is

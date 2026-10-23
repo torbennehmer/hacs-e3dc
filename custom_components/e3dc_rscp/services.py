@@ -148,9 +148,7 @@ def _resolve_device_id(hass: HomeAssistant, devid: str) -> E3DCCoordinator:
             raise HomeAssistantError(
                 f"{SERVICE_SET_POWER_LIMITS}: Invalid via Device ID {devid}."
             )
-        for identifier in via_dev.identifiers:
-            domain: str = identifier[0]
-        if domain == DOMAIN:
+        if any(identifier[0] == DOMAIN for identifier in via_dev.identifiers):
             dev = via_dev
 
     for identifier in dev.identifiers:

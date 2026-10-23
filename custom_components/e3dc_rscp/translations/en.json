@@ -96,6 +96,30 @@
                     "password": "[%key:common::config_flow::data::password%]",
                     "rscpkey": "RSCP encryption key"
                 }
+            },
+            "ssdp_auth_type": {
+                "title": "Discovered E3DC device",
+                "description": "E3DC device {name} has been discovered at IP address {host}.\n\nChoose how to authenticate with it.",
+                "data": {
+                    "auth_type": "Authentication type"
+                },
+                "data_description": {
+                    "auth_type": "Portal-User: Use your E3DC portal account (email + password). Local user: Use the offline RSCP user (username is fixed to 'local.user', password configured on the device under Personalize \u2192 User profile \u2192 Password for offline RSCP user)."
+                }
+            },
+            "ssdp_confirm": {
+                "title": "Discovered E3DC device",
+                "description": "E3DC device {name} has been discovered at IP address {host}.\n\nPlease provide your E3DC credentials to complete the setup.\n\nFor local user: the username will be set automatically to **local.user**.",
+                "data": {
+                    "username": "Username (E3DC portal email)",
+                    "password": "Password",
+                    "rscpkey": "RSCP encryption key"
+                },
+                "data_description": {
+                    "username": "Your E3DC portal email address (only for Portal-User).",
+                    "password": "Portal-User: your E3DC portal password.\nLocal user: the offline RSCP user password set on the device (Personalize \u2192 User profile \u2192 Password for offline RSCP user).",
+                    "rscpkey": "The RSCP encryption key configured on the device (Personalize \u2192 User profile \u2192 RSCP password). This is the encryption key, not a login password."
+                }
             }
         }
     },
@@ -103,7 +127,11 @@
         "step": {
             "init": {
                 "data": {
-                    "create_battery_devices": "Create battery devices"
+                    "create_battery_devices": "Create battery devices",
+                    "scan_interval": "Update interval"
+                },
+                "data_description": {
+                    "scan_interval": "How often power and status values are polled from the E3DC (5–60 seconds). Daily statistics stay on their own schedule."
                 },
                 "title": "E3DC RSCP options"
             }
@@ -357,6 +385,33 @@
             },
             "house-consumption": {
                 "name": "House consumption"
+            },
+            "house-l1": {
+                "name": "House consumption L1"
+            },
+            "house-l2": {
+                "name": "House consumption L2"
+            },
+            "house-l3": {
+                "name": "House consumption L3"
+            },
+            "grid-l1": {
+                "name": "Grid L1"
+            },
+            "grid-l2": {
+                "name": "Grid L2"
+            },
+            "grid-l3": {
+                "name": "Grid L3"
+            },
+            "pvi-l1": {
+                "name": "Inverter L1"
+            },
+            "pvi-l2": {
+                "name": "Inverter L2"
+            },
+            "pvi-l3": {
+                "name": "Inverter L3"
             },
             "wallbox-consumption": {
                 "name": "Wallbox consumption"
@@ -625,24 +680,24 @@
                 "name": "Schuko"
             },
             "battery-before-car-mode": {
-                "name": "Wallbox charging prioritization",
+                "name": "Battery before wallbox mode",
                 "state": {
-                    "on": "Battery First",
-                    "off": "Wallbox First"
+                    "on": "Battery first",
+                    "off": "Wallbox first"
                 }
             },
             "battery-to-car-mode": {
-                "name": "Battery discharge by wallbox in sun mode",
+                "name": "Wallbox battery discharge in sun mode",
                 "state": {
                     "on": "Allowed",
                     "off": "Blocked"
                 }
             },
             "wallbox-enforce-power-assignment": {
-                "name": "Enforce power assignment when discharging battery by wallbox",
+                "name": "Wallbox battery discharge in mixed mode",
                 "state": {
-                    "on": "Disallowed",
-                    "off": "Allowed in mixed mode and during hold and timers"
+                    "on": "Blocked",
+                    "off": "Allowed"
                 }
             }
         },

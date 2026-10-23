@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Final
 
 from e3dc._rscpTags import PowermeterType
@@ -15,12 +15,12 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    PERCENTAGE,
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
     UnitOfPower,
+    UnitOfRatio,
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
@@ -65,7 +65,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         translation_key="system-derate-percent",
         icon="mdi:transmission-tower-off",
         entity_category=EntityCategory.DIAGNOSTIC,
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
     ),
@@ -173,7 +173,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         key="autarky",
         translation_key="autarky",
         icon="mdi:home-percent-outline",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
@@ -218,6 +218,25 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         suggested_display_precision=2,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
+    ),
+    # Per-phase power. House is calculated as inverter + grid + additional
+    # powermeters, so its three phases add up to house-consumption.
+    *(
+        E3DCSensorEntityDescription(
+            key=f"{source}-{phase}",
+            translation_key=f"{source}-{phase}",
+            icon=icon,
+            native_unit_of_measurement=UnitOfPower.WATT,
+            suggested_display_precision=0,
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+        )
+        for source, icon in (
+            ("house", "mdi:sine-wave"),
+            ("grid", "mdi:transmission-tower"),
+            ("pvi", "mdi:solar-power"),
+        )
+        for phase in ("l1", "l2", "l3")
     ),
     E3DCSensorEntityDescription(
         key="grid-netchange",
@@ -275,7 +294,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         key="selfconsumption",
         translation_key="selfconsumption",
         icon="mdi:cloud-percent-outline",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
@@ -283,7 +302,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
     E3DCSensorEntityDescription(
         key="soc",
         translation_key="soc",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
@@ -322,7 +341,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         key="db-day-autarky",
         translation_key="db-day-autarky",
         icon="mdi:cloud-percent-outline",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
@@ -391,7 +410,7 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         key="db-day-selfconsumption",
         translation_key="db-day-selfconsumption",
         icon="mdi:cloud-percent-outline",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
@@ -555,7 +574,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "soc": {
         "translation_key": "battery-module-soc",
         "icon": "mdi:battery-charging-80",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
@@ -564,7 +583,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "soh": {
         "translation_key": "battery-module-soh",
         "icon": "mdi:battery-heart",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "suggested_display_precision": 0,
@@ -573,7 +592,7 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "soh-reported": {
         "translation_key": "battery-module-soh-reported",
         "icon": "mdi:battery-heart-outline",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "suggested_display_precision": 0,
@@ -619,7 +638,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "asoc": {
         "translation_key": "battery-pack-asoc",
         "icon": "mdi:battery",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "suggested_display_precision": 0,
@@ -779,7 +798,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "rsoc": {
         "translation_key": "battery-pack-rsoc",
         "icon": "mdi:battery",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
@@ -788,7 +807,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "rsoc-real": {
         "translation_key": "battery-pack-rsoc-real",
         "icon": "mdi:battery",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
@@ -851,7 +870,7 @@ BATTERY_PACK_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
     "state-of-health": {
         "translation_key": "battery-pack-state-of-health",
         "icon": "mdi:heart-pulse",
-        "native_unit_of_measurement": PERCENTAGE,
+        "native_unit_of_measurement": UnitOfRatio.PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
         "entity_category": EntityCategory.DIAGNOSTIC,
@@ -866,10 +885,18 @@ async def async_setup_entry(
     """Initialize Sensor Platform."""
     assert isinstance(entry.unique_id, str)
     coordinator: E3DCCoordinator = hass.data[DOMAIN][entry.unique_id]
-    entities: list[E3DCSensor] = [
-        E3DCSensor(coordinator, description, entry.unique_id)
-        for description in SENSOR_DESCRIPTIONS
-    ]
+    additional_production_available = coordinator.additional_production_available
+    entities: list[E3DCSensor] = []
+    for description in SENSOR_DESCRIPTIONS:
+        # Enable the aggregated additional-production sensor only when an
+        # external source is present (see issue #43). Keep it disabled by
+        # default otherwise so installs without an extra inverter stay clean.
+        if description.key == "additional-production":
+            description = replace(
+                description,
+                entity_registry_enabled_default=additional_production_available,
+            )
+        entities.append(E3DCSensor(coordinator, description, entry.unique_id))
 
     # Add SG Ready sensors if SG Ready is enabled
     if coordinator.sgready_available:
@@ -928,7 +955,7 @@ async def async_setup_entry(
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
 
     # Create battery pack sensors first, before module sensors
-    # This ensures pack devices are registered before modules reference them via via_device
+    # This ensures pack devices are registered before modules reference them via via_device_id
     if coordinator.create_battery_devices:
         for pack in coordinator.battery_packs:
             pack_unique_id = pack.get("uniqueId", entry.unique_id)
@@ -975,7 +1002,7 @@ async def async_setup_entry(
                 )
 
     # Create battery module sensors after pack sensors
-    # This ensures pack devices exist before modules reference them via via_device
+    # This ensures pack devices exist before modules reference them via via_device_id
     for battery in coordinator.batteries:
         unique_id = list(battery["deviceInfo"]["identifiers"])[0][1]
         battery_key = battery["key"]
@@ -1191,7 +1218,7 @@ async def async_setup_entry(
             key=f"{wallbox_key}-soc",
             translation_key="wallbox-soc",
             icon="mdi:battery-charging",
-            native_unit_of_measurement=PERCENTAGE,
+            native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
             suggested_display_precision=0,
             device_class=SensorDeviceClass.BATTERY,
             state_class=SensorStateClass.MEASUREMENT,

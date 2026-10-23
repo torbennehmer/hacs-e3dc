@@ -3,7 +3,7 @@
 from datetime import timedelta, datetime
 import logging
 from time import time
-from typing import Any, Final, TypedDict
+from typing import Any, Final, TypedDict, cast
 import pytz
 import re
 
@@ -25,14 +25,21 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 
-from custom_components.e3dc_rscp.utils import initialize_farm_controller_flow_if_needed
+from custom_components.e3dc_rscp.utils import (
+    initialize_farm_controller_flow_if_needed,
+    async_register_device,
+)
 
 from .const import (
     CONF_RSCPKEY,
     CONF_CREATE_BATTERY_DEVICES,
+    CONF_SCAN_INTERVAL,
     DEFAULT_CREATE_BATTERY_DEVICES,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MAX_SCAN_INTERVAL,
     MAX_WALLBOXES_POSSIBLE,
+    MIN_SCAN_INTERVAL,
     PowerMode,
     SetPowerMode,
 )
@@ -100,6 +107,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._next_stat_update: float = 0
         self._next_eh_update: float = 0
         self._isFarmController: bool = config_entry.data.get("farmcontroller", False)
+        self._hub_device_id: str | None = None
 
         # Initialize battery manager
         self.battery_manager = E3DCBatteryManager(
@@ -107,6 +115,8 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             uid=self.uid,
             proxy=self.proxy,
             mydata=self._mydata,
+            config_entry_id=config_entry.entry_id,
+            hub_device_id_callback=lambda: self.hub_device_id,
             create_battery_devices_callback=lambda: self.config_entry.options.get(
                 CONF_CREATE_BATTERY_DEVICES, DEFAULT_CREATE_BATTERY_DEVICES
             ),
@@ -120,11 +130,19 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mydata["set-power-mode"] = SetPowerMode.NORMAL.value
         self._mydata["set-power-value"] = None
 
+        scan_interval = int(
+            config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        )
+        scan_interval = max(MIN_SCAN_INTERVAL, min(MAX_SCAN_INTERVAL, scan_interval))
+
         super().__init__(
-            hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=10)
+            hass,
+            _LOGGER,
+            name=DOMAIN,
+            update_interval=timedelta(seconds=scan_interval),
         )
 
-    async def async_connect(self):
+    async def async_connect(self) -> None:
         """Establish connection to E3DC."""
 
         # TODO: Beautify this, make the code flow with the connects/disconnects more natural.
@@ -159,9 +177,18 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.proxy.get_software_version
         )
 
+        # Register the hub device explicitly so its registry id is available
+        # for via_device_id links on child devices (wallboxes, battery
+        # packs/modules) created during identification below.
+        self._hub_device_id = async_register_device(
+            self.hass,
+            self.config_entry.entry_id,
+            cast(dict[str, Any], self.device_info()),
+        )
+
         await self._load_timezone_settings()
 
-    async def async_identify_farm(self, hass: HomeAssistant):
+    async def async_identify_farm(self, hass: HomeAssistant) -> None:
         """Identify if device is part of a farm and initiate farm controller configuration if so."""
 
         await initialize_farm_controller_flow_if_needed(
@@ -172,7 +199,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.config_entry.data.get(CONF_RSCPKEY, None),
         )
 
-    async def async_identify_wallboxes(self, hass: HomeAssistant):
+    async def async_identify_wallboxes(self, hass: HomeAssistant) -> None:
         """Identify availability of Wallboxes if get_wallbox_identification_data() returns meaningful data."""
         if self._isFarmController:
             """Farm Controller does not support wallboxes. They are handled by child."""
@@ -198,22 +225,24 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wallboxType = request_data["wallboxType"]
                 model = f"Wallbox Type {wallboxType}"
 
-                deviceInfo = DeviceInfo(
-                    identifiers={(DOMAIN, unique_id)},
-                    via_device=(DOMAIN, self.uid),
-                    manufacturer="E3DC",
-                    name=request_data["deviceName"],
-                    model=model,
-                    sw_version=request_data["firmwareVersion"],
-                    serial_number=request_data["wallboxSerial"],
-                    connections={
+                raw_device_info: dict[str, Any] = {
+                    "identifiers": {(DOMAIN, unique_id)},
+                    "manufacturer": "E3DC",
+                    "name": request_data["deviceName"],
+                    "model": model,
+                    "sw_version": request_data["firmwareVersion"],
+                    "serial_number": request_data["wallboxSerial"],
+                    "connections": {
                         (
                             dr.CONNECTION_NETWORK_MAC,
                             dr.format_mac(request_data["macAddress"]),
                         )
                     },
-                    configuration_url="https://my.e3dc.com/",
-                )
+                    "configuration_url": "https://my.e3dc.com/",
+                }
+                assert isinstance(self.hub_device_id, str)
+                raw_device_info["via_device_id"] = self.hub_device_id
+                deviceInfo = cast(DeviceInfo, raw_device_info)
 
                 wallbox: E3DCWallbox = {
                     "index": wallbox_index,
@@ -245,6 +274,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             _LOGGER.debug("SG Ready support not active")
 
+    @property
+    def hub_device_id(self) -> str | None:
+        """Return the device registry id of the main E3DC hub device."""
+        return self._hub_device_id
+
     # Getter for _wallboxes
     @property
     def wallboxes(self) -> list[E3DCWallbox]:
@@ -270,6 +304,26 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def battery_packs(self) -> list[E3DCBatteryPack]:
         """Get the list of battery packs for the configured batteries."""
         return self.battery_manager.battery_packs
+
+    @property
+    def additional_production_available(self) -> bool:
+        """Return True if an additional production source is present.
+
+        Used to enable the aggregated ``additional-production`` sensor by
+        default when an external inverter / additional source exists. Checks
+        both the E3DC ``externalSourceAvailable`` flag and concrete powermeter
+        types discovered at connect time.
+        """
+        if self._mydata.get("system-additional-source-available"):
+            return True
+
+        for powermeter in self.proxy.e3dc_config.get("powermeters", []):
+            if powermeter["type"] in (
+                PowermeterType.PM_TYPE_ADDITIONAL_PRODUCTION.value,
+                PowermeterType.PM_TYPE_ADDITIONAL.value,
+            ):
+                return True
+        return False
 
     async def async_identify_batteries(self, hass: HomeAssistant) -> None:
         """Identify installed battery modules if enabled via options (delegates to battery manager)."""
@@ -300,7 +354,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     raise KeyError(f"Key {key} not found in wallbox with index {index}")
         raise ValueError(f"Wallbox with index {index} not found")
 
-    async def _async_connect_additional_powermeters(self):
+    async def _async_connect_additional_powermeters(self) -> None:
         """Identify the installed powermeters and reconnect to E3DC with this config."""
         # TODO: Restructure config so that we are indexed by powemeter ID.
         self.proxy.e3dc_config["powermeters"] = await self.hass.async_add_executor_job(
@@ -421,7 +475,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         return self._mydata
 
-    async def _load_and_process_power_settings(self):
+    async def _load_and_process_power_settings(self) -> None:
         """Load and process power settings."""
         try:
             power_settings: dict[str, Any] = await self.hass.async_add_executor_job(
@@ -461,7 +515,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             self._mydata[key] = bool(system_status[flag])
 
-    async def _load_and_process_poll(self):
+    async def _load_and_process_poll(self) -> None:
         """Load and process standard poll data."""
         try:
             poll_data: dict[str, Any] = await self.hass.async_add_executor_job(
@@ -577,22 +631,34 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             4: "start_up",
         }
         raw_state = request_data["sgready-state"]
-        self._mydata["sgready-state"] = sgready_state_map.get(raw_state, str(raw_state))
+        mapped_state = sgready_state_map.get(raw_state)
+        if mapped_state is None:
+            # The sensor is an ENUM sensor, values outside of its options list
+            # would be rejected by HA, so keep the previous state instead.
+            _LOGGER.warning(
+                "Unknown SG Ready state %s, keeping previous state", raw_state
+            )
+        else:
+            self._mydata["sgready-state"] = mapped_state
         self._mydata["sgready-numeric-state"] = request_data["sgready-numeric-state"]
         self._mydata["sgready-active"] = bool(request_data["sgready-active"])
         self._sgready_available = bool(request_data["sgready-active"])
 
-    async def _load_and_process_wallbox_data(self) -> None:
-        """Load and process wallbox data to existing data."""
+    async def _load_and_process_wallbox_ems_settings(self) -> None:
+        """Load and process EMS-level wallbox settings.
 
-        # Load EMS general settings:
-
+        These are independent of the per-wallbox readings, so a failure here
+        (e.g. firmware without support for these RSCP tags) must not prevent
+        the regular wallbox polling.
+        """
         try:
             ems_wb_state: dict[str, Any] = await self.hass.async_add_executor_job(
                 self.proxy.get_wallbox_ems_settings
             )
         except HomeAssistantError as ex:
-            _LOGGER.warning("Failed to load EMS wallbox settings: %s", ex)
+            _LOGGER.warning(
+                "Failed to load EMS wallbox settings, not updating them: %s", ex
+            )
             return
 
         self._mydata["battery-before-car-mode"] = ems_wb_state[
@@ -606,14 +672,22 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "wallbox-enforce-power-assignment"
         ]
 
+    async def _load_and_process_wallbox_data(self) -> None:
+        """Load and process wallbox data to existing data."""
+        await self._load_and_process_wallbox_ems_settings()
+
         for wallbox in self.wallboxes:
             try:
                 request_data: dict[str, Any] = await self.hass.async_add_executor_job(
                     self.proxy.get_wallbox_data, wallbox["index"]
                 )
             except HomeAssistantError as ex:
-                _LOGGER.warning("Failed to load wallboxes, not updating data: %s", ex)
-                return
+                _LOGGER.warning(
+                    "Failed to load wallbox %s, not updating its data: %s",
+                    wallbox["index"],
+                    ex,
+                )
+                continue
 
             for key, value in request_data.items():
                 formatted_key = re.sub(
@@ -635,7 +709,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 wallbox_key = wallbox["key"]
                 self._mydata[f"{wallbox_key}-{formatted_key}"] = value
 
-    async def _load_timezone_settings(self):
+    async def _load_timezone_settings(self) -> None:
         """Load the current timezone offset from the E3DC, using its local timezone data.
 
         Required to correctly retrieve power statistics for today.
