@@ -358,6 +358,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.proxy.e3dc_config["powermeters"] = await self.hass.async_add_executor_job(
             self.proxy.get_powermeters
         )
+        # Keep discovered PVIs (incl. string count) across reconnect, otherwise
+        # pye3dc falls back to [{"index": 0}] without a "strings" key.
+        self.proxy.e3dc_config["pvis"] = await self.hass.async_add_executor_job(
+            self.proxy.get_pvis
+        )
 
         for powermeter in self.proxy.e3dc_config["powermeters"]:
             if powermeter["type"] == PowermeterType.PM_TYPE_ROOT.value:
@@ -435,6 +440,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         _LOGGER.debug("Polling additional powermeters")
         await self._load_and_process_powermeters_data()
+
+        _LOGGER.debug("Polling PVI string data")
+        await self._load_and_process_pvi_strings_data()
 
         if self._update_guard_wallboxsettings is False:
             if self.wallboxes:
@@ -580,6 +588,19 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         except HomeAssistantError as ex:
             _LOGGER.warning("Failed to load powermeters, not updating data: %s", ex)
+            return
+
+        for key, value in request_data.items():
+            self._mydata[key] = value
+
+    async def _load_and_process_pvi_strings_data(self) -> None:
+        """Load and process per-string PV DC metrics."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_pvi_strings_data
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to load PVI string data, not updating data: %s", ex)
             return
 
         for key, value in request_data.items():

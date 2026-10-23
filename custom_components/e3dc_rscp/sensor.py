@@ -943,6 +943,75 @@ async def async_setup_entry(
         )
         entities.append(E3DCSensor(coordinator, power_description, entry.unique_id))
 
+    # Per-string PV DC metrics (MPP trackers) from the first PVI.
+    for string_num in range(1, coordinator.proxy.pvi_string_count() + 1):
+        prefix = f"pvi-string-{string_num}"
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"{prefix}-power",
+                    translation_key="pvi-string-power",
+                    translation_placeholders={"string": str(string_num)},
+                    icon="mdi:solar-power",
+                    native_unit_of_measurement=UnitOfPower.WATT,
+                    suggested_display_precision=0,
+                    device_class=SensorDeviceClass.POWER,
+                    state_class=SensorStateClass.MEASUREMENT,
+                ),
+                entry.unique_id,
+            )
+        )
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"{prefix}-voltage",
+                    translation_key="pvi-string-voltage",
+                    translation_placeholders={"string": str(string_num)},
+                    icon="mdi:sine-wave",
+                    native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+                    suggested_display_precision=1,
+                    device_class=SensorDeviceClass.VOLTAGE,
+                    state_class=SensorStateClass.MEASUREMENT,
+                ),
+                entry.unique_id,
+            )
+        )
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"{prefix}-current",
+                    translation_key="pvi-string-current",
+                    translation_placeholders={"string": str(string_num)},
+                    icon="mdi:current-dc",
+                    native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+                    suggested_display_precision=2,
+                    device_class=SensorDeviceClass.CURRENT,
+                    state_class=SensorStateClass.MEASUREMENT,
+                ),
+                entry.unique_id,
+            )
+        )
+        entities.append(
+            E3DCSensor(
+                coordinator,
+                E3DCSensorEntityDescription(
+                    key=f"{prefix}-energy",
+                    translation_key="pvi-string-energy",
+                    translation_placeholders={"string": str(string_num)},
+                    icon="mdi:solar-power-variant",
+                    native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+                    suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+                    suggested_display_precision=2,
+                    device_class=SensorDeviceClass.ENERGY,
+                    state_class=SensorStateClass.TOTAL_INCREASING,
+                ),
+                entry.unique_id,
+            )
+        )
+
     # Create battery pack sensors first, before module sensors
     # This ensures pack devices are registered before modules reference them via via_device_id
     if coordinator.create_battery_devices:
