@@ -143,6 +143,15 @@
                 "cloud": "Portal-User",
                 "local": "Local user (local.user)"
             }
+        },
+        "power_mode": {
+            "options": {
+                "0": "Normal operation",
+                "1": "Idle",
+                "2": "Discharging",
+                "3": "Charging",
+                "4": "Charging from grid"
+            }
         }
     },
     "entity": {
@@ -492,9 +501,6 @@
                 "name": "Remaining capacity"
             },
             "battery-module-soc": {
-                "name": "State of charge (energy)"
-            },
-            "battery-module-soc": {
                 "name": "State of charge"
             },
             "battery-module-soh": {
@@ -808,17 +814,6 @@
             },
             "battery-wallbox-discharge-limit": {
                 "name": "Battery-to-Wallbox SOC limit"
-            }
-        }
-    },
-    "selector": {
-        "power_mode": {
-            "options": {
-                "0": "Normal operation",
-                "1": "Idle",
-                "2": "Discharging",
-                "3": "Charging",
-                "4": "Charging from grid"
             }
         }
     },
