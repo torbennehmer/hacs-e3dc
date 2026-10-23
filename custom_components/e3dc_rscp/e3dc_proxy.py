@@ -348,18 +348,22 @@ class E3DCProxy:
             keepAlive=True,
         )
 
-        def _value(tag: RscpTag) -> float | None:
+        def _value(tag: RscpTag, digits: int) -> float | None:
             found = rscpFindTag(req, tag)
             if found is None:
                 return None
             value = rscpFindTagIndex(found, RscpTag.PVI_VALUE)
-            return None if value is None else float(value)
+            if value is None:
+                return None
+            # Round float32 RSCP noise so history/automations stay clean
+            # (UI already uses suggested_display_precision).
+            return round(float(value), digits)
 
         return {
-            "power": _value(RscpTag.PVI_DC_POWER),
-            "voltage": _value(RscpTag.PVI_DC_VOLTAGE),
-            "current": _value(RscpTag.PVI_DC_CURRENT),
-            "energy": _value(RscpTag.PVI_DC_STRING_ENERGY_ALL),
+            "power": _value(RscpTag.PVI_DC_POWER, 0),
+            "voltage": _value(RscpTag.PVI_DC_VOLTAGE, 1),
+            "current": _value(RscpTag.PVI_DC_CURRENT, 2),
+            "energy": _value(RscpTag.PVI_DC_STRING_ENERGY_ALL, 0),
         }
 
     def pvi_string_count(self) -> int:
