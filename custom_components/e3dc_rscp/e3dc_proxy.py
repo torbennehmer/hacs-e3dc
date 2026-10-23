@@ -140,6 +140,11 @@ class E3DCProxy:
         return self.e3dc.get_db_data_timestamp(timestamp, timespan_seconds, True)
 
     @e3dc_call
+    def get_db_data_timespan(self, timespan: str) -> dict[str, Any]:
+        """Return DB statistics for DAY, MONTH or YEAR."""
+        return self.e3dc.get_db_data(timespan=timespan, keepAlive=True)
+
+    @e3dc_call
     def get_manual_charge(self) -> dict[str, Any]:
         """Poll manual charging state."""
         data = self.e3dc.sendRequest(
