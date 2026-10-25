@@ -367,8 +367,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.proxy.e3dc_config["powermeters"] = await self.hass.async_add_executor_job(
             self.proxy.get_powermeters
         )
-        # Keep discovered PVIs (incl. string count) across reconnect, otherwise
-        # pye3dc falls back to [{"index": 0}] without a "strings" key.
+        # Keep discovered PVIs (incl. corrected max string count, see #413)
+        # across reconnect, otherwise pye3dc falls back to [{"index": 0}]
+        # without a "strings" key.
         self.proxy.e3dc_config["pvis"] = await self.hass.async_add_executor_job(
             self.proxy.get_pvis
         )

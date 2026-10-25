@@ -188,10 +188,49 @@ class E3DCProxy:
         """Load available powermeters from E3DC."""
         return self.e3dc.get_powermeters(keepAlive=True)
 
+    def _resolve_pvi_string_count(
+        self, pvi_index: int, used_fallback: int | None
+    ) -> int:
+        """Return DC string count preferring max over used (#413).
+
+        Some firmwares report ``PVI_USED_STRING_COUNT`` too low while further
+        DC inputs still produce. Prefer ``PVI_DC_MAX_STRING_COUNT``; fall back
+        to used (from RSCP or pye3dc discovery) if max is missing.
+        """
+        req = self.e3dc.sendRequest(
+            (
+                RscpTag.PVI_REQ_DATA,
+                RscpType.Container,
+                [
+                    (RscpTag.PVI_INDEX, RscpType.Uint16, pvi_index),
+                    (RscpTag.PVI_REQ_DC_MAX_STRING_COUNT, RscpType.NoneType, None),
+                    (RscpTag.PVI_REQ_USED_STRING_COUNT, RscpType.NoneType, None),
+                ],
+            ),
+            keepAlive=True,
+        )
+        max_count = rscpFindTagIndex(req, RscpTag.PVI_DC_MAX_STRING_COUNT)
+        if max_count is not None:
+            return int(max_count)
+        used = rscpFindTagIndex(req, RscpTag.PVI_USED_STRING_COUNT)
+        if used is not None:
+            return int(used)
+        return int(used_fallback or 0)
+
     @e3dc_call
     def get_pvis(self) -> list[dict[str, Any]]:
-        """Load available PV inverters from E3DC."""
-        return self.e3dc.get_pvis(keepAlive=True)
+        """Load available PV inverters from E3DC.
+
+        Overrides pye3dc's ``strings`` (from ``PVI_USED_STRING_COUNT``) with
+        ``PVI_DC_MAX_STRING_COUNT`` when available so all live DC inputs get
+        sensors (#413).
+        """
+        pvis = self.e3dc.get_pvis(keepAlive=True)
+        for pvi in pvis:
+            pvi["strings"] = self._resolve_pvi_string_count(
+                int(pvi["index"]), pvi.get("strings")
+            )
+        return pvis
 
     @e3dc_call
     def get_wallbox_ems_settings(self) -> dict[str, Any]:
@@ -436,7 +475,11 @@ class E3DCProxy:
         }
 
     def pvi_string_count(self) -> int:
-        """Return configured DC string count of the first PVI (0 if unknown)."""
+        """Return DC string count of the first PVI (0 if unknown).
+
+        Uses the value stored by :meth:`get_pvis`, which prefers max DC
+        string count over used-string count (#413).
+        """
         pvis = getattr(self.e3dc, "pvis", None) or []
         if not pvis:
             return 0
