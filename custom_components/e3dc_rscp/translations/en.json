@@ -449,8 +449,27 @@
             "pvi-frequency": {
                 "name": "Inverter frequency"
             },
+            "pvi-system-mode": {
+                "name": "Inverter system mode"
+            },
+            "pvi-power-mode": {
+                "name": "Inverter power mode"
+            },
             "pvi-temperature": {
                 "name": "Inverter temperature {sensor}"
+            },
+            "emergency-power-status": {
+                "name": "Emergency power status",
+                "state": {
+                    "not_supported": "Not supported",
+                    "active": "Active",
+                    "not_active": "Not active",
+                    "not_available": "Not available",
+                    "motor_switch_wrong_position": "Motor switch in wrong position"
+                }
+            },
+            "emergency-power-numeric-status": {
+                "name": "Emergency power status numeric"
             },
             "grid-energy-l1": {
                 "name": "Grid energy L1"

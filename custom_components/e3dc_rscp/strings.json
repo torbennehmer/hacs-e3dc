@@ -713,6 +713,25 @@
           "4": "Idle"
         }
       },
+      "emergency-power-status": {
+        "name": "Emergency power status",
+        "state": {
+          "not_supported": "Not supported",
+          "active": "Active",
+          "not_active": "Not active",
+          "not_available": "Not available",
+          "motor_switch_wrong_position": "Motor switch in wrong position"
+        }
+      },
+      "emergency-power-numeric-status": {
+        "name": "Emergency power status numeric"
+      },
+      "pvi-system-mode": {
+        "name": "Inverter system mode"
+      },
+      "pvi-power-mode": {
+        "name": "Inverter power mode"
+      },
       "sgready-state": {
         "name": "SG Ready",
         "state": {
