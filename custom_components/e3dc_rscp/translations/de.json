@@ -428,6 +428,39 @@
             "pvi-l3": {
                 "name": "Wechselrichter L3"
             },
+            "pvi-voltage-l1": {
+                "name": "Wechselrichter Spannung L1"
+            },
+            "pvi-voltage-l2": {
+                "name": "Wechselrichter Spannung L2"
+            },
+            "pvi-voltage-l3": {
+                "name": "Wechselrichter Spannung L3"
+            },
+            "pvi-current-l1": {
+                "name": "Wechselrichter Strom L1"
+            },
+            "pvi-current-l2": {
+                "name": "Wechselrichter Strom L2"
+            },
+            "pvi-current-l3": {
+                "name": "Wechselrichter Strom L3"
+            },
+            "pvi-frequency": {
+                "name": "Wechselrichter Frequenz"
+            },
+            "pvi-temperature": {
+                "name": "Wechselrichter Temperatur {sensor}"
+            },
+            "grid-energy-l1": {
+                "name": "Netzenergie L1"
+            },
+            "grid-energy-l2": {
+                "name": "Netzenergie L2"
+            },
+            "grid-energy-l3": {
+                "name": "Netzenergie L3"
+            },
             "pvi-string-power": {
                 "name": "PV-String {string} Leistung"
             },
