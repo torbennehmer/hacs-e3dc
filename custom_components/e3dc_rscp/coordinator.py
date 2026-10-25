@@ -104,6 +104,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._sgready_available: bool = False
         self._timezone_offset: int = 0
         self._next_stat_update: float = 0
+        self._pvi_temperature_count: int = 0
         self._isFarmController: bool = config_entry.data.get("farmcontroller", False)
         self._hub_device_id: str | None = None
 
@@ -147,6 +148,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Have a call to autoconf, then connect with it.
         await self.hass.async_add_executor_job(self.proxy.connect)
         await self._async_connect_additional_powermeters()
+        self._pvi_temperature_count = await self.hass.async_add_executor_job(
+            self.proxy.get_pvi_temperature_count
+        )
 
         self._mydata["system-derate-percent"] = self.proxy.e3dc.deratePercent
         self._mydata["system-derate-power"] = self.proxy.e3dc.deratePower
@@ -287,6 +291,11 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def sgready_available(self) -> bool:
         """Return if SG Ready information is available."""
         return self._sgready_available
+
+    @property
+    def pvi_temperature_count(self) -> int:
+        """Return the number of PVI temperature sensors on the first inverter."""
+        return self._pvi_temperature_count
 
     @property
     def create_battery_devices(self) -> bool:
