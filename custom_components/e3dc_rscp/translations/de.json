@@ -473,6 +473,31 @@
             "pvi-string-energy": {
                 "name": "PV-String {string} Energie"
             },
+            "pvi-frequency": {
+                "name": "Wechselrichter-Frequenz"
+            },
+            "pvi-system-mode": {
+                "name": "Wechselrichter-Systemmodus"
+            },
+            "pvi-power-mode": {
+                "name": "Wechselrichter-Leistungsmodus"
+            },
+            "pvi-temperature": {
+                "name": "Wechselrichter-Temperatur {sensor}"
+            },
+            "emergency-power-status": {
+                "name": "Notstromstatus",
+                "state": {
+                    "not_supported": "Nicht unterstützt",
+                    "active": "Aktiv",
+                    "not_active": "Nicht aktiv",
+                    "not_available": "Nicht verfügbar",
+                    "motor_switch_wrong_position": "Motorschalter in falscher Stellung"
+                }
+            },
+            "emergency-power-numeric-status": {
+                "name": "Notstromstatus numerisch"
+            },
             "wallbox-consumption": {
                 "name": "Wallbox-Verbrauch"
             },

@@ -76,6 +76,15 @@ _SYSTEM_STATUS_FLAGS: Final[dict[str, str]] = {
     "wallBoxAlive": "system-wallbox-alive",
 }
 
+# EMS_EMERGENCY_POWER_STATUS / Modbus register 40084
+_EMERGENCY_POWER_STATUS_MAP: Final[dict[int, str]] = {
+    0: "not_supported",
+    1: "active",
+    2: "not_active",
+    3: "not_available",
+    4: "motor_switch_wrong_position",
+}
+
 
 class E3DCWallbox(TypedDict):
     """E3DC Wallbox, keeps general information, attributes and identity data for an individual wallbox."""
@@ -435,6 +444,9 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         _LOGGER.debug("Polling system status information")
         await self._load_and_process_system_status()
 
+        _LOGGER.debug("Polling emergency power status")
+        await self._load_and_process_emergency_power_status()
+
         # TODO: Check if we need to replace this with a safe IPC sync
         if self._update_guard_powersettings is False:
             _LOGGER.debug("Poll power settings")
@@ -648,6 +660,38 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         for key, value in request_data.items():
             self._mydata[key] = value
+
+    async def _load_and_process_emergency_power_status(self) -> None:
+        """Load and process detailed EMS emergency power status."""
+        try:
+            request_data: dict[str, Any] = await self.hass.async_add_executor_job(
+                self.proxy.get_emergency_power_status
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to load emergency power status, not updating data: %s", ex
+            )
+            return
+
+        raw_status = request_data["emergency-power-status"]
+        try:
+            status_code = int(raw_status)
+        except (TypeError, ValueError):
+            _LOGGER.warning(
+                "Unknown emergency power status %s, keeping previous state", raw_status
+            )
+            return
+
+        mapped_status = _EMERGENCY_POWER_STATUS_MAP.get(status_code)
+        if mapped_status is None:
+            # ENUM sensor rejects unknown options; keep previous mapped state.
+            _LOGGER.warning(
+                "Unknown emergency power status %s, keeping previous state",
+                status_code,
+            )
+        else:
+            self._mydata["emergency-power-status"] = mapped_status
+        self._mydata["emergency-power-numeric-status"] = status_code
 
     async def _load_and_process_sgready_state(self) -> None:
         """Loand and process SG Ready state."""

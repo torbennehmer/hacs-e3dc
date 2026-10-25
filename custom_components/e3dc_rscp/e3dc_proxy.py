@@ -382,7 +382,7 @@ class E3DCProxy:
         }
 
     def _pvi_aux_metrics(self) -> dict[str, Any]:
-        """Return AC frequency and PVI temperature sensors for the first inverter."""
+        """Return AC frequency, modes and PVI temperatures for the first inverter."""
         req = self.e3dc.sendRequest(
             (
                 RscpTag.PVI_REQ_DATA,
@@ -390,6 +390,8 @@ class E3DCProxy:
                 [
                     (RscpTag.PVI_INDEX, RscpType.Uint16, 0),
                     (RscpTag.PVI_REQ_AC_FREQUENCY, RscpType.NoneType, None),
+                    (RscpTag.PVI_REQ_SYSTEM_MODE, RscpType.NoneType, None),
+                    (RscpTag.PVI_REQ_POWER_MODE, RscpType.NoneType, None),
                     (RscpTag.PVI_REQ_TEMPERATURE_COUNT, RscpType.NoneType, None),
                 ],
             ),
@@ -397,6 +399,8 @@ class E3DCProxy:
         )
         result: dict[str, Any] = {
             "pvi-frequency": self._pvi_value(req, RscpTag.PVI_AC_FREQUENCY),
+            "pvi-system-mode": rscpFindTagIndex(req, RscpTag.PVI_SYSTEM_MODE),
+            "pvi-power-mode": rscpFindTagIndex(req, RscpTag.PVI_POWER_MODE),
         }
         temp_count = rscpFindTagIndex(req, RscpTag.PVI_TEMPERATURE_COUNT)
         count = int(temp_count or 0)
@@ -563,6 +567,17 @@ class E3DCProxy:
     def get_software_version(self) -> str:
         """Return the current software version of the E3DC."""
         return self.e3dc.sendRequestTag(RscpTag.INFO_REQ_SW_RELEASE, keepAlive=True)
+
+    @e3dc_call
+    def get_emergency_power_status(self) -> dict[str, Any]:
+        """Return EMS emergency power status (Modbus register 40084 equivalent)."""
+        status = self.e3dc.sendRequestTag(
+            RscpTag.EMS_REQ_EMERGENCY_POWER_STATUS, keepAlive=True
+        )
+        return {
+            "emergency-power-status": status,
+            "emergency-power-numeric-status": status,
+        }
 
     @e3dc_call
     def get_sgready_state(self) -> dict[str, Any]:
