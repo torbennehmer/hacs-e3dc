@@ -133,7 +133,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         suggested_display_precision=1,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
     ),
     E3DCSensorEntityDescription(
         key="system-battery-installed-capacity",
@@ -167,7 +166,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         suggested_display_precision=1,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
     ),
     E3DCSensorEntityDescription(
         key="system-battery-charge-max",
@@ -208,7 +206,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCSensorEntityDescription, ...]] = (
         suggested_display_precision=0,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        entity_registry_enabled_default=False,
     ),
     E3DCSensorEntityDescription(
         key="system-battery-discharge-minimum-default",
@@ -678,7 +675,6 @@ BATTERY_SENSOR_DESCRIPTION_TEMPLATES: dict[str, dict[str, Any]] = {
         "state_class": SensorStateClass.MEASUREMENT,
         "suggested_display_precision": 0,
         "entity_category": EntityCategory.DIAGNOSTIC,
-        "entity_registry_enabled_default": False,
     },
     "status": {
         "translation_key": "battery-module-status",
