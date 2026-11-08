@@ -52,7 +52,6 @@ SWITCHES: Final[tuple[E3DCSwitchEntityDescription, ...]] = (
         async_turn_off_action=lambda coordinator: coordinator.async_set_powersave(
             False
         ),
-        entity_registry_enabled_default=False,
     ),
     E3DCSwitchEntityDescription(
         key="pset-weatherregulationenabled",

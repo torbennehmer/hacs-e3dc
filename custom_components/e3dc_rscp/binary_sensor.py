@@ -169,7 +169,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         on_icon="mdi:solar-power-variant-outline",
         off_icon="mdi:solar-power-variant",
-        entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     E3DCBinarySensorEntityDescription(
@@ -202,7 +201,6 @@ SENSOR_DESCRIPTIONS: Final[tuple[E3DCBinarySensorEntityDescription, ...]] = (
         translation_key="system-rescue-battery-enabled",
         on_icon="mdi:battery-heart-variant",
         off_icon="mdi:battery-heart-outline",
-        entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     E3DCBinarySensorEntityDescription(
