@@ -403,19 +403,6 @@ class E3DCBatteryManager:
                     calculated_value = None
                 self._mydata[full_key] = calculated_value
 
-    def _get_dcb_count_from_pack(self, pack: dict[str, Any]) -> int | None:
-        """Get the number of DCB modules in a battery pack."""
-        dcbs = pack.get("dcbs")
-        if isinstance(dcbs, dict):
-            if len(dcbs) > 0:
-                return len(dcbs)
-        elif isinstance(dcbs, list):
-            if len(dcbs) > 0:
-                return len(dcbs)
-
-        raw_count = pack.get("dcbCount")
-        return as_int_or_none(raw_count)
-
     def _get_dcb_design_voltage(self, pack: dict[str, Any]) -> Any:
         """Get the design voltage from the first DCB module in a pack.
 
@@ -436,29 +423,22 @@ class E3DCBatteryManager:
 
     def _calculate_battery_design_energy(self, pack: dict[str, Any]) -> float | None:
         """Calculate battery pack design energy in kWh."""
-        dcb_count = self._get_dcb_count_from_pack(pack)
-        if dcb_count is None or dcb_count <= 0:
-            return None
-
         design_capacity = as_float_or_none(pack.get("designCapacity"))
         design_voltage = as_float_or_none(self._get_dcb_design_voltage(pack))
         if design_capacity is None or design_voltage is None:
             return None
 
-        return (design_capacity * (dcb_count * design_voltage)) / 1000
+        # Pack capacity is already the sum of all parallel modules.
+        return (design_capacity * design_voltage) / 1000
 
     def _calculate_battery_full_energy(self, pack: dict[str, Any]) -> float | None:
         """Calculate battery pack full charge energy in kWh."""
-        dcb_count = self._get_dcb_count_from_pack(pack)
-        if dcb_count is None or dcb_count <= 0:
-            return None
-
         full_charge_capacity = as_float_or_none(pack.get("fcc"))
         design_voltage = as_float_or_none(self._get_dcb_design_voltage(pack))
         if full_charge_capacity is None or design_voltage is None:
             return None
 
-        return (full_charge_capacity * (dcb_count * design_voltage)) / 1000
+        return (full_charge_capacity * design_voltage) / 1000
 
     def _calculate_battery_remaining_energy(self, pack: dict[str, Any]) -> float | None:
         """Calculate battery pack remaining energy in kWh."""
