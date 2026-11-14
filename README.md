@@ -273,8 +273,8 @@ Notes:
 - on some E3DCs some Names of Batteries and Serial Numbers are reported back as "TODO". This is not an error of the integration.
 
 - The following battery pack sensors are calculated by this integration based on raw values from the E3DC energy management system:
-  - **Design Energy**: Calculated as `(design capacity × (DCB count × design voltage)) / 1000` in kWh
-  - **Full Energy**: Calculated as `(full charge capacity × (DCB count × design voltage)) / 1000` in kWh
+  - **Design Energy**: Calculated as `(design capacity × design voltage) / 1000` in kWh
+  - **Full Energy**: Calculated as `(full charge capacity × design voltage) / 1000` in kWh
   - **Remaining Energy**: Calculated as `(remaining capacity × module voltage) / 1000` in kWh
   - **Usable Remaining Energy**: Calculated as `(usable remaining capacity × module voltage) / 1000` in kWh
   - **State of Health**: Calculated as `(full charge capacity / design capacity) × 100` as percentage
