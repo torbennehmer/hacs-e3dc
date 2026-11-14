@@ -28,6 +28,7 @@ from homeassistant.const import (
 from custom_components.e3dc_rscp.utils import (
     initialize_farm_controller_flow_if_needed,
     async_register_device,
+    finite_float_or_none,
 )
 
 from .const import (
@@ -571,18 +572,23 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _apply_db_data(self, prefix: str, db_data: dict[str, Any]) -> None:
         """Map E3DC DB statistics into coordinator data under the given prefix."""
-        self._mydata[f"{prefix}-autarky"] = db_data["autarky"]
-        self._mydata[f"{prefix}-battery-charge"] = db_data["bat_power_in"]
-        self._mydata[f"{prefix}-battery-discharge"] = db_data["bat_power_out"]
-        self._mydata[f"{prefix}-grid-consumption"] = db_data["grid_power_out"]
-        self._mydata[f"{prefix}-grid-production"] = db_data["grid_power_in"]
-        self._mydata[f"{prefix}-house-consumption"] = db_data["consumption"]
-        self._mydata[f"{prefix}-selfconsumption"] = db_data["consumed_production"]
-        self._mydata[f"{prefix}-solar-production"] = db_data["solarProduction"]
+        # The E3DC may report NaN (e.g. when production just started). Home
+        # Assistant rejects non-finite numeric states, so map those to None.
+        for key, source in (
+            ("autarky", "autarky"),
+            ("battery-charge", "bat_power_in"),
+            ("battery-discharge", "bat_power_out"),
+            ("grid-consumption", "grid_power_out"),
+            ("grid-production", "grid_power_in"),
+            ("house-consumption", "consumption"),
+            ("selfconsumption", "consumed_production"),
+            ("solar-production", "solarProduction"),
+        ):
+            self._mydata[f"{prefix}-{key}"] = finite_float_or_none(db_data[source])
 
         # Powermeter production can be signed depending on meter orientation.
-        pm0 = abs(float(db_data.get("pm0Production") or 0))
-        pm1 = abs(float(db_data.get("pm1Production") or 0))
+        pm0 = abs(finite_float_or_none(db_data.get("pm0Production")) or 0)
+        pm1 = abs(finite_float_or_none(db_data.get("pm1Production")) or 0)
         self._mydata[f"{prefix}-pm0-production"] = pm0
         self._mydata[f"{prefix}-pm1-production"] = pm1
         self._mydata[f"{prefix}-additional-production"] = pm0 + pm1

@@ -1,6 +1,7 @@
 """Utility functions for E3DC RSCP integration."""
 
 import logging
+import math
 from collections.abc import Mapping
 from typing import Any
 
@@ -40,6 +41,18 @@ def as_float_or_none(value: Any | None) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def finite_float_or_none(value: Any | None) -> float | None:
+    """Return value as float, or None if missing or not finite (NaN/inf).
+
+    The E3DC can report NaN for DB statistics, e.g. right after production starts.
+    Home Assistant rejects non-finite states on numeric sensors.
+    """
+    number = as_float_or_none(value)
+    if number is None or not math.isfinite(number):
+        return None
+    return number
 
 
 def async_register_device(
