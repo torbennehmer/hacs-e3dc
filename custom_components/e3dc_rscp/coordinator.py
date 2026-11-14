@@ -847,7 +847,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             connections=(
                 {(dr.CONNECTION_NETWORK_MAC, self.proxy.e3dc.macAddress)}
                 if not self._isFarmController
-                else None
+                else set()
             ),
             identifiers={(DOMAIN, self.uid)},
             sw_version=self._sw_version,
