@@ -158,9 +158,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Have a call to autoconf, then connect with it.
         await self.hass.async_add_executor_job(self.proxy.connect)
         await self._async_connect_additional_powermeters()
-        self._pvi_temperature_count = await self.hass.async_add_executor_job(
-            self.proxy.get_pvi_temperature_count
-        )
+        await self._async_identify_pvi_temperatures()
 
         self._mydata["system-derate-percent"] = self.proxy.e3dc.deratePercent
         self._mydata["system-derate-power"] = self.proxy.e3dc.deratePower
@@ -371,6 +369,30 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     raise KeyError(f"Key {key} not found in wallbox with index {index}")
         raise ValueError(f"Wallbox with index {index} not found")
 
+    async def _async_identify_pvis(self) -> list[dict[str, Any]]:
+        """Identify installed PVIs, empty if unsupported (e.g. Farm Controller, #424)."""
+        if self._isFarmController:
+            return []
+        try:
+            return await self.hass.async_add_executor_job(self.proxy.get_pvis)
+        except HomeAssistantError as ex:
+            _LOGGER.warning("Failed to identify PVIs, skipping PVI sensors: %s", ex)
+            return []
+
+    async def _async_identify_pvi_temperatures(self) -> None:
+        """Identify the PVI temperature sensor count, zero if unsupported."""
+        self._pvi_temperature_count = 0
+        if self._isFarmController:
+            return
+        try:
+            self._pvi_temperature_count = await self.hass.async_add_executor_job(
+                self.proxy.get_pvi_temperature_count
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.warning(
+                "Failed to identify PVI temperature sensors, skipping them: %s", ex
+            )
+
     async def _async_connect_additional_powermeters(self) -> None:
         """Identify the installed powermeters and reconnect to E3DC with this config."""
         # TODO: Restructure config so that we are indexed by powemeter ID.
@@ -380,9 +402,7 @@ class E3DCCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Keep discovered PVIs (incl. corrected max string count, see #413)
         # across reconnect, otherwise pye3dc falls back to [{"index": 0}]
         # without a "strings" key.
-        self.proxy.e3dc_config["pvis"] = await self.hass.async_add_executor_job(
-            self.proxy.get_pvis
-        )
+        self.proxy.e3dc_config["pvis"] = await self._async_identify_pvis()
 
         for powermeter in self.proxy.e3dc_config["powermeters"]:
             if powermeter["type"] == PowermeterType.PM_TYPE_ROOT.value:
